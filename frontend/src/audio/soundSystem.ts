@@ -140,6 +140,151 @@ class SoundSystem {
       // Ignore audio synthesis errors
     }
   }
+
+  /**
+   * Procedural pneumatic mechanical thud for data disc push/pop operations.
+   */
+  public playPneumaticThud(): void {
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    try {
+      const now = this.ctx.currentTime;
+      const thudOsc = this.ctx.createOscillator();
+      const thudGain = this.ctx.createGain();
+      const thudFilter = this.ctx.createBiquadFilter();
+
+      thudFilter.type = 'lowpass';
+      thudFilter.frequency.setValueAtTime(220, now);
+      thudFilter.frequency.exponentialRampToValueAtTime(60, now + 0.18);
+
+      thudOsc.type = 'sine';
+      thudOsc.frequency.setValueAtTime(140, now);
+      thudOsc.frequency.exponentialRampToValueAtTime(38, now + 0.18);
+
+      thudGain.gain.setValueAtTime(0.35, now);
+      thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+      thudOsc.connect(thudFilter);
+      thudFilter.connect(thudGain);
+      thudGain.connect(this.masterGain);
+
+      thudOsc.start(now);
+      thudOsc.stop(now + 0.2);
+    } catch {
+      // Ignore audio synthesis errors
+    }
+  }
+
+  /**
+   * Harmonious affirmative chime for correct question responses and validated actions.
+   */
+  public playCorrect(): void {
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    try {
+      const now = this.ctx.currentTime;
+      const notes = [523.25, 659.25, 783.99]; // C5, E5, G5 triad
+
+      notes.forEach((freq, idx) => {
+        if (!this.ctx || !this.masterGain) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const startTime = now + idx * 0.05;
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startTime);
+
+        gain.gain.setValueAtTime(0.14, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+
+        osc.start(startTime);
+        osc.stop(startTime + 0.35);
+      });
+    } catch {
+      // Ignore audio synthesis errors
+    }
+  }
+
+  /**
+   * Low discordant buzz for incorrect attempts or sealed gate contact.
+   */
+  public playError(): void {
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    try {
+      const now = this.ctx.currentTime;
+      const osc1 = this.ctx.createOscillator();
+      const osc2 = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const filter = this.ctx.createBiquadFilter();
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(280, now);
+      filter.Q.setValueAtTime(4.0, now);
+
+      osc1.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(130.81, now); // C3
+
+      osc2.type = 'sawtooth';
+      osc2.frequency.setValueAtTime(138.59, now); // C#3 (minor second discordance)
+
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.28);
+      osc2.stop(now + 0.28);
+    } catch {
+      // Ignore audio synthesis errors
+    }
+  }
+
+  /**
+   * Dramatic ascending cyber arpeggio triggered upon barrier dissolution and prerequisite unlock.
+   */
+  public playUnlockArpeggio(): void {
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    try {
+      const now = this.ctx.currentTime;
+      // Ascending Cyber Hexatonic Arpeggio: C4, E4, G4, C5, E5, G5, C6
+      const arpeggio = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
+
+      arpeggio.forEach((freq, index) => {
+        if (!this.ctx || !this.masterGain) return;
+        const noteTime = now + index * 0.08;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(freq * 1.5, noteTime);
+        filter.Q.setValueAtTime(3.0, noteTime);
+
+        osc.type = index === arpeggio.length - 1 ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(freq, noteTime);
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.02, noteTime + 0.4);
+
+        const volume = index === arpeggio.length - 1 ? 0.25 : 0.16;
+        gain.gain.setValueAtTime(volume, noteTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.55);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+
+        osc.start(noteTime);
+        osc.stop(noteTime + 0.55);
+      });
+    } catch {
+      // Ignore audio synthesis errors
+    }
+  }
 }
 
 export const soundSystem = new SoundSystem();

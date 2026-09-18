@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, ShieldAlert, CheckCircle2, RotateCcw, Compass, UserCheck, Sparkles } from 'lucide-react';
+import { Volume2, VolumeX, ShieldAlert, CheckCircle2, RotateCcw, Compass, UserCheck, Sparkles, Zap } from 'lucide-react';
 import { useClassroomStore } from '../../store/useClassroomStore';
 import { AIMentorDialogue } from './AIMentorDialogue';
 
@@ -15,6 +15,7 @@ export const HUD: React.FC = () => {
     isNearMentor,
     isMentorOpen,
     openMentor,
+    simulateMasteryJump,
   } = useClassroomStore();
 
   const isLearnerB = learner?.learner_id === 'learner_b';
@@ -126,6 +127,29 @@ export const HUD: React.FC = () => {
             <CheckCircle2 size={12} />
             Learner A (Advanced)
           </button>
+
+          {learner && learner.mastery_map.stack < 0.7 && (
+            <button
+              className="cyber-button"
+              onClick={simulateMasteryJump}
+              title="Cross 70% Stack threshold to trigger Barrier Dissolve & unlock Recursion Wing"
+              style={{
+                borderColor: 'var(--cyan-core)',
+                background: 'rgba(0, 240, 255, 0.18)',
+                color: '#00f0ff',
+                fontSize: '10px',
+                padding: '6px 12px',
+                fontWeight: 700,
+                boxShadow: '0 0 12px var(--cyan-glow)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <Zap size={12} color="#00f0ff" />
+              Simulate 75% Mastery Jump
+            </button>
+          )}
 
           <button
             className="cyber-button"

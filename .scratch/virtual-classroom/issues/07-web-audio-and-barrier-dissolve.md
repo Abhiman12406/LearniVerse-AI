@@ -4,11 +4,11 @@
 
 **Blocked by:** 02: Prerequisite Barrier & In-World Floating Diagnostic Plaque, 06: BKT Bayesian Knowledge Tracing Engine & Interaction Loop
 
-**Status:** ready-for-agent
+**Status:** closed
 
-- [ ] Web Audio API procedural synthesizer generates ambient cyber drone, pneumatic push/pop thuds, correct/error cues, and ascending unlock arpeggios without external audio files
-- [ ] HUD audio toggle provides instant global muting across all synthesized sound effects
-- [ ] Crossing 70% Stack Mastery triggers the Barrier Dissolve sequence: crimson laser barrier flickers and dissolves into 300+ glowing cyan particles
-- [ ] Camera smoothly pans/frames the Recursion Lab entrance during the dissolution event before returning to the Avatar
-- [ ] Barrier collision box deactivates upon dissolution, allowing the Avatar to freely enter the Recursion Lab
-- [ ] Automated tests verify procedural sound node synthesis, audio mute state, and barrier dissolution state machine
+- [x] Web Audio API procedural synthesizer generates ambient cyber drone, pneumatic push/pop thuds, correct/error cues, and ascending unlock arpeggios without external audio files
+- [x] HUD audio toggle provides instant global muting across all synthesized sound effects
+- [x] Crossing 70% Stack Mastery triggers the Barrier Dissolve sequence: crimson laser barrier flickers and dissolves into 300+ glowing cyan particles
+- [x] Camera smoothly pans/frames the Recursion Lab entrance during the dissolution event before returning to the Avatar
+- [x] Barrier collision box deactivates upon dissolution, allowing the Avatar to freely enter the Recursion Lab
+- [x] Automated tests verify procedural sound node synthesis, audio mute state, and barrier dissolution state machine

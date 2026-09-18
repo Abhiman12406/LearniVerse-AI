@@ -22,6 +22,15 @@ interface ClassroomStore {
   isNearMentor: boolean;
   mentorGuidance: MentorGuidance | null;
 
+  // Barrier Dissolve & Cinematic Camera State
+  dissolvingWingId: string | null;
+  dissolvePhase: 'idle' | 'flicker' | 'shockwave' | 'dissolved';
+  cinematicCamera: {
+    active: boolean;
+    position: [number, number, number];
+    lookAt: [number, number, number];
+  } | null;
+
   // Actions
   fetchLearnerProfile: () => Promise<void>;
   fetchWorldState: () => Promise<void>;
@@ -33,6 +42,8 @@ interface ClassroomStore {
   closeMentor: () => void;
   setIsNearMentor: (isNear: boolean) => void;
   fetchMentorGuidance: (learnerId?: string) => Promise<void>;
+  triggerBarrierDissolve: (wingId?: string) => void;
+  simulateMasteryJump: () => Promise<void>;
 }
 
 // Fallback seed profile for initial rendering or offline mock
@@ -289,6 +300,10 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   isNearMentor: false,
   mentorGuidance: DEFAULT_MENTOR_GUIDANCE_B,
 
+  dissolvingWingId: null,
+  dissolvePhase: 'idle',
+  cinematicCamera: null,
+
   fetchLearnerProfile: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -391,6 +406,92 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     set({ isNearMentor: isNear });
   },
 
+  triggerBarrierDissolve: (wingId: string = 'recursion_lab') => {
+    // 1. Synthesize procedural ascending unlock arpeggio
+    soundSystem.playUnlockArpeggio();
+
+    // 2. Pan/frame camera to the Recursion Lab archway and start violent flicker
+    set({
+      dissolvingWingId: wingId,
+      dissolvePhase: 'flicker',
+      cinematicCamera: {
+        active: true,
+        position: [-10.5, 3.6, 0.0],
+        lookAt: [-24.0, 3.0, 0.0],
+      },
+    });
+
+    // 3. Transition to explosive particle shockwave after 600ms
+    setTimeout(() => {
+      set({ dissolvePhase: 'shockwave' });
+
+      // Update world state locally so barrier collision deactivates immediately
+      const currentWorld = get().worldState;
+      if (currentWorld && currentWorld.wings[wingId]) {
+        const updatedWings = { ...currentWorld.wings };
+        updatedWings[wingId] = {
+          ...updatedWings[wingId],
+          status: 'accessible',
+          reason: null,
+        };
+        set({
+          worldState: {
+            ...currentWorld,
+            wings: updatedWings,
+            conduits_target_wing: wingId,
+          },
+        });
+      }
+    }, 600);
+
+    // 4. Restore camera to avatar follow mode after 3500ms
+    setTimeout(() => {
+      set({
+        dissolvePhase: 'dissolved',
+        dissolvingWingId: null,
+        cinematicCamera: null,
+      });
+    }, 3500);
+  },
+
+  simulateMasteryJump: async () => {
+    try {
+      const res = await fetch('/api/learner/simulate-jump', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ learner_id: 'learner_b', target_stack: 0.75 }),
+      });
+      if (res.ok) {
+        const updatedProfile = await res.json();
+        set({ learner: updatedProfile });
+      }
+    } catch {
+      // Local fallback for offline mode
+      const currentLearner = get().learner;
+      if (currentLearner) {
+        const updated: LearnerProfile = {
+          ...currentLearner,
+          mastery_map: {
+            ...currentLearner.mastery_map,
+            stack: 0.75,
+          },
+          learning_state: {
+            status: 'advanced',
+            primary_focus_concept: 'recursion',
+            active_prerequisite_gap: null,
+            summary: 'Stack mastery elevated to 75%. Prerequisite barrier dissolved! Ready for Recursion Lab.',
+          },
+          recommended_station: 'recursion_lab',
+        };
+        set({ learner: updated });
+      }
+    }
+
+    // Trigger the 3D Barrier Dissolve sequence with particle shockwave & arpeggio
+    get().triggerBarrierDissolve('recursion_lab');
+    await get().fetchMentorGuidance('learner_b');
+  },
+
   resetWorldSeed: async () => {
     try {
       await fetch('/api/learner/reset', { method: 'POST' });
@@ -400,6 +501,9 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       set({
         avatar: { position: [0, 0, 8], rotation: 0, isMoving: false },
         isMentorOpen: false,
+        dissolvingWingId: null,
+        dissolvePhase: 'idle',
+        cinematicCamera: null,
       });
     } catch {
       // reset locally
@@ -409,6 +513,9 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
         mentorGuidance: DEFAULT_MENTOR_GUIDANCE_B,
         avatar: { position: [0, 0, 8], rotation: 0, isMoving: false },
         isMentorOpen: false,
+        dissolvingWingId: null,
+        dissolvePhase: 'idle',
+        cinematicCamera: null,
       });
     }
   },

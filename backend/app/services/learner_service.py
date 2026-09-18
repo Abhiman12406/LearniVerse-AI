@@ -157,5 +157,42 @@ class LearnerService:
             conduits_target_wing=profile.recommended_station,
         )
 
+    def update_concept_mastery(
+        self, learner_id: Optional[str], concept: str, value: float
+    ) -> LearnerProfile:
+        lid = learner_id or self._active_learner_id
+        if lid not in self._profiles:
+            lid = "learner_b"
+        profile = self._profiles[lid]
+
+        if hasattr(profile.mastery_map, concept):
+            setattr(profile.mastery_map, concept, value)
+
+        # Dynamic re-evaluation of prerequisite constraints
+        recursion_eval = prerequisite_service.evaluate_concept(
+            "recursion", profile.mastery_map
+        )
+        if recursion_eval.is_ready:
+            pct = int(value * 100)
+            profile.learning_state.status = "advanced"
+            profile.learning_state.active_prerequisite_gap = None
+            profile.learning_state.summary = (
+                f"Stack mastery elevated to {pct}%. Prerequisite barrier dissolved! "
+                "Recursion Wing portal is unlocked and ready for exploration."
+            )
+            profile.recommended_station = "recursion_lab"
+        else:
+            profile.learning_state.status = "remediation_required"
+            profile.learning_state.active_prerequisite_gap = recursion_eval.reason
+            profile.recommended_station = "stack_lab"
+
+        return profile
+
+    def simulate_mastery_jump(
+        self, learner_id: Optional[str] = "learner_b", target_stack: float = 0.75
+    ) -> LearnerProfile:
+        """Elevate Stack mastery across the 70% threshold and dissolve the barrier."""
+        return self.update_concept_mastery(learner_id, "stack", target_stack)
+
 
 learner_service = LearnerService()

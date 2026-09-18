@@ -16,30 +16,44 @@ interface CameraFollowerProps {
 const CameraFollower: React.FC<CameraFollowerProps> = ({ cameraAngleRef, cameraPitchRef }) => {
   const { camera } = useThree();
   const avatar = useClassroomStore((s) => s.avatar);
+  const cinematicCamera = useClassroomStore((s) => s.cinematicCamera);
   const currentCamPos = useRef(new THREE.Vector3(0, 3, 15));
   const currentLookAt = useRef(new THREE.Vector3(0, 1.2, 8));
 
   useFrame(() => {
-    const [ax, ay, az] = avatar.position;
-    const distance = 6.8;
-    const height = 2.6 + Math.sin(cameraPitchRef.current) * 1.8;
+    let idealX: number;
+    let idealY: number;
+    let idealZ: number;
+    let targetLookAt: THREE.Vector3;
 
-    // Calculate ideal camera position behind avatar based on orbit azimuth
-    const angle = cameraAngleRef.current;
-    const idealX = ax + Math.sin(angle) * distance;
-    const idealZ = az + Math.cos(angle) * distance;
-    const idealY = ay + height;
+    if (cinematicCamera && cinematicCamera.active) {
+      // Cinematic camera framing (e.g. framing Recursion Lab entrance during barrier dissolve)
+      [idealX, idealY, idealZ] = cinematicCamera.position;
+      targetLookAt = new THREE.Vector3(...cinematicCamera.lookAt);
+    } else {
+      const [ax, ay, az] = avatar.position;
+      const distance = 6.8;
+      const height = 2.6 + Math.sin(cameraPitchRef.current) * 1.8;
 
-    // Smooth lerp camera position
-    currentCamPos.current.x = THREE.MathUtils.lerp(currentCamPos.current.x, idealX, 0.08);
-    currentCamPos.current.y = THREE.MathUtils.lerp(currentCamPos.current.y, idealY, 0.08);
-    currentCamPos.current.z = THREE.MathUtils.lerp(currentCamPos.current.z, idealZ, 0.08);
+      // Calculate ideal camera position behind avatar based on orbit azimuth
+      const angle = cameraAngleRef.current;
+      idealX = ax + Math.sin(angle) * distance;
+      idealZ = az + Math.cos(angle) * distance;
+      idealY = ay + height;
+
+      // Camera targets slightly above avatar torso and toward atrium center
+      targetLookAt = new THREE.Vector3(ax, ay + 1.2, az);
+    }
+
+    // Smooth lerp camera position with cinematic damping
+    const lerpFactor = cinematicCamera?.active ? 0.05 : 0.08;
+    currentCamPos.current.x = THREE.MathUtils.lerp(currentCamPos.current.x, idealX, lerpFactor);
+    currentCamPos.current.y = THREE.MathUtils.lerp(currentCamPos.current.y, idealY, lerpFactor);
+    currentCamPos.current.z = THREE.MathUtils.lerp(currentCamPos.current.z, idealZ, lerpFactor);
 
     camera.position.copy(currentCamPos.current);
 
-    // Camera targets slightly above avatar torso and toward atrium center
-    const targetLookAt = new THREE.Vector3(ax, ay + 1.2, az);
-    currentLookAt.current.lerp(targetLookAt, 0.1);
+    currentLookAt.current.lerp(targetLookAt, lerpFactor + 0.02);
     camera.lookAt(currentLookAt.current);
   });
 

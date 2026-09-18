@@ -49,3 +49,14 @@ class WorldState(BaseModel):
 
 class SwitchLearnerRequest(BaseModel):
     learner_id: str
+
+
+class UpdateMasteryRequest(BaseModel):
+    learner_id: Optional[str] = None
+    concept: str
+    mastery: float = Field(..., ge=0.0, le=1.0)
+
+
+class SimulateJumpRequest(BaseModel):
+    learner_id: Optional[str] = "learner_b"
+    target_stack: float = Field(default=0.75, ge=0.0, le=1.0)

@@ -93,6 +93,7 @@ const ArchwayPortal: React.FC<ArchwayProps> = ({ id, name, azimuthDeg, radius })
 
       {/* Procedural Prerequisite Barrier across Portal opening */}
       <PrerequisiteBarrier
+        wingId={id}
         isSealed={!!isSealed}
         width={4.2}
         height={5.6}
