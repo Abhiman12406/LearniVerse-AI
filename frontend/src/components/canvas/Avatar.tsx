@@ -112,7 +112,7 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
     }
 
     // Movement input vector relative to camera azimuth (suppressed if mentor dialogue is open)
-    const forward: number = isMentorOpen
+    const inputForward: number = isMentorOpen
       ? 0
       : (keys.current['KeyW'] || keys.current['ArrowUp'])
       ? 1
@@ -120,16 +120,16 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
       ? -1
       : 0;
 
-    const strafe: number = isMentorOpen
+    const inputStrafe: number = isMentorOpen
       ? 0
-      : (keys.current['KeyA'] || keys.current['ArrowLeft'])
-      ? -1
       : (keys.current['KeyD'] || keys.current['ArrowRight'])
       ? 1
+      : (keys.current['KeyA'] || keys.current['ArrowLeft'])
+      ? -1
       : 0;
 
     const isSprinting = !isMentorOpen && (!!keys.current['ShiftLeft'] || !!keys.current['ShiftRight']);
-    const isMoving = forward !== 0 || strafe !== 0;
+    const isMoving = inputForward !== 0 || inputStrafe !== 0;
     const moveSpeed = (isSprinting ? 9.2 : 5.4) * delta;
 
     let turnRate = 0;
@@ -137,20 +137,36 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
     if (isMoving) {
       // Calculate movement direction relative to camera angle
       const camAngle = cameraAngleRef.current;
-      const inputAngle = Math.atan2(strafe, forward);
-      const moveAngle = camAngle + inputAngle;
 
-      // Move in camera forward direction (toward -Z when camAngle=0)
-      const targetVx = -Math.sin(moveAngle) * moveSpeed;
-      const targetVz = -Math.cos(moveAngle) * moveSpeed;
+      // Camera forward and right unit vectors on horizontal XZ plane:
+      //   Forward (into screen): (-sin(camAngle), -cos(camAngle))
+      //   Right (screen right):   (cos(camAngle),  -sin(camAngle))
+      const fwdX = -Math.sin(camAngle);
+      const fwdZ = -Math.cos(camAngle);
+      const rightX = Math.cos(camAngle);
+      const rightZ = -Math.sin(camAngle);
+
+      // Combine forward and strafe inputs
+      let dirX = inputForward * fwdX + inputStrafe * rightX;
+      let dirZ = inputForward * fwdZ + inputStrafe * rightZ;
+
+      // Normalize diagonal movement
+      const len = Math.hypot(dirX, dirZ);
+      if (len > 0.0001) {
+        dirX /= len;
+        dirZ /= len;
+      }
+
+      const targetVx = dirX * moveSpeed;
+      const targetVz = dirZ * moveSpeed;
 
       // Smooth acceleration lerp
       velocity.current.x = THREE.MathUtils.lerp(velocity.current.x, targetVx, 0.22);
       velocity.current.z = THREE.MathUtils.lerp(velocity.current.z, targetVz, 0.22);
 
-      // Rotate avatar mesh toward movement direction
+      // Rotate avatar mesh toward movement direction (avatar face is on local +Z)
       const currentRot = avatarGroupRef.current.rotation.y;
-      const targetRot = Math.atan2(-velocity.current.x, -velocity.current.z);
+      const targetRot = Math.atan2(velocity.current.x, velocity.current.z);
       let diff = (targetRot - currentRot) % (Math.PI * 2);
       if (diff > Math.PI) diff -= Math.PI * 2;
       if (diff < -Math.PI) diff += Math.PI * 2;
@@ -249,7 +265,7 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
   rig.characterGroup.visible = isCharacterVisible;
 
   return (
-    <group ref={avatarGroupRef} position={[0, 0, 8]}>
+    <group ref={avatarGroupRef} position={[0, 0, 8]} rotation={[0, Math.PI, 0]}>
       {/* Procedural 3D Student Character Rig (Hidden in 1P Mode) */}
       <group visible={isCharacterVisible}>
         <primitive object={rig.characterGroup} />
