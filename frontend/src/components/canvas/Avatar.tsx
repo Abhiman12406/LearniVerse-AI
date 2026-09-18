@@ -1,28 +1,52 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useClassroomStore } from '../../store/useClassroomStore';
 import { resolveAvatarCollision } from '../../utils/collision';
+import { createStudentAvatar } from '../../assets/3d/createStudentAvatar';
 
 interface AvatarProps {
   cameraAngleRef: React.MutableRefObject<number>; // Horizontal orbit angle in radians
 }
 
+/**
+ * Computes floor ground elevation taking into account the Central Dais platform (radius 5.0m, height 0.5m)
+ * and the beveled step transition down to the Atrium floor (radius 5.0m to 5.4m).
+ */
+export function calculateDaisElevation(x: number, z: number): number {
+  const dist = Math.hypot(x, z);
+  if (dist < 5.0) {
+    return 0.5; // Raised dais platform height
+  } else if (dist < 5.4) {
+    const t = (5.4 - dist) / 0.4;
+    return 0.5 * t;
+  }
+  return 0.0;
+}
+
 export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
   const avatarGroupRef = useRef<THREE.Group>(null);
-  const bodyMeshRef = useRef<THREE.Group>(null);
-  const leftLegRef = useRef<THREE.Mesh>(null);
-  const rightLegRef = useRef<THREE.Mesh>(null);
 
   // Position and movement vector tracking
   const position = useRef(new THREE.Vector3(0, 0, 8));
   const velocity = useRef(new THREE.Vector3());
+  const verticalVelocity = useRef<number>(0);
+  const isJumping = useRef<boolean>(false);
   const keys = useRef<{ [key: string]: boolean }>({});
   const setAvatarState = useClassroomStore((s) => s.setAvatarState);
 
+  // Procedural Student Avatar Rig
+  const rig = useMemo(() => createStudentAvatar(), []);
+
+  useEffect(() => {
+    return () => {
+      rig.dispose();
+    };
+  }, [rig]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Check for interaction keys
+      // AI Mentor interaction key
       if (e.code === 'KeyE') {
         const { isNearMentor, isMentorOpen, openMentor, closeMentor } = useClassroomStore.getState();
         if (isNearMentor) {
@@ -43,8 +67,18 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
         }
       }
 
+      // Jump trigger
+      if (e.code === 'Space' && !isJumping.current) {
+        const { isMentorOpen } = useClassroomStore.getState();
+        if (!isMentorOpen) {
+          isJumping.current = true;
+          verticalVelocity.current = 7.2; // Initial upward jump impulse
+        }
+      }
+
       keys.current[e.code] = true;
     };
+
     const handleKeyUp = (e: KeyboardEvent) => {
       keys.current[e.code] = false;
     };
@@ -80,9 +114,10 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
       : 0;
 
     const isSprinting = !isMentorOpen && (!!keys.current['ShiftLeft'] || !!keys.current['ShiftRight']);
-
-    const moveSpeed = (isSprinting ? 9.0 : 5.5) * delta;
     const isMoving = forward !== 0 || strafe !== 0;
+    const moveSpeed = (isSprinting ? 9.2 : 5.4) * delta;
+
+    let turnRate = 0;
 
     if (isMoving) {
       // Calculate movement direction relative to camera angle
@@ -95,8 +130,8 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
       const targetVz = -Math.cos(moveAngle) * moveSpeed;
 
       // Smooth acceleration lerp
-      velocity.current.x = THREE.MathUtils.lerp(velocity.current.x, targetVx, 0.2);
-      velocity.current.z = THREE.MathUtils.lerp(velocity.current.z, targetVz, 0.2);
+      velocity.current.x = THREE.MathUtils.lerp(velocity.current.x, targetVx, 0.22);
+      velocity.current.z = THREE.MathUtils.lerp(velocity.current.z, targetVz, 0.22);
 
       // Rotate avatar mesh toward movement direction
       const currentRot = avatarGroupRef.current.rotation.y;
@@ -104,24 +139,31 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
       let diff = (targetRot - currentRot) % (Math.PI * 2);
       if (diff > Math.PI) diff -= Math.PI * 2;
       if (diff < -Math.PI) diff += Math.PI * 2;
-      avatarGroupRef.current.rotation.y += diff * 0.25;
+
+      // Slerp angular rotation
+      const rotStep = diff * 0.25;
+      avatarGroupRef.current.rotation.y += rotStep;
+
+      // Turn rate in radians per second to drive turn banking
+      turnRate = diff / Math.max(delta, 0.001);
     } else {
-      // Damping deceleration
+      // Deceleration damping
       velocity.current.x = THREE.MathUtils.lerp(velocity.current.x, 0, 0.25);
       velocity.current.z = THREE.MathUtils.lerp(velocity.current.z, 0, 0.25);
     }
 
-    // Apply translation
+    // Apply horizontal translation
     position.current.x += velocity.current.x;
     position.current.z += velocity.current.z;
 
-    // Boundary collision with Atrium perimeter & sealed Prerequisite Barriers
+    // Physical collision against furniture obstacles & sealed prerequisite barriers
     const { worldState } = useClassroomStore.getState();
     const collision = resolveAvatarCollision(
       position.current.x,
       position.current.z,
       worldState,
-      17.2
+      17.2,
+      true
     );
     position.current.x = collision.x;
     position.current.z = collision.z;
@@ -132,34 +174,42 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
       velocity.current.z *= 0.1;
     }
 
-    // Vertical elevation: grounded smoothly on classroom floor
-    const targetY = 0;
-    position.current.y = THREE.MathUtils.lerp(position.current.y, targetY, 0.15);
+    // Vertical elevation: Dais stepping & Jump physics
+    const groundY = calculateDaisElevation(position.current.x, position.current.z);
 
+    if (isJumping.current) {
+      // Gravity acceleration
+      verticalVelocity.current -= 22.0 * delta;
+      position.current.y += verticalVelocity.current * delta;
 
-    // Walking animation cycle
-    if (isMoving) {
-      const time = performance.now() * 0.012 * (isSprinting ? 1.4 : 1.0);
-      if (leftLegRef.current && rightLegRef.current) {
-        leftLegRef.current.rotation.x = Math.sin(time) * 0.6;
-        rightLegRef.current.rotation.x = -Math.sin(time) * 0.6;
-      }
-      if (bodyMeshRef.current) {
-        bodyMeshRef.current.position.y = 0.95 + Math.abs(Math.sin(time * 2)) * 0.08;
+      if (position.current.y <= groundY) {
+        position.current.y = groundY;
+        verticalVelocity.current = 0;
+        isJumping.current = false;
       }
     } else {
-      if (leftLegRef.current && rightLegRef.current) {
-        leftLegRef.current.rotation.x = THREE.MathUtils.lerp(leftLegRef.current.rotation.x, 0, 0.2);
-        rightLegRef.current.rotation.x = THREE.MathUtils.lerp(rightLegRef.current.rotation.x, 0, 0.2);
-      }
-      if (bodyMeshRef.current) {
-        bodyMeshRef.current.position.y = THREE.MathUtils.lerp(bodyMeshRef.current.position.y, 0.95, 0.2);
-      }
+      // Smoothly step up/down to ground elevation
+      position.current.y = THREE.MathUtils.lerp(position.current.y, groundY, 0.25);
     }
 
+    // Update avatar group position
     avatarGroupRef.current.position.copy(position.current);
 
-    // Sync transient coordinates to store at low interval or frame
+    // Update procedural avatar rig locomotion cycle
+    const jumpProgress = isJumping.current
+      ? Math.min(Math.max((position.current.y - groundY) / 1.2, 0), 1)
+      : 0;
+
+    rig.update(delta, {
+      isMoving,
+      isSprinting,
+      isJumping: isJumping.current,
+      jumpProgress,
+      speed: Math.hypot(velocity.current.x, velocity.current.z) / Math.max(delta, 0.001),
+      turnRate,
+    });
+
+    // Sync transient coordinates to store for camera and HUD tracking
     setAvatarState(
       [position.current.x, position.current.y, position.current.z],
       avatarGroupRef.current.rotation.y,
@@ -169,54 +219,8 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
 
   return (
     <group ref={avatarGroupRef} position={[0, 0, 8]}>
-      {/* Procedural Cybernetic Avatar Rig */}
-      <group ref={bodyMeshRef} position={[0, 0.95, 0]}>
-        {/* Sleek Torso */}
-        <mesh position={[0, 0.35, 0]} castShadow>
-          <boxGeometry args={[0.55, 0.65, 0.35]} />
-          <meshStandardMaterial color="#0c101d" roughness={0.3} metalness={0.85} />
-        </mesh>
-
-        {/* Emissive Core Crystal */}
-        <mesh position={[0, 0.4, 0.185]}>
-          <boxGeometry args={[0.18, 0.22, 0.05]} />
-          <meshBasicMaterial color="#00f0ff" />
-        </mesh>
-
-        {/* Cyber Helm / Head */}
-        <mesh position={[0, 0.85, 0]} castShadow>
-          <boxGeometry args={[0.36, 0.36, 0.38]} />
-          <meshStandardMaterial color="#161c2e" roughness={0.2} metalness={0.9} />
-        </mesh>
-
-        {/* Emissive Visor */}
-        <mesh position={[0, 0.86, 0.19]}>
-          <planeGeometry args={[0.28, 0.12]} />
-          <meshBasicMaterial color="#00f0ff" />
-        </mesh>
-
-        {/* Shoulder Pauldrons */}
-        <mesh position={[-0.38, 0.58, 0]} castShadow>
-          <boxGeometry args={[0.2, 0.22, 0.3]} />
-          <meshStandardMaterial color="#1a2238" roughness={0.3} metalness={0.8} />
-        </mesh>
-        <mesh position={[0.38, 0.58, 0]} castShadow>
-          <boxGeometry args={[0.2, 0.22, 0.3]} />
-          <meshStandardMaterial color="#1a2238" roughness={0.3} metalness={0.8} />
-        </mesh>
-      </group>
-
-      {/* Left Articulated Leg */}
-      <mesh ref={leftLegRef} position={[-0.18, 0.45, 0]} castShadow>
-        <cylinderGeometry args={[0.08, 0.09, 0.85, 12]} />
-        <meshStandardMaterial color="#0f1424" roughness={0.4} metalness={0.8} />
-      </mesh>
-
-      {/* Right Articulated Leg */}
-      <mesh ref={rightLegRef} position={[0.18, 0.45, 0]} castShadow>
-        <cylinderGeometry args={[0.08, 0.09, 0.85, 12]} />
-        <meshStandardMaterial color="#0f1424" roughness={0.4} metalness={0.8} />
-      </mesh>
+      {/* Procedural 3D Student Character Rig */}
+      <primitive object={rig.characterGroup} />
 
       {/* Subtle Avatar Ground Spotlight / Shadow Anchor */}
       <pointLight position={[0, 0.2, 0]} intensity={0.6} distance={2.5} color="#00f0ff" />

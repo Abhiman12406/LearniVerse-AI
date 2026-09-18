@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { useClassroomStore } from '../store/useClassroomStore';
+import { calculateDaisElevation } from '../components/canvas/Avatar';
 
 describe('Avatar Initial Coordinates & Collision Boundaries', () => {
   it('places Avatar at initial coordinates (0, 0, 8)', () => {
@@ -39,24 +40,17 @@ describe('Avatar Initial Coordinates & Collision Boundaries', () => {
   });
 
   it('computes elevation step up onto Central Dais when within radius 5.0 units', () => {
-    const calculateElevation = (x: number, z: number): number => {
-      const dist = Math.hypot(x, z);
-      if (dist < 5.0) {
-        return 0.5; // Raised dais platform height
-      } else if (dist < 5.4) {
-        const t = (5.4 - dist) / 0.4;
-        return 0.5 * t;
-      }
-      return 0.0;
-    };
-
     // At origin (center of Dais)
-    expect(calculateElevation(0, 0)).toBe(0.5);
+    expect(calculateDaisElevation(0, 0)).toBe(0.5);
 
     // On dais platform (e.g. radius 3.0)
-    expect(calculateElevation(3, 0)).toBe(0.5);
+    expect(calculateDaisElevation(3, 0)).toBe(0.5);
+
+    // On transition slope (e.g. radius 5.2)
+    expect(calculateDaisElevation(5.2, 0)).toBeCloseTo(0.25, 2);
 
     // Out in Atrium floor (e.g. radius 8.0)
-    expect(calculateElevation(0, 8)).toBe(0.0);
+    expect(calculateDaisElevation(0, 8)).toBe(0.0);
   });
 });
+
