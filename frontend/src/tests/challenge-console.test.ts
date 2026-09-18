@@ -69,13 +69,13 @@ describe('Dual-Layer Glassmorphic Challenge Console & Stack DSA Missions', () =>
     expect(useClassroomStore.getState().selectedAnswers[c1.id]).toBe('opt_fifo');
   });
 
-  it('validates incorrect answer submission with explanation feedback', () => {
+  it('validates incorrect answer submission with explanation feedback', async () => {
     const { setChallengeAnswer, submitChallengeAnswer, stackMission } = useClassroomStore.getState();
     const c1 = stackMission.challenges[0];
 
     // Select incorrect option B (FIFO)
     setChallengeAnswer(c1.id, 'opt_fifo');
-    const result = submitChallengeAnswer(c1.id);
+    const result = await submitChallengeAnswer(c1.id);
 
     expect(result.isCorrect).toBe(false);
     expect(result.explanation).toContain('FIFO (First-In, First-Out)');
@@ -85,13 +85,13 @@ describe('Dual-Layer Glassmorphic Challenge Console & Stack DSA Missions', () =>
     expect(record.isCorrect).toBe(false);
   });
 
-  it('validates correct answer submission with positive pedagogical confirmation', () => {
+  it('validates correct answer submission with positive pedagogical confirmation', async () => {
     const { setChallengeAnswer, submitChallengeAnswer, stackMission } = useClassroomStore.getState();
     const c1 = stackMission.challenges[0];
 
     // Select correct option A (LIFO)
     setChallengeAnswer(c1.id, 'opt_lifo_correct');
-    const result = submitChallengeAnswer(c1.id);
+    const result = await submitChallengeAnswer(c1.id);
 
     expect(result.isCorrect).toBe(true);
     expect(result.explanation).toContain('Correct!');

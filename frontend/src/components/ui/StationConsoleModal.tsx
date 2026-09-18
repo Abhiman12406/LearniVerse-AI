@@ -12,6 +12,9 @@ import {
   Layers,
   RotateCcw,
   Zap,
+  Unlock,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react';
 import { useClassroomStore } from '../../store/useClassroomStore';
 
@@ -36,9 +39,16 @@ export const StationConsoleModal: React.FC = () => {
   const prevChallenge = useClassroomStore((s) => s.prevChallenge);
   const loadChallengeOntoApparatus = useClassroomStore((s) => s.loadChallengeOntoApparatus);
 
+  // BKT & Learner State
+  const learner = useClassroomStore((s) => s.learner);
+  const lastMasteryDelta = useClassroomStore((s) => s.lastMasteryDelta);
+  const isThresholdCrossed = useClassroomStore((s) => s.isThresholdCrossed);
+  const unlockedWingId = useClassroomStore((s) => s.unlockedWingId);
+
   const currentChallenge = stackMission.challenges[activeChallengeIndex];
   const selectedOptionId = currentChallenge ? selectedAnswers[currentChallenge.id] : undefined;
   const submission = currentChallenge ? submittedAnswers[currentChallenge.id] : undefined;
+  const deltaInfo = currentChallenge ? lastMasteryDelta[currentChallenge.concept] : undefined;
 
   const topDisc = stackDiscs[stackDiscs.length - 1];
   const isFull = stackDiscs.length >= 6;
@@ -160,6 +170,28 @@ export const StationConsoleModal: React.FC = () => {
               {stackMission.title}
             </span>
           </div>
+
+          {learner && (
+            <div
+              id="header-stack-mastery-indicator"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                background: 'rgba(245, 158, 11, 0.12)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                fontSize: '11px',
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
+              <span style={{ color: 'var(--text-muted)' }}>Stack Mastery:</span>
+              <span style={{ color: '#f59e0b', fontWeight: 700 }}>
+                {Math.round((learner.mastery_map['stack'] ?? 0.38) * 100)}%
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Center: Pagination Steps */}
@@ -525,68 +557,143 @@ export const StationConsoleModal: React.FC = () => {
               </div>
             ) : (
               /* Post-submission Result & Pedagogical Feedback Card */
-              <div
-                id="challenge-feedback-card"
-                style={{
-                  borderRadius: '8px',
-                  padding: '14px',
-                  background: submission.isCorrect
-                    ? 'rgba(0, 255, 136, 0.08)'
-                    : 'rgba(255, 0, 85, 0.08)',
-                  border: `1px solid ${submission.isCorrect ? 'rgba(0, 255, 136, 0.4)' : 'rgba(255, 0, 85, 0.4)'}`,
-                  marginBottom: '12px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  {submission.isCorrect ? (
-                    <>
-                      <CheckCircle2 size={16} color="#00ff88" />
-                      <span style={{ color: '#00ff88', fontWeight: 700, fontSize: '13px' }}>
-                        Verification Confirmed (+Mastery Belief)
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertTriangle size={16} color="#ff0055" />
-                      <span style={{ color: '#ff0055', fontWeight: 700, fontSize: '13px' }}>
-                        Discrepancy Detected — Try Testing in 3D Sandbox
-                      </span>
-                    </>
-                  )}
-                </div>
-
-                {/* Feynman Analogy Section */}
+              <>
                 <div
+                  id="challenge-feedback-card"
                   style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '8px',
-                    fontSize: '12px',
-                    color: 'var(--text-secondary)',
-                    marginBottom: '10px',
-                    lineHeight: 1.45,
+                    borderRadius: '8px',
+                    padding: '14px',
+                    background: submission.isCorrect
+                      ? 'rgba(0, 255, 136, 0.08)'
+                      : 'rgba(255, 0, 85, 0.08)',
+                    border: `1px solid ${submission.isCorrect ? 'rgba(0, 255, 136, 0.4)' : 'rgba(255, 0, 85, 0.4)'}`,
+                    marginBottom: '12px',
                   }}
                 >
-                  <Lightbulb size={15} color="#ffb700" style={{ flexShrink: 0, marginTop: '2px' }} />
-                  <span>
-                    <strong style={{ color: '#ffb700' }}>Feynman Mental Model: </strong>
-                    {currentChallenge.feynmanAnalogy}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {submission.isCorrect ? (
+                        <>
+                          <CheckCircle2 size={16} color="#00ff88" />
+                          <span style={{ color: '#00ff88', fontWeight: 700, fontSize: '13px' }}>
+                            Verification Confirmed (+Mastery Belief)
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertTriangle size={16} color="#ff0055" />
+                          <span style={{ color: '#ff0055', fontWeight: 700, fontSize: '13px' }}>
+                            Discrepancy Detected — Try Testing in 3D Sandbox
+                          </span>
+                        </>
+                      )}
+                    </div>
+
+                    {deltaInfo && (
+                      <div
+                        id="bkt-delta-badge"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          fontFamily: 'var(--font-mono)',
+                          backgroundColor: deltaInfo.delta >= 0 ? 'rgba(0, 255, 136, 0.15)' : 'rgba(255, 0, 85, 0.15)',
+                          border: `1px solid ${deltaInfo.delta >= 0 ? 'rgba(0, 255, 136, 0.4)' : 'rgba(255, 0, 85, 0.4)'}`,
+                          color: deltaInfo.delta >= 0 ? '#00ff88' : '#ff4d79',
+                        }}
+                      >
+                        {deltaInfo.delta >= 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
+                        <span>
+                          {deltaInfo.delta >= 0 ? `+${Math.round(deltaInfo.delta * 100)}%` : `${Math.round(deltaInfo.delta * 100)}%`}
+                        </span>
+                        <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>
+                          (Now {Math.round(deltaInfo.newMastery * 100)}%)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Feynman Analogy Section */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '8px',
+                      fontSize: '12px',
+                      color: 'var(--text-secondary)',
+                      marginBottom: '10px',
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    <Lightbulb size={15} color="#ffb700" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <span>
+                      <strong style={{ color: '#ffb700' }}>Feynman Mental Model: </strong>
+                      {currentChallenge.feynmanAnalogy}
+                    </span>
+                  </div>
+
+                  {/* Pedagogical Explanation */}
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      color: 'var(--text-muted)',
+                      lineHeight: 1.5,
+                      borderTop: '1px solid var(--border-subtle)',
+                      paddingTop: '8px',
+                    }}
+                  >
+                    {currentChallenge.pedagogicalExplanation}
+                  </div>
                 </div>
 
-                {/* Pedagogical Explanation */}
-                <div
-                  style={{
-                    fontSize: '11px',
-                    color: 'var(--text-muted)',
-                    lineHeight: 1.5,
-                    borderTop: '1px solid var(--border-subtle)',
-                    paddingTop: '8px',
-                  }}
-                >
-                  {currentChallenge.pedagogicalExplanation}
-                </div>
-              </div>
+                {/* Prerequisite Threshold Crossing Alert Banner */}
+                {isThresholdCrossed && unlockedWingId === 'recursion_lab' && (
+                  <div
+                    id="threshold-crossed-banner"
+                    style={{
+                      marginBottom: '12px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      background: 'linear-gradient(135deg, rgba(0, 255, 136, 0.15), rgba(0, 240, 255, 0.15))',
+                      border: '1px solid rgba(0, 255, 136, 0.6)',
+                      boxShadow: '0 0 15px rgba(0, 255, 136, 0.25)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '10px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Unlock size={18} color="#00ff88" />
+                      <div>
+                        <div style={{ color: '#00ff88', fontWeight: 800, fontSize: '12px', letterSpacing: '0.05em' }}>
+                          PREREQUISITE THRESHOLD REACHED (≥70%)
+                        </div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
+                          Recursion Lab Door UNLOCKED! Conduit energy rerouted to Sector 210°.
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setActiveStation(null)}
+                      className="cyber-button"
+                      style={{
+                        padding: '5px 12px',
+                        fontSize: '11px',
+                        borderColor: '#00ff88',
+                        color: '#00ff88',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      Inspect Wing Door →
+                    </button>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Pagination Controls */}

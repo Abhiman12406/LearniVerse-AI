@@ -129,6 +129,43 @@ class LearnerService:
         self._active_learner_id = "learner_b"
         return self._profiles[self._active_learner_id]
 
+    def update_concept_mastery(
+        self, learner_id: str, concept: str, new_mastery: float
+    ) -> LearnerProfile:
+        """Update a specific concept mastery for a learner and re-evaluate pedagogical state."""
+        profile = self._profiles.get(learner_id)
+        if not profile:
+            profile = self._profiles["learner_b"]
+            learner_id = "learner_b"
+
+        current_map = profile.mastery_map.model_dump()
+        current_map[concept] = round(float(new_mastery), 2)
+        profile.mastery_map = MasteryMap(**current_map)
+
+        # Dynamic state adaptation: When Stack mastery crosses the 0.70 threshold
+        if concept == "stack":
+            if current_map["stack"] >= 0.70:
+                profile.learning_state.status = "remediation_complete"
+                profile.learning_state.summary = (
+                    f"Prerequisite satisfied: Stack mastery ({int(current_map['stack']*100)}%) crossed the 70% threshold. "
+                    "Recursion Wing is now unlocked and accessible."
+                )
+                profile.learning_state.primary_focus_concept = "recursion"
+                profile.learning_state.active_prerequisite_gap = None
+                profile.recommended_station = "recursion_lab"
+            else:
+                profile.learning_state.status = "remediation_required"
+                profile.learning_state.summary = (
+                    f"Prerequisite Gap: Stack mastery ({int(current_map['stack']*100)}%) is below the 70% threshold required for Recursion Wing."
+                )
+                profile.learning_state.primary_focus_concept = "stack"
+                profile.learning_state.active_prerequisite_gap = (
+                    f"Stack mastery {current_map['stack']:.2f} < 0.70 prerequisite threshold for Recursion"
+                )
+                profile.recommended_station = "stack_lab"
+
+        return profile
+
     def get_world_state(self, learner_id: Optional[str] = None) -> WorldState:
         lid = learner_id or self._active_learner_id
         profile = self._profiles.get(lid, self._profiles["learner_b"])

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { LearnerProfile, WorldState, AvatarState } from '../types/world';
+import { LearnerProfile, WorldState, AvatarState, MasteryMap } from '../types/world';
 import { MentorGuidance } from '../types/mentor';
 import { soundSystem } from '../audio/soundSystem';
 import { StackMission } from '../types/challenge';
@@ -35,6 +35,14 @@ interface ClassroomStore {
   submittedAnswers: Record<string, { isCorrect: boolean; feedback: string }>;
   isConsoleSubmitting: boolean;
 
+  // BKT Engine & Telemetry State
+  lastMasteryDelta: Record<
+    string,
+    { delta: number; oldMastery: number; newMastery: number; timestamp: number }
+  >;
+  isThresholdCrossed: boolean;
+  unlockedWingId: string | null;
+
   // Actions
   fetchLearnerProfile: () => Promise<void>;
   fetchWorldState: () => Promise<void>;
@@ -52,12 +60,25 @@ interface ClassroomStore {
 
   // Challenge Console Actions
   setChallengeAnswer: (challengeId: string, optionId: string) => void;
-  submitChallengeAnswer: (challengeId: string) => { isCorrect: boolean; explanation: string };
+  submitChallengeAnswer: (challengeId: string) => Promise<{ isCorrect: boolean; explanation: string }>;
   setActiveChallengeIndex: (index: number) => void;
   nextChallenge: () => void;
   prevChallenge: () => void;
   loadChallengeOntoApparatus: (challengeId: string) => void;
   resetChallengeProgress: () => void;
+
+  // BKT & Interaction Actions
+  submitInteraction: (
+    concept: string,
+    questionId: string,
+    correct: boolean,
+    difficulty?: string
+  ) => Promise<{ prior: number; posterior: number; delta: number; thresholdCrossed: boolean }>;
+  simulateMasteryJump: (
+    targetOrLearnerId?: number | string,
+    concept?: string,
+    target?: number
+  ) => Promise<void>;
 }
 
 // Fallback seed profile for initial rendering or offline mock
@@ -430,6 +451,11 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   submittedAnswers: {},
   isConsoleSubmitting: false,
 
+  // BKT Engine & Telemetry State
+  lastMasteryDelta: {},
+  isThresholdCrossed: false,
+  unlockedWingId: null,
+
   setChallengeAnswer: (challengeId: string, optionId: string) => {
     soundSystem.playChirp();
     set((state) => ({
@@ -440,7 +466,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     }));
   },
 
-  submitChallengeAnswer: (challengeId: string) => {
+  submitChallengeAnswer: async (challengeId: string) => {
     const state = get();
     const challenge = state.stackMission.challenges.find((c) => c.id === challengeId);
     if (!challenge) {
@@ -473,7 +499,226 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       },
     }));
 
+    // Trigger and await BKT Interaction loop
+    await get().submitInteraction(challenge.concept, challenge.id, isCorrect, challenge.difficulty);
+
     return { isCorrect, explanation: feedback };
+  },
+
+  submitInteraction: async (concept, questionId, correct, difficulty = 'medium') => {
+    const state = get();
+    const currentMastery = state.learner?.mastery_map[concept as keyof MasteryMap] ?? 0.38;
+
+    try {
+      const res = await fetch('/api/interactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          student_id: state.learner?.learner_id || 'learner_b',
+          concept,
+          question_id: questionId,
+          correct,
+          difficulty,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const {
+          prior_mastery,
+          posterior_mastery,
+          delta,
+          threshold_crossed,
+          unlocked_wing,
+          world_delta,
+          learner_profile,
+        } = data;
+
+        set((s) => ({
+          learner: learner_profile,
+          worldState: world_delta,
+          lastMasteryDelta: {
+            ...s.lastMasteryDelta,
+            [concept]: {
+              delta,
+              oldMastery: prior_mastery,
+              newMastery: posterior_mastery,
+              timestamp: Date.now(),
+            },
+          },
+          isThresholdCrossed: threshold_crossed,
+          unlockedWingId: unlocked_wing,
+        }));
+
+        if (threshold_crossed) {
+          soundSystem.playSuccess();
+        }
+
+        return {
+          prior: prior_mastery,
+          posterior: posterior_mastery,
+          delta,
+          thresholdCrossed: threshold_crossed,
+        };
+      }
+    } catch {
+      // Fall through to resilient local BKT calculation
+    }
+
+    // Local offline calculation
+    const p_transit = 0.05;
+    const p_guess = difficulty === 'easy' ? 0.60 : difficulty === 'hard' ? 0.40 : 0.54;
+    const p_slip = difficulty === 'hard' ? 0.14 : 0.11;
+    let p_obs: number;
+    if (correct) {
+      const num = currentMastery * (1.0 - p_slip);
+      const den = num + (1.0 - currentMastery) * p_guess;
+      p_obs = den > 0 ? num / den : currentMastery;
+    } else {
+      const num = currentMastery * p_slip;
+      const den = num + (1.0 - currentMastery) * (1.0 - p_guess);
+      p_obs = den > 0 ? num / den : currentMastery;
+    }
+    const posterior = Math.round(Math.min(0.99, Math.max(0.01, p_obs + (1.0 - p_obs) * p_transit)) * 100) / 100;
+    const delta = Math.round((posterior - currentMastery) * 100) / 100;
+    const thresholdCrossed = currentMastery < 0.70 && posterior >= 0.70;
+
+    const currentProfile = state.learner || DEFAULT_LEARNER;
+    const updatedMap = { ...currentProfile.mastery_map, [concept]: posterior };
+    const updatedWorld = state.worldState ? JSON.parse(JSON.stringify(state.worldState)) : DEFAULT_WORLD_STATE;
+
+    let unlockedWing: string | null = null;
+    if (concept === 'stack' && posterior >= 0.70) {
+      updatedWorld.wings.recursion_lab.status = 'accessible';
+      updatedWorld.wings.recursion_lab.reason = null;
+      updatedWorld.conduits_target_wing = 'recursion_lab';
+      unlockedWing = 'recursion_lab';
+    }
+
+    set((s) => ({
+      learner: {
+        ...currentProfile,
+        mastery_map: updatedMap,
+        recommended_station: posterior >= 0.70 && concept === 'stack' ? 'recursion_lab' : currentProfile.recommended_station,
+      },
+      worldState: updatedWorld,
+      lastMasteryDelta: {
+        ...s.lastMasteryDelta,
+        [concept]: {
+          delta,
+          oldMastery: currentMastery,
+          newMastery: posterior,
+          timestamp: Date.now(),
+        },
+      },
+      isThresholdCrossed: thresholdCrossed,
+      unlockedWingId: unlockedWing,
+    }));
+
+    if (thresholdCrossed) {
+      soundSystem.playSuccess();
+    }
+
+    return {
+      prior: currentMastery,
+      posterior,
+      delta,
+      thresholdCrossed,
+    };
+  },
+
+  simulateMasteryJump: async (
+    targetOrLearnerId?: number | string,
+    concept: string = 'stack',
+    target: number = 0.74
+  ) => {
+    const state = get();
+    let learnerId = state.learner?.learner_id || 'learner_b';
+    let targetMastery = 0.74;
+    let targetConcept = concept;
+
+    if (typeof targetOrLearnerId === 'number') {
+      targetMastery = targetOrLearnerId;
+    } else if (typeof targetOrLearnerId === 'string') {
+      learnerId = targetOrLearnerId;
+      targetMastery = typeof target === 'number' ? target : 0.74;
+    }
+
+    const prior = state.learner?.mastery_map[targetConcept as keyof MasteryMap] ?? 0.38;
+
+    try {
+      const res = await fetch('/api/simulate-mastery-jump', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          learner_id: learnerId,
+          concept: targetConcept,
+          target_mastery: targetMastery,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        set((s) => ({
+          learner: data.learner_profile,
+          worldState: data.world_state,
+          lastMasteryDelta: {
+            ...s.lastMasteryDelta,
+            [targetConcept]: {
+              delta: Math.round((targetMastery - prior) * 100) / 100,
+              oldMastery: prior,
+              newMastery: targetMastery,
+              timestamp: Date.now(),
+            },
+          },
+          isThresholdCrossed: data.threshold_crossed,
+          unlockedWingId: data.unlocked_wing,
+        }));
+        soundSystem.playSuccess();
+        return;
+      }
+    } catch {
+      // Fallback
+    }
+
+    // Local fallback jump
+    const currentProfile = state.learner || DEFAULT_LEARNER;
+    const updatedMap = { ...currentProfile.mastery_map, [targetConcept]: targetMastery };
+    const updatedWorld = state.worldState ? JSON.parse(JSON.stringify(state.worldState)) : DEFAULT_WORLD_STATE;
+
+    if (targetConcept === 'stack' && targetMastery >= 0.70) {
+      updatedWorld.wings.recursion_lab.status = 'accessible';
+      updatedWorld.wings.recursion_lab.reason = null;
+      updatedWorld.conduits_target_wing = 'recursion_lab';
+    }
+
+    set((s) => ({
+      learner: {
+        ...currentProfile,
+        mastery_map: updatedMap,
+        recommended_station: targetConcept === 'stack' && targetMastery >= 0.70 ? 'recursion_lab' : currentProfile.recommended_station,
+        learning_state: {
+          ...currentProfile.learning_state,
+          status: 'progressing',
+          summary: `Prerequisite satisfied: Stack mastery (${Math.round(targetMastery * 100)}%) crossed the 70% threshold. Recursion Wing is now unlocked.`,
+          primary_focus_concept: 'recursion',
+          active_prerequisite_gap: null,
+        },
+      },
+      worldState: updatedWorld,
+      lastMasteryDelta: {
+        ...s.lastMasteryDelta,
+        [targetConcept]: {
+          delta: Math.round((targetMastery - prior) * 100) / 100,
+          oldMastery: prior,
+          newMastery: targetMastery,
+          timestamp: Date.now(),
+        },
+      },
+      isThresholdCrossed: targetMastery >= 0.70 && prior < 0.70,
+      unlockedWingId: targetConcept === 'stack' && targetMastery >= 0.70 ? 'recursion_lab' : null,
+    }));
+    soundSystem.playSuccess();
   },
 
   setActiveChallengeIndex: (index: number) => {
@@ -568,6 +813,9 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
         activeChallengeIndex: 0,
         selectedAnswers: {},
         submittedAnswers: {},
+        lastMasteryDelta: {},
+        isThresholdCrossed: false,
+        unlockedWingId: null,
       });
     } catch {
       // reset locally
@@ -586,6 +834,9 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
         activeChallengeIndex: 0,
         selectedAnswers: {},
         submittedAnswers: {},
+        lastMasteryDelta: {},
+        isThresholdCrossed: false,
+        unlockedWingId: null,
       });
     }
   },
