@@ -1,5 +1,7 @@
 {
+  "id": "feynman-assistant-workflow",
   "name": "Feynman Multimodal Adaptive Explanation Agent",
+  "versionId": "1.0.0",
   "nodes": [
     {
       "parameters": {

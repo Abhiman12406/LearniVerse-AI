@@ -9,6 +9,20 @@ set -e
 # Render assigns a dynamic port via $PORT (defaults to 5678 if unset)
 export N8N_PORT="${PORT:-5678}"
 
+# Enforce Node.js heap limit for Render Free Tier (512 MB total container RAM)
+case "$NODE_OPTIONS" in
+  *max-old-space-size*)
+    ;;
+  *)
+    export NODE_OPTIONS="--max-old-space-size=384 ${NODE_OPTIONS:-}"
+    ;;
+esac
+
+# Optimize for low-memory environments: disable diagnostics, telemetry, and metrics
+export N8N_METRICS="${N8N_METRICS:-false}"
+export N8N_DIAGNOSTICS_ENABLED="false"
+export N8N_VERSION_NOTIFICATIONS_ENABLED="false"
+
 # Normalize FASTAPI_BACKEND_URL scheme for n8n HTTP Request nodes
 if [ -n "$FASTAPI_BACKEND_URL" ]; then
   case "$FASTAPI_BACKEND_URL" in
