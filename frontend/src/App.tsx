@@ -10,6 +10,7 @@ import { LinkedListConsole } from './components/ui/LinkedListConsole';
 import { RecursionConsole } from './components/ui/RecursionConsole';
 import { TreeBSTConsole } from './components/ui/TreeBSTConsole';
 import { TelemetryDrawer } from './components/ui/TelemetryDrawer';
+import { DiagnosticModal } from './components/ui/DiagnosticModal';
 
 export const App: React.FC = () => {
   const { fetchLearnerProfile, fetchWorldState } = useClassroomStore();
@@ -45,6 +46,7 @@ export const App: React.FC = () => {
       <RecursionConsole />
       <TreeBSTConsole />
       <TelemetryDrawer />
+      <DiagnosticModal />
     </main>
   );
 };

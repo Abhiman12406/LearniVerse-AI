@@ -12,6 +12,8 @@ import {
   DEFAULT_BKT_TRACE_A,
 } from '../data/mockDeliberations';
 import { FeynmanResponse, VerificationResponse, TranscribeResponse } from '../types/feynman';
+import { DiagnosticAssessment, DiagnosticSubmissionResponse } from '../types/diagnostic';
+import { DEFAULT_DIAGNOSTIC_ASSESSMENT } from '../data/diagnosticQuestions';
 
 export interface ArrayBayElement {
   index: number;
@@ -320,6 +322,24 @@ interface ClassroomStore {
   requestFeynmanExplanation: (input: string, inputType?: string, requestedModality?: string) => Promise<void>;
   submitFeynmanVerification: (questionId: string, selectedOptionIndex?: number, textAnswer?: string) => Promise<VerificationResponse | null>;
   transcribeAudioWithGroq: (audioBlob: Blob) => Promise<string>;
+
+  // AI Diagnostic Assessment State & Actions
+  isDiagnosticOpen: boolean;
+  diagnosticAssessment: DiagnosticAssessment | null;
+  diagnosticAnswers: Record<string, string>;
+  diagnosticCurrentIndex: number;
+  diagnosticSubmitted: boolean;
+  diagnosticResult: DiagnosticSubmissionResponse | null;
+  isDiagnosticLoading: boolean;
+  isDiagnosticSubmitting: boolean;
+
+  openDiagnostic: () => void;
+  closeDiagnostic: () => void;
+  fetchDiagnosticQuestions: (forceRefresh?: boolean) => Promise<void>;
+  setDiagnosticAnswer: (questionId: string, optionId: string) => void;
+  setDiagnosticIndex: (index: number) => void;
+  submitDiagnosticAssessment: () => Promise<void>;
+  resetDiagnosticAssessment: () => void;
 }
 
 // Fallback seed profile for initial rendering or offline mock
@@ -580,6 +600,16 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   activeTelemetryTab: 'explainability',
   latestDeliberation: DEFAULT_DELIBERATION_B,
   latestBktTrace: DEFAULT_BKT_TRACE_B,
+
+  // AI Diagnostic Assessment State
+  isDiagnosticOpen: false,
+  diagnosticAssessment: null,
+  diagnosticAnswers: {},
+  diagnosticCurrentIndex: 0,
+  diagnosticSubmitted: false,
+  diagnosticResult: null,
+  isDiagnosticLoading: false,
+  isDiagnosticSubmitting: false,
 
   dissolvingWingId: null,
   dissolvePhase: 'idle',
@@ -2416,5 +2446,148 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       console.warn('Groq Whisper speech transcription failed:', err);
       throw err;
     }
+  },
+
+  // AI Diagnostic Assessment Actions
+  openDiagnostic: () => {
+    set({ isDiagnosticOpen: true });
+    if (!get().diagnosticAssessment) {
+      get().fetchDiagnosticQuestions();
+    }
+  },
+
+  closeDiagnostic: () => {
+    set({ isDiagnosticOpen: false });
+  },
+
+  fetchDiagnosticQuestions: async (forceRefresh = false) => {
+    set({ isDiagnosticLoading: true });
+    try {
+      const res = await fetch(`/api/assessment/diagnostic?force_refresh=${forceRefresh}`);
+      if (res.ok) {
+        const data: DiagnosticAssessment = await res.json();
+        set({ diagnosticAssessment: data, isDiagnosticLoading: false });
+        return;
+      }
+      throw new Error(`Diagnostic fetch error: ${res.status}`);
+    } catch {
+      // Resilient offline fallback with full DSA question coverage
+      set({
+        diagnosticAssessment: DEFAULT_DIAGNOSTIC_ASSESSMENT,
+        isDiagnosticLoading: false,
+      });
+    }
+  },
+
+  setDiagnosticAnswer: (questionId: string, optionId: string) => {
+    try {
+      soundSystem.playChirp();
+    } catch {
+      // Audio fallback
+    }
+    set((state) => ({
+      diagnosticAnswers: {
+        ...state.diagnosticAnswers,
+        [questionId]: optionId,
+      },
+    }));
+  },
+
+  setDiagnosticIndex: (index: number) => {
+    try {
+      soundSystem.playChirp();
+    } catch {
+      // Audio fallback
+    }
+    set({ diagnosticCurrentIndex: index });
+  },
+
+  submitDiagnosticAssessment: async () => {
+    const state = get();
+    const assessment = state.diagnosticAssessment || DEFAULT_DIAGNOSTIC_ASSESSMENT;
+    const studentId = state.learner?.learner_id || 'learner_b';
+
+    set({ isDiagnosticSubmitting: true });
+    try {
+      const res = await fetch('/api/assessment/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          student_id: studentId,
+          assessment_id: assessment.assessment_id,
+          answers: state.diagnosticAnswers,
+        }),
+      });
+
+      if (res.ok) {
+        const result: DiagnosticSubmissionResponse = await res.json();
+        set({
+          diagnosticSubmitted: true,
+          diagnosticResult: result,
+          isDiagnosticSubmitting: false,
+        });
+        try {
+          soundSystem.playChime();
+        } catch {
+          // Audio fallback
+        }
+        return;
+      }
+      throw new Error(`Submission status: ${res.status}`);
+    } catch {
+      // Resilient offline evaluation calculation
+      let correctCount = 0;
+      const reviews = assessment.questions.map((q) => {
+        const selected = state.diagnosticAnswers[q.id] || null;
+        const isCorrect = selected === q.correct_option_id;
+        if (isCorrect) correctCount++;
+        const opt = q.options.find((o) => o.id === (selected || q.correct_option_id));
+        return {
+          question_id: q.id,
+          concept: q.concept,
+          selected_option_id: selected,
+          correct_option_id: q.correct_option_id,
+          is_correct: isCorrect,
+          explanation: opt ? opt.explanation : 'Evaluated against curriculum rubric',
+          title: q.title,
+        };
+      });
+
+      const result: DiagnosticSubmissionResponse = {
+        assessment_id: assessment.assessment_id,
+        student_id: studentId,
+        total_questions: assessment.questions.length,
+        answered_count: Object.keys(state.diagnosticAnswers).length,
+        correct_count: correctCount,
+        score_percentage: Math.round((correctCount / assessment.questions.length) * 100),
+        reviews,
+        concept_breakdown: reviews.reduce(
+          (acc, r) => ({ ...acc, [r.concept]: r.is_correct }),
+          {} as Record<string, boolean>
+        ),
+        status: 'evaluated',
+        evaluation_timestamp: new Date().toISOString(),
+      };
+
+      set({
+        diagnosticSubmitted: true,
+        diagnosticResult: result,
+        isDiagnosticSubmitting: false,
+      });
+      try {
+        soundSystem.playChime();
+      } catch {
+        // Audio fallback
+      }
+    }
+  },
+
+  resetDiagnosticAssessment: () => {
+    set({
+      diagnosticAnswers: {},
+      diagnosticCurrentIndex: 0,
+      diagnosticSubmitted: false,
+      diagnosticResult: null,
+    });
   },
 }));

@@ -14,6 +14,7 @@ import {
   Activity,
   Camera,
   Eye,
+  ClipboardList,
 } from 'lucide-react';
 import { useClassroomStore } from '../../store/useClassroomStore';
 import { AIMentorDialogue } from './AIMentorDialogue';
@@ -41,6 +42,9 @@ export const HUD: React.FC = () => {
     isTelemetryOpen,
     toggleTelemetry,
     openFeynman,
+    isDiagnosticOpen,
+    openDiagnostic,
+    diagnosticSubmitted,
     perspectiveMode,
     togglePerspectiveMode,
     setPerspectiveMode,
@@ -249,6 +253,7 @@ export const HUD: React.FC = () => {
             useClassroomStore.setState({ cinematicCamera: null });
             showToast('Navigated to: Main Classroom Central Hub');
           }}
+          title="Main Classroom Central Hub"
         >
           🏛️ Main Class
         </button>
@@ -261,8 +266,9 @@ export const HUD: React.FC = () => {
             useClassroomStore.setState({ cinematicCamera: null });
             showToast('Navigated to: Array Station Lab (West)');
           }}
+          title="Array Station Lab (West Wing)"
         >
-          🟦 Array Station (West)
+          🟦 Array (W)
         </button>
         <button
           className={`wing-pill ${currentWingKey === 'list' ? 'active' : ''}`}
@@ -273,8 +279,9 @@ export const HUD: React.FC = () => {
             useClassroomStore.setState({ cinematicCamera: null });
             showToast('Navigated to: Linked List Lab (East)');
           }}
+          title="Linked List Lab (East Wing)"
         >
-          🟩 Linked List Lab (East)
+          🟩 Linked List (E)
         </button>
         <button
           className={`wing-pill ${currentWingKey === 'recursion' ? 'active' : ''}`}
@@ -285,8 +292,9 @@ export const HUD: React.FC = () => {
             useClassroomStore.setState({ cinematicCamera: null });
             showToast('Navigated to: Recursion Chamber (North)');
           }}
+          title="Recursion Chamber (North Wing)"
         >
-          🟪 Recursion Chamber (North)
+          🟪 Recursion (N)
         </button>
         <button
           className={`wing-pill ${currentWingKey === 'tree' ? 'active' : ''}`}
@@ -297,8 +305,9 @@ export const HUD: React.FC = () => {
             useClassroomStore.setState({ cinematicCamera: null });
             showToast('Navigated to: Tree & BST Lab (South-East)');
           }}
+          title="Tree & BST Lab (South-East Wing)"
         >
-          🌲 Tree & BST Lab (South-East)
+          🌲 Tree (SE)
         </button>
         <button
           className={`wing-pill ${currentWingKey === 'stack' ? 'active' : ''}`}
@@ -309,8 +318,9 @@ export const HUD: React.FC = () => {
             useClassroomStore.setState({ cinematicCamera: null });
             showToast('Navigated to: Stack Lab (South)');
           }}
+          title="Stack Lab (South Wing)"
         >
-          🟧 Stack Lab (South)
+          🟧 Stack (S)
         </button>
       </div>
 
@@ -327,12 +337,12 @@ export const HUD: React.FC = () => {
           justifyContent: 'space-between',
           alignItems: 'flex-start',
           width: '100%',
-          marginTop: '4px',
+          marginTop: '2px',
         }}
       >
         {/* Left: Project Branding & Zone Indicator */}
-        <div className="hud-header ui-interactive" style={{ pointerEvents: 'auto', maxWidth: '440px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+        <div className="hud-header ui-interactive" style={{ pointerEvents: 'auto', maxWidth: '340px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
             <span className="badge">Adaptive Virtual Campus</span>
             <div className="zone-indicator" id="zone-badge">
               <div className="zone-dot"></div>
@@ -341,7 +351,7 @@ export const HUD: React.FC = () => {
           </div>
           <h1 className="hud-title">3D Adaptive Classroom Campus</h1>
           <p className="subtitle">
-            WASD to walk through doors • Auto-follow perspective camera • Press [E] near apparatuses
+            WASD: walk • Orbit: right-click / drag • [E]: operate apparatus
           </p>
         </div>
 
@@ -352,182 +362,251 @@ export const HUD: React.FC = () => {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'flex-end',
-            gap: '8px',
+            gap: '6px',
+            maxWidth: '380px',
           }}
         >
           <div
             className="glass-panel"
             style={{
-              padding: '6px 12px',
+              padding: '6px 8px',
               display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: 'rgba(25, 12, 18, 0.88)',
+              flexDirection: 'column',
+              gap: '5px',
+              background: 'rgba(22, 10, 16, 0.92)',
               borderColor: 'rgba(255, 255, 255, 0.14)',
             }}
           >
-            <span
-              style={{
-                fontSize: '10px',
-                fontFamily: 'var(--font-mono)',
-                color: '#fb923c',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                fontWeight: 700,
-                marginRight: '2px',
-              }}
-            >
-              Demo:
-            </span>
+            {/* Row 1: Demo Profiles & Simulation Jump */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span
+                style={{
+                  fontSize: '9px',
+                  fontFamily: 'var(--font-mono)',
+                  color: '#fb923c',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  fontWeight: 700,
+                  marginRight: '2px',
+                }}
+              >
+                Demo:
+              </span>
 
-            <button
-              id="btn-learner-b"
-              className="cyber-button"
-              onClick={() => switchLearner('learner_b')}
-              style={{
-                borderColor: isLearnerB ? 'var(--crimson-alert)' : 'transparent',
-                background: isLearnerB ? 'rgba(255, 0, 85, 0.18)' : 'rgba(255, 255, 255, 0.05)',
-                color: isLearnerB ? '#ff6699' : 'var(--text-secondary)',
-                fontSize: '10px',
-                padding: '5px 9px',
-                fontWeight: isLearnerB ? 700 : 500,
-              }}
-              title="Learner B (Remedial): 38% Stack, sealed Recursion Lab"
-            >
-              <ShieldAlert size={12} />
-              <span>Learner B (38%)</span>
-            </button>
+              <button
+                id="btn-learner-b"
+                className="cyber-button"
+                onClick={() => switchLearner('learner_b')}
+                style={{
+                  borderColor: isLearnerB ? 'var(--crimson-alert)' : 'transparent',
+                  background: isLearnerB ? 'rgba(255, 0, 85, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                  color: isLearnerB ? '#ff6699' : 'var(--text-secondary)',
+                  fontSize: '10px',
+                  padding: '4px 7px',
+                  height: '26px',
+                  boxSizing: 'border-box',
+                  fontWeight: isLearnerB ? 700 : 500,
+                  gap: '4px',
+                }}
+                title="Learner B (Remedial): 38% Stack, sealed Recursion Lab"
+              >
+                <ShieldAlert size={12} />
+                <span>Learner B (38%)</span>
+              </button>
 
-            <button
-              id="btn-learner-a"
-              className="cyber-button"
-              onClick={() => switchLearner('learner_a')}
-              style={{
-                borderColor: !isLearnerB ? 'var(--emerald-mastery)' : 'transparent',
-                background: !isLearnerB ? 'rgba(0, 255, 136, 0.18)' : 'rgba(255, 255, 255, 0.05)',
-                color: !isLearnerB ? '#00ffaa' : 'var(--text-secondary)',
-                fontSize: '10px',
-                padding: '5px 9px',
-                fontWeight: !isLearnerB ? 700 : 500,
-              }}
-              title="Learner A (Advanced): 84% Stack, unlocked Recursion Lab"
-            >
-              <CheckCircle2 size={12} />
-              <span>Learner A (Adv)</span>
-            </button>
+              <button
+                id="btn-learner-a"
+                className="cyber-button"
+                onClick={() => switchLearner('learner_a')}
+                style={{
+                  borderColor: !isLearnerB ? 'var(--emerald-mastery)' : 'transparent',
+                  background: !isLearnerB ? 'rgba(0, 255, 136, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                  color: !isLearnerB ? '#00ffaa' : 'var(--text-secondary)',
+                  fontSize: '10px',
+                  padding: '4px 7px',
+                  height: '26px',
+                  boxSizing: 'border-box',
+                  fontWeight: !isLearnerB ? 700 : 500,
+                  gap: '4px',
+                }}
+                title="Learner A (Advanced): 84% Stack, unlocked Recursion Lab"
+              >
+                <CheckCircle2 size={12} />
+                <span>Learner A (Adv)</span>
+              </button>
 
-            <button
-              id="btn-simulate-jump"
-              className="cyber-button"
-              onClick={() => simulateMasteryJump('learner_b', 'stack', 0.74)}
-              title="Simulate Mastery Jump (38% → 74%) with cinematic barrier dissolve"
-              style={{
-                borderColor: '#ea580c',
-                background: 'linear-gradient(135deg, rgba(234, 88, 12, 0.3), rgba(249, 115, 22, 0.2))',
-                color: '#fdba74',
-                fontSize: '10px',
-                padding: '5px 10px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                fontWeight: 800,
-                boxShadow: '0 0 12px rgba(234, 88, 12, 0.4)',
-              }}
-            >
-              <Zap size={12} color="#fdba74" />
-              <span>Jump (38% → 74%)</span>
-            </button>
+              <button
+                id="btn-simulate-jump"
+                className="cyber-button"
+                onClick={() => simulateMasteryJump('learner_b', 'stack', 0.74)}
+                title="Simulate Mastery Jump (38% → 74%) with cinematic barrier dissolve"
+                style={{
+                  borderColor: '#ea580c',
+                  background: 'linear-gradient(135deg, rgba(234, 88, 12, 0.35), rgba(249, 115, 22, 0.25))',
+                  color: '#fdba74',
+                  fontSize: '10px',
+                  padding: '4px 8px',
+                  height: '26px',
+                  boxSizing: 'border-box',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontWeight: 800,
+                  boxShadow: '0 0 10px rgba(234, 88, 12, 0.4)',
+                }}
+              >
+                <Zap size={11} color="#fdba74" />
+                <span>Jump (38% → 74%)</span>
+              </button>
 
-            <button
-              id="btn-reset-seed"
-              className="cyber-button"
-              onClick={resetWorldSeed}
-              title="Reset Seed to Initial Clean Demonstration Conditions"
-              style={{
-                padding: '5px 8px',
-                background: 'rgba(255, 255, 255, 0.05)',
-                borderColor: 'var(--border-subtle)',
-                color: 'var(--text-primary)',
-                fontSize: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
-            >
-              <RotateCcw size={11} color="var(--text-muted)" />
-              <span>Reset</span>
-            </button>
+              <button
+                id="btn-reset-seed"
+                className="cyber-button"
+                onClick={resetWorldSeed}
+                title="Reset Seed to Initial Clean Demonstration Conditions"
+                style={{
+                  padding: '4px 7px',
+                  height: '26px',
+                  boxSizing: 'border-box',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  borderColor: 'var(--border-subtle)',
+                  color: 'var(--text-primary)',
+                  fontSize: '10px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <RotateCcw size={11} color="var(--text-muted)" />
+                <span>Reset</span>
+              </button>
+            </div>
 
-            <button
-              id="btn-pitch-guide-toggle"
-              className="cyber-button"
-              onClick={() => setShowPitchGuide(!showPitchGuide)}
-              title="Toggle 90-Second Hero Pitch Flow Guide"
-              style={{
-                padding: '5px 8px',
-                background: showPitchGuide ? 'rgba(240, 116, 91, 0.25)' : 'rgba(255, 255, 255, 0.04)',
-                borderColor: showPitchGuide ? '#ea580c' : 'var(--border-subtle)',
-                color: showPitchGuide ? '#fdba74' : 'var(--text-muted)',
-                fontSize: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
-            >
-              <HelpCircle size={11} />
-              <span>90s Guide</span>
-            </button>
+            {/* Row 2: AI Intelligence & Inspection Tools */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end' }}>
+              <button
+                id="btn-diagnostic-assessment"
+                onClick={() => openDiagnostic()}
+                className="cyber-button"
+                style={{
+                  padding: '4px 8px',
+                  height: '26px',
+                  boxSizing: 'border-box',
+                  cursor: 'pointer',
+                  color: isDiagnosticOpen ? '#38bdf8' : '#e0f2fe',
+                  borderColor: isDiagnosticOpen ? '#38bdf8' : !diagnosticSubmitted ? '#0284c7' : 'var(--border-subtle)',
+                  background: isDiagnosticOpen
+                    ? 'rgba(56, 189, 248, 0.25)'
+                    : !diagnosticSubmitted
+                    ? 'linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(16, 185, 129, 0.22))'
+                    : 'rgba(255, 255, 255, 0.04)',
+                  boxShadow: !diagnosticSubmitted ? '0 0 10px rgba(56, 189, 248, 0.4)' : 'none',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  gap: '4px',
+                  position: 'relative',
+                }}
+                title="Launch AI-Powered 5-Question DSA Diagnostic Assessment"
+              >
+                <ClipboardList size={12} color={isDiagnosticOpen ? '#38bdf8' : '#38bdf8'} />
+                <span>[📝 DIAGNOSTIC]</span>
+                {!diagnosticSubmitted && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: '-2px',
+                      right: '-2px',
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      background: '#38bdf8',
+                      boxShadow: '0 0 6px #38bdf8',
+                    }}
+                  />
+                )}
+              </button>
 
-            <button
-              id="btn-agent-brain"
-              onClick={toggleTelemetry}
-              className="cyber-button"
-              style={{
-                padding: '5px 10px',
-                cursor: 'pointer',
-                color: isTelemetryOpen ? '#00f0ff' : 'var(--text-primary)',
-                borderColor: isTelemetryOpen ? 'var(--cyan-core)' : 'var(--border-subtle)',
-                background: isTelemetryOpen ? 'rgba(0, 240, 255, 0.16)' : 'rgba(255, 255, 255, 0.04)',
-                boxShadow: isTelemetryOpen ? '0 0 14px var(--cyan-glow)' : 'none',
-                fontSize: '10px',
-                fontWeight: 700,
-              }}
-              title="Inspect 5-Agent Deliberation Pipeline, Guardrails & BKT Belief State"
-            >
-              <Brain size={12} color={isTelemetryOpen ? '#00f0ff' : 'var(--cyan-core)'} />
-              <span>[🧠 BRAIN]</span>
-            </button>
+              <button
+                id="btn-agent-brain"
+                onClick={toggleTelemetry}
+                className="cyber-button"
+                style={{
+                  padding: '4px 8px',
+                  height: '26px',
+                  boxSizing: 'border-box',
+                  cursor: 'pointer',
+                  color: isTelemetryOpen ? '#00f0ff' : 'var(--text-primary)',
+                  borderColor: isTelemetryOpen ? 'var(--cyan-core)' : 'var(--border-subtle)',
+                  background: isTelemetryOpen ? 'rgba(0, 240, 255, 0.18)' : 'rgba(255, 255, 255, 0.04)',
+                  boxShadow: isTelemetryOpen ? '0 0 12px var(--cyan-glow)' : 'none',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  gap: '4px',
+                }}
+                title="Inspect 5-Agent Deliberation Pipeline, Guardrails & BKT Belief State"
+              >
+                <Brain size={12} color={isTelemetryOpen ? '#00f0ff' : 'var(--cyan-core)'} />
+                <span>[🧠 BRAIN]</span>
+              </button>
 
-            <button
-              id="btn-ask-feynman"
-              className="cyber-button"
-              onClick={() => openFeynman()}
-              title="Open Feynman Multimodal Adaptive Explanation Agent [F]"
-              style={{
-                padding: '5px 9px',
-                background: 'rgba(168, 85, 247, 0.2)',
-                borderColor: '#a855f7',
-                color: '#e9d5ff',
-                fontSize: '10px',
-                fontWeight: 700,
-              }}
-            >
-              <Sparkles size={11} color="#c084fc" />
-              <span>Feynman [F]</span>
-            </button>
+              <button
+                id="btn-ask-feynman"
+                className="cyber-button"
+                onClick={() => openFeynman()}
+                title="Open Feynman Multimodal Adaptive Explanation Agent [F]"
+                style={{
+                  padding: '4px 8px',
+                  height: '26px',
+                  boxSizing: 'border-box',
+                  background: 'rgba(168, 85, 247, 0.2)',
+                  borderColor: '#a855f7',
+                  color: '#e9d5ff',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  gap: '4px',
+                }}
+              >
+                <Sparkles size={11} color="#c084fc" />
+                <span>Feynman [F]</span>
+              </button>
 
-            <button
-              onClick={toggleAudioMute}
-              className="cyber-button"
-              style={{
-                padding: '5px 8px',
-                color: isMuted ? 'var(--text-muted)' : '#fdba74',
-                borderColor: isMuted ? 'var(--border-subtle)' : 'rgba(240, 116, 91, 0.5)',
-              }}
-              title={isMuted ? 'Unmute Ambient Sound' : 'Mute Ambient Sound'}
-            >
-              {isMuted ? <VolumeX size={12} /> : <Volume2 size={12} />}
-            </button>
+              <button
+                id="btn-pitch-guide-toggle"
+                className="cyber-button"
+                onClick={() => setShowPitchGuide(!showPitchGuide)}
+                title="Toggle 90-Second Hero Pitch Flow Guide"
+                style={{
+                  padding: '4px 7px',
+                  height: '26px',
+                  boxSizing: 'border-box',
+                  background: showPitchGuide ? 'rgba(240, 116, 91, 0.25)' : 'rgba(255, 255, 255, 0.04)',
+                  borderColor: showPitchGuide ? '#ea580c' : 'var(--border-subtle)',
+                  color: showPitchGuide ? '#fdba74' : 'var(--text-muted)',
+                  fontSize: '10px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <HelpCircle size={11} />
+                <span>90s Guide</span>
+              </button>
+
+              <button
+                onClick={toggleAudioMute}
+                className="cyber-button"
+                style={{
+                  padding: '4px 7px',
+                  height: '26px',
+                  boxSizing: 'border-box',
+                  color: isMuted ? 'var(--text-muted)' : '#fdba74',
+                  borderColor: isMuted ? 'var(--border-subtle)' : 'rgba(240, 116, 91, 0.5)',
+                }}
+                title={isMuted ? 'Unmute Ambient Sound' : 'Mute Ambient Sound'}
+              >
+                {isMuted ? <VolumeX size={12} /> : <Volume2 size={12} />}
+              </button>
+            </div>
           </div>
 
           {/* Collapsible 90-Second Hero Pitch Stepper Card */}
@@ -659,99 +738,6 @@ export const HUD: React.FC = () => {
 
       {/* Bottom Controls Panel (Centered Action Bar + View Toggles) */}
       <div className="controls-panel ui-interactive">
-        <div className="apparatus-action-bar">
-          {/* Array Actions */}
-          <button
-            className="act-btn"
-            id="btn-arr-scan"
-            onClick={() => {
-              const idx = Math.floor(Math.random() * 5);
-              jumpToArrayIndex(idx);
-              const val = arrayBays[idx]?.value ?? 45;
-              showToast(`Array Access [Index ${idx}]: Value = ${val} (Direct O(1) Pointer)`);
-            }}
-          >
-            <span>🔍 Array O(1) Access</span>
-          </button>
-          <button
-            className="act-btn"
-            id="btn-arr-linear"
-            onClick={() => {
-              showToast('Scanning Array Memory: O(N) Sequential Search...');
-              runArrayLinearSearch(78);
-            }}
-          >
-            <span>⚡ Linear Search O(N)</span>
-          </button>
-
-          {/* Linked List Actions */}
-          <button
-            className="act-btn green"
-            id="btn-list-traverse"
-            onClick={() => {
-              showToast('Traversing Node Pointers: HEAD -> Next -> Next -> NULL...');
-              traverseLinkedList();
-            }}
-          >
-            <span>✨ Traverse Links</span>
-          </button>
-          <button
-            className="act-btn green"
-            id="btn-list-add"
-            onClick={() => {
-              const rndVal = (Math.floor(Math.random() * 8) + 1) * 10;
-              insertLinkedListNode(2, rndVal);
-              showToast(`Inserted Dynamic Heap Node: Node(${rndVal}) at tail`);
-            }}
-          >
-            <span>➕ Insert Node</span>
-          </button>
-
-          {/* Recursion Actions */}
-          <button
-            className="act-btn purple"
-            id="btn-rec-unwind"
-            onClick={() => {
-              showToast('Base Case Reached! Unwinding Call Stack & Returning Results...');
-              triggerRecursionReturn();
-            }}
-          >
-            <span>🔄 Unwind Call Stack</span>
-          </button>
-          <button
-            className="act-btn purple"
-            id="btn-rec-push"
-            onClick={() => {
-              pushRecursionCall();
-              showToast(`Pushed Activation Frame to Call Stack (Depth: ${recursionFrames.length + 1})`);
-            }}
-          >
-            <span>⬇️ Push Frame</span>
-          </button>
-
-          {/* Tree Actions */}
-          <button
-            className="act-btn emerald"
-            id="btn-tree-inorder"
-            onClick={() => {
-              showToast('Running In-Order Traversal (Left -> Root -> Right)...');
-              runTreeInOrderTraversal();
-            }}
-          >
-            <span>🌿 In-Order Traversal</span>
-          </button>
-          <button
-            className="act-btn emerald"
-            id="btn-tree-search"
-            onClick={() => {
-              showToast('Searching BST for Key = 60: Path (50 -> 70 -> 60)...');
-              runTreeSearch(60);
-            }}
-          >
-            <span>🎯 BST Search (60)</span>
-          </button>
-        </div>
-
         <div className="view-toggles">
           <button
             className={`demo-btn ${perspectiveMode === '3rd_person' && !isIsometric ? 'active' : ''}`}
@@ -763,8 +749,8 @@ export const HUD: React.FC = () => {
               showToast('Switched to 3rd-Person Chase Cam');
             }}
           >
-            <Camera size={13} />
-            <span>3rd-Person Chase Cam</span>
+            <Camera size={12} />
+            <span>3rd-Person</span>
           </button>
           <button
             className={`demo-btn ${perspectiveMode === '1st_person' && !isIsometric ? 'active' : ''}`}
@@ -776,8 +762,8 @@ export const HUD: React.FC = () => {
               showToast('Switched to 1st-Person Eye Cam');
             }}
           >
-            <Eye size={13} />
-            <span>1st-Person Eye Cam</span>
+            <Eye size={12} />
+            <span>1st-Person</span>
           </button>
           <button
             className={`demo-btn ${isIsometric ? 'active' : ''}`}
@@ -794,7 +780,7 @@ export const HUD: React.FC = () => {
               showToast('Switched to Isometric Campus Overview');
             }}
           >
-            <span>📐 Isometric Campus Overview</span>
+            <span>📐 Isometric</span>
           </button>
           <button
             className={`demo-btn ${isGoldenHour ? 'active' : ''}`}
@@ -816,8 +802,101 @@ export const HUD: React.FC = () => {
               showToast('Reset Avatar Position to Center Atrium');
             }}
           >
-            <span>🎯 Reset to Center</span>
+            <span>🎯 Center Pose</span>
           </button>
+        </div>
+
+        <div className="apparatus-action-bar">
+          {/* Row 1: Linear Data Structures (Array & Linked List) */}
+          <div className="apparatus-row">
+            <button
+              className="act-btn"
+              id="btn-arr-scan"
+              onClick={() => {
+                const idx = Math.floor(Math.random() * 5);
+                jumpToArrayIndex(idx);
+                const val = arrayBays[idx]?.value ?? 45;
+                showToast(`Array Access [Index ${idx}]: Value = ${val} (Direct O(1) Pointer)`);
+              }}
+            >
+              <span>🔍 Array O(1)</span>
+            </button>
+            <button
+              className="act-btn"
+              id="btn-arr-linear"
+              onClick={() => {
+                showToast('Scanning Array Memory: O(N) Sequential Search...');
+                runArrayLinearSearch(78);
+              }}
+            >
+              <span>⚡ Linear Search O(N)</span>
+            </button>
+            <button
+              className="act-btn green"
+              id="btn-list-traverse"
+              onClick={() => {
+                showToast('Traversing Node Pointers: HEAD -> Next -> Next -> NULL...');
+                traverseLinkedList();
+              }}
+            >
+              <span>✨ Traverse Links</span>
+            </button>
+            <button
+              className="act-btn green"
+              id="btn-list-add"
+              onClick={() => {
+                const rndVal = (Math.floor(Math.random() * 8) + 1) * 10;
+                insertLinkedListNode(2, rndVal);
+                showToast(`Inserted Dynamic Heap Node: Node(${rndVal}) at tail`);
+              }}
+            >
+              <span>➕ Insert Node</span>
+            </button>
+          </div>
+
+          {/* Row 2: Hierarchical & Call Stack (Recursion & Tree) */}
+          <div className="apparatus-row">
+            <button
+              className="act-btn purple"
+              id="btn-rec-unwind"
+              onClick={() => {
+                showToast('Base Case Reached! Unwinding Call Stack & Returning Results...');
+                triggerRecursionReturn();
+              }}
+            >
+              <span>🔄 Unwind Call Stack</span>
+            </button>
+            <button
+              className="act-btn purple"
+              id="btn-rec-push"
+              onClick={() => {
+                pushRecursionCall();
+                showToast(`Pushed Activation Frame to Call Stack (Depth: ${recursionFrames.length + 1})`);
+              }}
+            >
+              <span>⬇️ Push Frame</span>
+            </button>
+            <button
+              className="act-btn emerald"
+              id="btn-tree-inorder"
+              onClick={() => {
+                showToast('Running In-Order Traversal (Left -> Root -> Right)...');
+                runTreeInOrderTraversal();
+              }}
+            >
+              <span>🌿 In-Order Traversal</span>
+            </button>
+            <button
+              className="act-btn emerald"
+              id="btn-tree-search"
+              onClick={() => {
+                showToast('Searching BST for Key = 60: Path (50 -> 70 -> 60)...');
+                runTreeSearch(60);
+              }}
+            >
+              <span>🎯 BST Search (60)</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -835,9 +914,10 @@ export const HUD: React.FC = () => {
           <div
             className="glass-panel ui-interactive"
             style={{
-              padding: '12px 16px',
-              maxWidth: '420px',
-              background: 'rgba(25, 12, 18, 0.88)',
+              padding: '10px 14px',
+              width: '330px',
+              maxWidth: '330px',
+              background: 'rgba(22, 10, 16, 0.92)',
               borderColor: 'rgba(255, 255, 255, 0.14)',
             }}
           >

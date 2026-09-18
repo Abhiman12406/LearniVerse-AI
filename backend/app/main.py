@@ -10,6 +10,7 @@ from backend.app.routers.interactions import router as interactions_router
 from backend.app.routers.agents import router as agents_router
 from backend.app.routers.feynman import router as feynman_router
 from backend.app.routers.curriculum import router as curriculum_router
+from backend.app.routers.assessment import router as assessment_router
 
 app = FastAPI(
     title="Adaptive Virtual Classroom API",
@@ -34,6 +35,7 @@ app.include_router(interactions_router)
 app.include_router(agents_router)
 app.include_router(feynman_router)
 app.include_router(curriculum_router)
+app.include_router(assessment_router)
 
 
 @app.get("/")
