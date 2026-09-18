@@ -100,6 +100,7 @@ export function createClassroomEnvironment(): ClassroomEnvironment {
   createCorridor(9.5, 0, Math.PI / 2, 7.0);  // East (Linked List Lab connects at X = 13)
   createCorridor(0, -11.0, 0, 10.0);         // North (Recursion Chamber)
   createCorridor(0, 11.0, 0, 10.0);          // South (Stack Lab)
+  createCorridor(12.0, 9.9, 0, 7.8);         // South-East (Tree & BST Lab)
 
   // Doorway Portals on Classroom Perimeter
   // Structural pillars are key architecture and retain dynamic shadow casting
@@ -820,6 +821,15 @@ export function createClassroomEnvironment(): ClassroomEnvironment {
   registerBoxCollider('Tree Lab North Wall (East)', 16.45, 13.8, 5.1, 0.4);
   registerBoxCollider('Tree Lab Tech Bench (East)', 17.8, 20.8, 1.2, 4.0);
   registerBoxCollider('Tree Lab Tech Bench (South)', 12.0, 26.6, 4.0, 1.2);
+
+  // Stack Lab (South Wing, centered at X = 0.0, Z = 19.75, width 9.6m: X in [-4.8, 4.8], depth 13.5m: Z in [13.0, 26.5])
+  registerBoxCollider('Stack Lab South Wall', 0.0, 26.5, 9.6, 0.4);
+  registerBoxCollider('Stack Lab West Wall', -4.8, 19.75, 0.4, 13.5);
+  registerBoxCollider('Stack Lab East Wall', 4.8, 19.75, 0.4, 13.5);
+  registerBoxCollider('Stack Lab North Wall (West)', -3.35, 13.0, 2.9, 0.4);
+  registerBoxCollider('Stack Lab North Wall (East)', 3.35, 13.0, 2.9, 0.4);
+  registerBoxCollider('Stack Lab Tech Bench (West)', -3.9, 20.0, 1.2, 4.0);
+  registerBoxCollider('Stack Lab Tech Bench (East)', 3.9, 20.0, 1.2, 4.0);
 
   // South-East Corridor Side Walls (connecting Central Atrium to Tree Lab at X = 12.0, Z: 6.0 to 13.8)
   registerBoxCollider('Corridor South-East West Wall', 9.7, 9.9, 0.2, 7.8);
