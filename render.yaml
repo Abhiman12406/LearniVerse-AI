@@ -1,0 +1,75 @@
+# ==============================================================================
+# LearniVerse-AI: Render Deployment Blueprint
+# Conforming to RENDER.md §5, §14 and FEYNMAN.md
+# ==============================================================================
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Feynman Agent n8n Orchestrator (Docker Web Service)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: learniverse-n8n
+    env: docker
+    plan: starter
+    region: oregon
+    dockerfilePath: n8n/Dockerfile
+    dockerContext: n8n
+    healthCheckPath: /healthz
+    envVars:
+      - key: FASTAPI_BACKEND_URL
+        fromService:
+          type: web
+          name: learniverse-backend
+          property: host
+      - key: WEBHOOK_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: N8N_BLOCK_ENV_ACCESS_IN_NODE
+        value: "false"
+      - key: N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS
+        value: "true"
+      - key: GENERIC_TIMEZONE
+        value: "UTC"
+
+  # ----------------------------------------------------------------------------
+  # 2. LearniVerse FastAPI Core Backend (Python Web Service)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: learniverse-backend
+    env: python
+    plan: free
+    region: oregon
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/feynman/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: N8N_WEBHOOK_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+
+  # ----------------------------------------------------------------------------
+  # 3. 3D Adaptive Virtual Classroom Client (Static Site)
+  # ----------------------------------------------------------------------------
+  - type: static
+    name: learniverse-frontend
+    plan: free
+    region: oregon
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: learniverse-backend
+          property: host
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

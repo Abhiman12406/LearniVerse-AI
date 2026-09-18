@@ -18,59 +18,71 @@ def _generate_deterministic_proposal(
     diagnostic: Dict[str, Any],
     mastery_map: Dict[str, float],
     target_concept: str,
+    ability_irt: Optional[Dict[str, float]] = None,
 ) -> PlannerProposal:
-    """Deterministic pedagogical heuristic fallback."""
+    """ZPD Gaussian-gain and Prerequisite-Aware Utility optimization fallback (§8-§11)."""
     status = diagnostic.get("status", "progressing")
     blocking_prereq = diagnostic.get("blocking_prerequisite")
     stack_val = mastery_map.get("stack", 0.5)
 
+    from backend.app.services.zpd_planner_service import zpd_planner_service
+    from backend.app.services.knowledge_graph_service import knowledge_graph_service
+
+    # Determine candidate concept
     if status == "remediation_required" or blocking_prereq == "stack" or stack_val < 0.70:
-        diff = "easy" if stack_val < 0.45 else "medium"
-        return PlannerProposal(
-            action="REMEDIATE",
-            concept="stack",
-            difficulty=diff,
-            reason=(
-                f"Pedagogical Planner identifies Stack mastery ({int(stack_val*100)}%) is below the "
-                "70% threshold required for Recursion Wing. Targeted remediation scheduled in Stack Lab."
-            ),
-            mode="deterministic_fallback",
-        )
-    elif stack_val >= 0.70:
-        rec_val = mastery_map.get("recursion", 0.20)
-        if rec_val >= 0.70:
-            return PlannerProposal(
-                action="CHALLENGE",
-                concept="recursion",
-                difficulty="hard",
-                reason=(
-                    f"Prerequisites verified across curriculum. Advanced challenge initiated for "
-                    f"Recursion (current mastery: {int(rec_val*100)}%)."
-                ),
-                mode="deterministic_fallback",
-            )
-        else:
-            return PlannerProposal(
-                action="LEARN",
-                concept="recursion",
-                difficulty="medium",
-                reason=(
-                    f"Stack prerequisite verified ({int(stack_val*100)}% ≥ 70%). "
-                    "Recursion Wing barrier dissolved. Advancing to Recursion Lab."
-                ),
-                mode="deterministic_fallback",
-            )
+        concept = "stack"
+        eligible = False
+    elif stack_val >= 0.70 and target_concept == "recursion":
+        concept = "recursion"
+        eligible = True
     else:
         concept = target_concept or "stack"
-        val = mastery_map.get(concept, 0.5)
-        diff = "easy" if val < 0.45 else ("medium" if val < 0.70 else "hard")
-        return PlannerProposal(
-            action="PRACTICE",
-            concept=concept,
-            difficulty=diff,
-            reason=f"Standard mastery progression practice on {concept.replace('_', ' ').title()}.",
-            mode="deterministic_fallback",
+        eligible = True
+
+    theta = (ability_irt or {}).get(concept, 0.0)
+    mastery = mastery_map.get(concept, 0.5)
+
+    best_task, _ = zpd_planner_service.select_optimal_task(
+        concept=concept,
+        mastery=mastery,
+        theta=theta,
+        eligible=eligible,
+    )
+
+    if not eligible or status == "remediation_required" or stack_val < 0.70:
+        action = "REMEDIATE"
+        diff = "easy" if stack_val < 0.45 else "medium"
+        reason = (
+            f"Pedagogical Planner identifies Stack mastery ({int(stack_val*100)}%) is below the "
+            f"70% threshold required for Recursion Wing (ZPD factor={best_task.zpd_factor}, Utility={best_task.utility}). "
+            "Targeted remediation scheduled in Stack Lab."
         )
+    elif stack_val >= 0.70 and mastery_map.get("recursion", 0.20) >= 0.70:
+        action = "CHALLENGE"
+        diff = "hard"
+        reason = (
+            f"Prerequisites verified across curriculum. Advanced challenge initiated for "
+            f"Recursion (current mastery: {int(mastery_map.get('recursion', 0.20)*100)}%, ZPD factor={best_task.zpd_factor})."
+        )
+    elif stack_val >= 0.70:
+        action = "LEARN"
+        diff = "medium"
+        reason = (
+            f"Stack prerequisite verified ({int(stack_val*100)}% ≥ 70%). "
+            "Recursion Wing barrier dissolved. Advancing to Recursion Lab."
+        )
+    else:
+        action = "PRACTICE"
+        diff = "easy" if mastery < 0.45 else ("medium" if mastery < 0.70 else "hard")
+        reason = f"Standard mastery progression practice on {concept.replace('_', ' ').title()} (Utility={best_task.utility})."
+
+    return PlannerProposal(
+        action=action,
+        concept=concept,
+        difficulty=diff,
+        reason=reason,
+        mode="deterministic_fallback",
+    )
 
 
 def _call_gemini_planner(
@@ -85,7 +97,8 @@ def _call_gemini_planner(
         return None
 
     try:
-        from google import genai
+        import importlib
+        genai = importlib.import_module("google.genai")
         client = genai.Client(api_key=api_key)
 
         prompt = f"""
@@ -162,9 +175,10 @@ def planner_agent_node(state: AgentState) -> AgentState:
         if proposal:
             llm_mode = "gemini"
         else:
-            # Fallback to deterministic heuristic planner
-            proposal = _generate_deterministic_proposal(diagnostic, mastery_map, target_concept)
-            llm_mode = "deterministic_fallback"
+            # Fallback to deterministic ZPD heuristic planner
+            ability_irt = (state.get("learner_profile") or {}).get("ability_irt")
+            proposal = _generate_deterministic_proposal(diagnostic, mastery_map, target_concept, ability_irt)
+            llm_mode = proposal.mode
 
     elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
 

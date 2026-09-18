@@ -1,6 +1,6 @@
 """Domain models for Learner and Classroom World state conforming to CONTEXT.md."""
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -25,6 +25,11 @@ class LearnerProfile(BaseModel):
     persona_type: str = Field(..., description="Learner A (Advanced) or Learner B (Remedial)")
     learning_state: LearningState
     mastery_map: MasteryMap
+    ability_irt: Dict[str, float] = Field(default_factory=lambda: {"array": 0.0, "linked_list": 0.0, "stack": 0.0, "recursion": 0.0, "tree": 0.0}, description="2PL IRT ability estimate θ in [-4, 4] (§4)")
+    confidence_map: Dict[str, float] = Field(default_factory=lambda: {"array": 0.8, "linked_list": 0.7, "stack": 0.4, "recursion": 0.3, "tree": 0.2}, description="Confidence estimate C_c = 1 - exp(-n/κ) in [0, 1] (§7)")
+    dimensions_map: Dict[str, Dict[str, float]] = Field(default_factory=dict, description="Multi-dimensional mastery streams (§6)")
+    sm2_records: Dict[str, Dict[str, Any]] = Field(default_factory=dict, description="SuperMemo-2 spaced repetition state (§15)")
+    mastery_classification: Dict[str, str] = Field(default_factory=lambda: {"array": "HIGH", "linked_list": "MEDIUM", "stack": "LOW", "recursion": "LOW", "tree": "UNCERTAIN"}, description="HIGH | MEDIUM | LOW | UNCERTAIN (§16)")
     active_wing: str = Field(default="atrium", description="Current spatial Wing or Atrium location")
     recommended_station: str = Field(..., description="Target station recommended by the learning policy")
 

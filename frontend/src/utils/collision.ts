@@ -22,7 +22,7 @@ const DEFAULT_CLASSROOM_COLLIDERS: CampusCollider[] = [
 ];
 
 /**
- * Calculates collision boundaries for classroom archways and sealed barriers.
+ * Calculates collision boundaries for classroom doorway exits and sealed barriers.
  */
 export function getArchwayCollisionBounds(worldState: WorldState | null): CollisionBounds[] {
   if (!worldState) return [];
@@ -50,8 +50,7 @@ export function getArchwayCollisionBounds(worldState: WorldState | null): Collis
       centerX,
       centerZ,
       portalWidth: 4.4,
-      // Sealed barrier stands at radius 15.8; accessible wings allow walking into lab chamber up to 25.5
-      barrierDistance: isSealed ? 15.8 : 25.5,
+      barrierDistance: isSealed ? 15.8 : 27.5,
     };
   });
 }
@@ -118,7 +117,7 @@ export function resolveAvatarCollision(
   x: number,
   z: number,
   worldState: WorldState | null,
-  atriumRadius: number = 17.2,
+  maxCampusRadius: number = 27.5,
   checkObstacles: boolean = true
 ): { x: number; z: number; isBlockedByBarrier: boolean; blockedWingId: string | null } {
   let resolvedX = x;
@@ -133,30 +132,24 @@ export function resolveAvatarCollision(
     resolvedZ = obs.z;
   }
 
-  const currentDist = Math.hypot(resolvedX, resolvedZ);
-  const bounds = getArchwayCollisionBounds(worldState);
-
   // 2. Check archway portals & sealed barriers
+  const bounds = getArchwayCollisionBounds(worldState);
   for (const b of bounds) {
     const angleRad = (b.azimuthDeg * Math.PI) / 180;
-    // Direction vector from origin to archway center
     const dirX = Math.sin(angleRad);
     const dirZ = -Math.cos(angleRad);
 
-    // Tangent vector along portal width
     const tanX = -dirZ;
     const tanZ = dirX;
 
-    // Project avatar position onto archway radial axis and lateral axis
     const radialDist = resolvedX * dirX + resolvedZ * dirZ;
     const lateralDist = resolvedX * tanX + resolvedZ * tanZ;
 
-    // Within portal opening width or chamber width once inside
     const allowedWidth = radialDist > 17.5 ? 6.0 : b.portalWidth;
     const halfWidth = allowedWidth / 2;
+
     if (radialDist > 10.0 && Math.abs(lateralDist) <= halfWidth) {
       if (b.isSealed && radialDist >= b.barrierDistance) {
-        // Avatar is approaching a sealed barrier: clamp to barrier distance
         isBlocked = true;
         blockedWing = b.wingId;
         const clampedRadial = b.barrierDistance;
@@ -164,17 +157,25 @@ export function resolveAvatarCollision(
         resolvedZ = clampedRadial * dirZ + lateralDist * tanZ;
         return { x: resolvedX, z: resolvedZ, isBlockedByBarrier: true, blockedWingId: blockedWing };
       } else if (!b.isSealed && radialDist <= b.barrierDistance) {
-        // Portal is accessible: allow passage beyond standard atrium radius up to barrierDistance
         return { x: resolvedX, z: resolvedZ, isBlockedByBarrier: false, blockedWingId: null };
       }
     }
   }
 
-  // 3. Standard atrium perimeter clamp if not passing through an accessible portal
-  if (currentDist > atriumRadius) {
+  // 3. Sealed Prerequisite Barrier Checks at Cardinal Doorways (North/South/West/East)
+  const recWing = worldState?.wings['recursion_lab'];
+  if (recWing?.status === 'sealed' && resolvedZ <= -5.6 && Math.abs(resolvedX) <= 2.2 && resolvedZ >= -7.0) {
+    resolvedZ = -5.6;
+    isBlocked = true;
+    blockedWing = 'recursion_lab';
+  }
+
+  // 4. Campus Outer Perimeter Clamp
+  const currentDist = Math.hypot(resolvedX, resolvedZ);
+  if (currentDist > maxCampusRadius) {
     const angle = Math.atan2(resolvedZ, resolvedX);
-    resolvedX = Math.cos(angle) * atriumRadius;
-    resolvedZ = Math.sin(angle) * atriumRadius;
+    resolvedX = Math.cos(angle) * maxCampusRadius;
+    resolvedZ = Math.sin(angle) * maxCampusRadius;
   }
 
   return { x: resolvedX, z: resolvedZ, isBlockedByBarrier: isBlocked, blockedWingId: blockedWing };

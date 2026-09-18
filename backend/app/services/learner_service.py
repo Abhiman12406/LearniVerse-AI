@@ -1,6 +1,7 @@
-"""Authoritative Learner Service managing profiles and world access states."""
+"""Authoritative Learner Service managing profiles, mathematical states, and world access."""
 
-from typing import Dict, Optional
+from datetime import datetime, timezone
+from typing import Any, Dict, Optional
 from backend.app.models.learner import (
     LearnerProfile,
     LearningState,
@@ -9,8 +10,10 @@ from backend.app.models.learner import (
     WorldState,
 )
 from backend.app.services.prerequisite_service import prerequisite_service
+from backend.app.services.multidimensional_mastery_service import multidimensional_mastery_service
+from backend.app.services.knowledge_graph_service import knowledge_graph_service
 
-# Seeded default profiles defined in Game Environment.md
+# Seeded default profiles conforming to BACKEND_LOGIC.md and Game Environment.md
 SEED_PROFILES: Dict[str, LearnerProfile] = {
     "learner_b": LearnerProfile(
         learner_id="learner_b",
@@ -29,6 +32,41 @@ SEED_PROFILES: Dict[str, LearnerProfile] = {
             recursion=0.20,
             tree=0.10,
         ),
+        ability_irt={
+            "array": 1.20,
+            "linked_list": 0.40,
+            "stack": -0.60,
+            "recursion": -1.20,
+            "tree": -1.50,
+        },
+        confidence_map={
+            "array": 0.85,
+            "linked_list": 0.72,
+            "stack": 0.45,
+            "recursion": 0.30,
+            "tree": 0.15,
+        },
+        dimensions_map={
+            "array": {"recall": 0.95, "understanding": 0.90, "application": 0.88, "problem_solving": 0.85, "transfer": 0.80, "retention": 0.90},
+            "linked_list": {"recall": 0.75, "understanding": 0.70, "application": 0.68, "problem_solving": 0.65, "transfer": 0.60, "retention": 0.70},
+            "stack": {"recall": 0.50, "understanding": 0.38, "application": 0.35, "problem_solving": 0.30, "transfer": 0.25, "retention": 0.40},
+            "recursion": {"recall": 0.30, "understanding": 0.20, "application": 0.15, "problem_solving": 0.15, "transfer": 0.10, "retention": 0.20},
+            "tree": {"recall": 0.20, "understanding": 0.10, "application": 0.10, "problem_solving": 0.05, "transfer": 0.05, "retention": 0.10},
+        },
+        sm2_records={
+            "array": {"concept_id": "array", "easiness_factor": 2.60, "repetitions": 4, "interval_days": 15},
+            "linked_list": {"concept_id": "linked_list", "easiness_factor": 2.45, "repetitions": 2, "interval_days": 6},
+            "stack": {"concept_id": "stack", "easiness_factor": 2.10, "repetitions": 0, "interval_days": 1},
+            "recursion": {"concept_id": "recursion", "easiness_factor": 2.20, "repetitions": 0, "interval_days": 1},
+            "tree": {"concept_id": "tree", "easiness_factor": 2.50, "repetitions": 0, "interval_days": 1},
+        },
+        mastery_classification={
+            "array": "HIGH",
+            "linked_list": "MEDIUM",
+            "stack": "LOW",
+            "recursion": "LOW",
+            "tree": "UNCERTAIN",
+        },
         active_wing="atrium",
         recommended_station="stack_lab",
     ),
@@ -49,6 +87,41 @@ SEED_PROFILES: Dict[str, LearnerProfile] = {
             recursion=0.72,
             tree=0.65,
         ),
+        ability_irt={
+            "array": 1.80,
+            "linked_list": 1.50,
+            "stack": 1.40,
+            "recursion": 1.10,
+            "tree": 0.60,
+        },
+        confidence_map={
+            "array": 0.95,
+            "linked_list": 0.90,
+            "stack": 0.88,
+            "recursion": 0.78,
+            "tree": 0.65,
+        },
+        dimensions_map={
+            "array": {"recall": 0.96, "understanding": 0.94, "application": 0.92, "problem_solving": 0.90, "transfer": 0.88, "retention": 0.95},
+            "linked_list": {"recall": 0.92, "understanding": 0.90, "application": 0.88, "problem_solving": 0.85, "transfer": 0.82, "retention": 0.90},
+            "stack": {"recall": 0.90, "understanding": 0.88, "application": 0.85, "problem_solving": 0.82, "transfer": 0.80, "retention": 0.86},
+            "recursion": {"recall": 0.80, "understanding": 0.75, "application": 0.70, "problem_solving": 0.68, "transfer": 0.65, "retention": 0.72},
+            "tree": {"recall": 0.70, "understanding": 0.65, "application": 0.60, "problem_solving": 0.58, "transfer": 0.55, "retention": 0.60},
+        },
+        sm2_records={
+            "array": {"concept_id": "array", "easiness_factor": 2.70, "repetitions": 6, "interval_days": 30},
+            "linked_list": {"concept_id": "linked_list", "easiness_factor": 2.60, "repetitions": 5, "interval_days": 21},
+            "stack": {"concept_id": "stack", "easiness_factor": 2.55, "repetitions": 4, "interval_days": 14},
+            "recursion": {"concept_id": "recursion", "easiness_factor": 2.45, "repetitions": 2, "interval_days": 6},
+            "tree": {"concept_id": "tree", "easiness_factor": 2.40, "repetitions": 1, "interval_days": 1},
+        },
+        mastery_classification={
+            "array": "HIGH",
+            "linked_list": "HIGH",
+            "stack": "HIGH",
+            "recursion": "HIGH",
+            "tree": "MEDIUM",
+        },
         active_wing="atrium",
         recommended_station="recursion_lab",
     ),
@@ -117,7 +190,6 @@ class LearnerService:
 
     def switch_learner(self, learner_id: str) -> LearnerProfile:
         if learner_id not in self._profiles:
-            # Fallback to default if unknown ID
             learner_id = "learner_b"
         self._active_learner_id = learner_id
         return self._profiles[self._active_learner_id]
@@ -127,10 +199,16 @@ class LearnerService:
             k: v.model_copy(deep=True) for k, v in SEED_PROFILES.items()
         }
         self._active_learner_id = "learner_b"
+        multidimensional_mastery_service.reset_student("learner_a")
+        multidimensional_mastery_service.reset_student("learner_b")
         return self._profiles[self._active_learner_id]
 
     def update_concept_mastery(
-        self, learner_id: Optional[str] = None, concept: str = "stack", new_mastery: Optional[float] = None, value: Optional[float] = None
+        self,
+        learner_id: Optional[str] = None,
+        concept: str = "stack",
+        new_mastery: Optional[float] = None,
+        value: Optional[float] = None,
     ) -> LearnerProfile:
         """Update a specific concept mastery for a learner and re-evaluate pedagogical state."""
         lid = learner_id or self._active_learner_id
@@ -168,6 +246,50 @@ class LearnerService:
             profile.learning_state.primary_focus_concept = "stack"
             profile.learning_state.active_prerequisite_gap = recursion_eval.reason
             profile.recommended_station = "stack_lab"
+
+        # Update 4-tier classification
+        classification = multidimensional_mastery_service.classify_mastery(
+            lid, concept, mastery_val, current_map
+        )
+        profile.mastery_classification[concept] = classification
+
+        return profile
+
+    def update_learner_evidence(
+        self,
+        learner_id: str,
+        concept: str,
+        new_mastery: float,
+        theta: float,
+        confidence: float,
+        classification: str,
+        dimension_scores: Optional[Dict[str, float]] = None,
+        sm2_record: Optional[Dict[str, Any]] = None,
+    ) -> LearnerProfile:
+        """Atomically updates all mathematical evidence streams for a learner."""
+        profile = self._profiles.get(learner_id)
+        if not profile:
+            profile = self._profiles["learner_b"]
+
+        # 1. Update BKT mastery and re-evaluate world state
+        self.update_concept_mastery(learner_id, concept, new_mastery)
+
+        # 2. Update IRT ability
+        profile.ability_irt[concept] = round(float(theta), 2)
+
+        # 3. Update Confidence
+        profile.confidence_map[concept] = round(float(confidence), 2)
+
+        # 4. Update Classification
+        profile.mastery_classification[concept] = classification
+
+        # 5. Update Dimensions
+        if dimension_scores:
+            profile.dimensions_map[concept] = dimension_scores
+
+        # 6. Update SM-2
+        if sm2_record:
+            profile.sm2_records[concept] = sm2_record
 
         return profile
 

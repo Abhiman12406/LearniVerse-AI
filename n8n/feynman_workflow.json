@@ -1,0 +1,423 @@
+{
+  "name": "Feynman Multimodal Adaptive Explanation Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "feynman-request",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1-webhook-student-request",
+      "name": "Webhook: Student Help Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "student_id",
+              "value": "={{ $json.body.student_id || 'learner_b' }}"
+            },
+            {
+              "name": "concept_id",
+              "value": "={{ $json.body.concept_id || 'recursion' }}"
+            },
+            {
+              "name": "input_type",
+              "value": "={{ $json.body.input_type || 'TEXT' }}"
+            },
+            {
+              "name": "raw_input",
+              "value": "={{ $json.body.input || '' }}"
+            },
+            {
+              "name": "requested_modality",
+              "value": "={{ $json.body.requested_modality || '' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2-normalize-input",
+      "name": "Set: Normalize Inbound Request",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ ($env.FASTAPI_BACKEND_URL || 'http://localhost:8000').replace(/\\/$/, '') + '/api/feynman/learning-context?student_id=' + $json.student_id + '&concept=' + $json.concept_id }}",
+        "options": {}
+      },
+      "id": "3-http-get-context",
+      "name": "HTTP: Fetch Student Context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $('2-normalize-input').item.json.input_type }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "AUDIO",
+              "output": 1
+            },
+            {
+              "value2": "IMAGE",
+              "output": 2
+            }
+          ]
+        },
+        "fallbackOutput": 0
+      },
+      "id": "4-switch-input-type",
+      "name": "Switch: Input Modality Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge into Unified Evidence Structure\nconst inputItem = $('2-normalize-input').item.json;\nconst context = $input.item.json;\n\nreturn {\n  student_id: inputItem.student_id,\n  concept_id: inputItem.concept_id,\n  input_type: inputItem.input_type,\n  unified_input: inputItem.raw_input,\n  context: context,\n  requested_modality: inputItem.requested_modality\n};"
+      },
+      "id": "5-code-unified-evidence",
+      "name": "Code: Unified Evidence Builder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        950,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "prompt": "=You are the Feynman Analysis Agent in an adaptive virtual classroom.\nStudent Context: {{ JSON.stringify($json.context) }}\nStudent Question: \"{{ $json.unified_input }}\"\nConcept: {{ $json.concept_id }}\nPreferred Modality: {{ $json.requested_modality }}\n\nIdentify what the student understands, the specific learning gap, and recommend the simplest effective explanation modality (TEXT, VISUAL, VOICE, VIDEO, or 3D). Return JSON only.",
+        "options": {
+          "model": "gemini-2.5-flash",
+          "temperature": 0.2
+        }
+      },
+      "id": "6-gemini-analyzer",
+      "name": "Gemini: Feynman Analyzer Agent",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1150,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.decision.modality || 'VISUAL' }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "TEXT",
+              "output": 0
+            },
+            {
+              "value2": "VISUAL",
+              "output": 1
+            },
+            {
+              "value2": "VOICE",
+              "output": 2
+            },
+            {
+              "value2": "VIDEO",
+              "output": 3
+            },
+            {
+              "value2": "3D",
+              "output": 4
+            }
+          ]
+        },
+        "fallbackOutput": 1
+      },
+      "id": "7-switch-modality",
+      "name": "Switch: Explanation Modality",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        1350,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Assemble final Feynman Response payload\nconst analysis = $('6-gemini-analyzer').item.json;\nconst evidence = $('5-code-unified-evidence').item.json;\n\nreturn {\n  session_id: 'FS_' + Math.random().toString(36).substring(2, 9).toUpperCase(),\n  student_id: evidence.student_id,\n  concept_id: evidence.concept_id,\n  input_type: evidence.input_type,\n  unified_input: evidence.unified_input,\n  orchestrator: 'n8n',\n  decision: analysis.decision || {\n    problem: 'Conceptual difficulty with ' + evidence.concept_id,\n    modality: 'VISUAL',\n    difficulty: 'BEGINNER',\n    learning_objective: 'Understand ' + evidence.concept_id,\n    reason: 'Process-oriented visual representation selected.'\n  },\n  explanation: analysis.explanation || {\n    title: 'Feynman Explanation: ' + evidence.concept_id,\n    analogy: 'Think of this concept like a physical real-world model.',\n    detailed_explanation: 'Step by step breakdown of ' + evidence.concept_id\n  }\n};"
+      },
+      "id": "8-code-assemble-response",
+      "name": "Code: Assemble Response Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "9-respond-to-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "feynman-verify",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "10-webhook-verify-request",
+      "name": "Webhook: Verification Submission",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.FASTAPI_BACKEND_URL || 'http://localhost:8000').replace(/\\/$/, '') + '/api/feynman/verify' }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "session_id",
+              "value": "={{ $json.body.session_id }}"
+            },
+            {
+              "name": "student_id",
+              "value": "={{ $json.body.student_id }}"
+            },
+            {
+              "name": "concept_id",
+              "value": "={{ $json.body.concept_id }}"
+            },
+            {
+              "name": "question_id",
+              "value": "={{ $json.body.question_id }}"
+            },
+            {
+              "name": "selected_option_index",
+              "value": "={{ $json.body.selected_option_index }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "11-http-post-verify-to-fastapi",
+      "name": "HTTP: Post Verification to FastAPI BKT",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        400,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "12-respond-verify-webhook",
+      "name": "Respond to Verification Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        700,
+        600
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: Student Help Request": {
+      "main": [
+        [
+          {
+            "node": "Set: Normalize Inbound Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set: Normalize Inbound Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Fetch Student Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Fetch Student Context": {
+      "main": [
+        [
+          {
+            "node": "Switch: Input Modality Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch: Input Modality Router": {
+      "main": [
+        [
+          {
+            "node": "Code: Unified Evidence Builder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Unified Evidence Builder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Unified Evidence Builder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Unified Evidence Builder": {
+      "main": [
+        [
+          {
+            "node": "Gemini: Feynman Analyzer Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini: Feynman Analyzer Agent": {
+      "main": [
+        [
+          {
+            "node": "Switch: Explanation Modality",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch: Explanation Modality": {
+      "main": [
+        [
+          {
+            "node": "Code: Assemble Response Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Assemble Response Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Assemble Response Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Assemble Response Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Assemble Response Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Assemble Response Payload": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Verification Submission": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Post Verification to FastAPI BKT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Post Verification to FastAPI BKT": {
+      "main": [
+        [
+          {
+            "node": "Respond to Verification Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true
+}

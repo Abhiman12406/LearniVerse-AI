@@ -10,6 +10,7 @@ import {
   Layers,
   Cpu,
   ArrowRight,
+  Brain,
 } from 'lucide-react';
 import { useClassroomStore } from '../../store/useClassroomStore';
 
@@ -19,6 +20,7 @@ export const AIMentorDialogue: React.FC = () => {
     closeMentor,
     mentorGuidance,
     learner,
+    openFeynman,
   } = useClassroomStore();
 
   const [activeTab, setActiveTab] = useState<'feynman' | 'diagnostic' | 'qa'>('feynman');
@@ -133,22 +135,47 @@ export const AIMentorDialogue: React.FC = () => {
             </div>
           </div>
 
-          {/* Close Button */}
-          <button
-            onClick={closeMentor}
-            className="glass-pill"
-            style={{
-              padding: '6px 12px',
-              cursor: 'pointer',
-              color: 'var(--text-secondary)',
-              border: '1px solid var(--border-subtle)',
-              transition: 'all 0.15s ease',
-            }}
-            title="Dismiss dialogue [ESC]"
-          >
-            <span style={{ fontSize: '10px', fontWeight: 600 }}>ESC</span>
-            <X size={14} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              onClick={() => {
+                closeMentor();
+                openFeynman(mentorGuidance.focus_concept);
+              }}
+              className="cyber-button"
+              style={{
+                padding: '6px 12px',
+                fontSize: '11px',
+                borderColor: 'var(--purple-bright)',
+                background: 'rgba(168, 85, 247, 0.2)',
+                color: '#e9d5ff',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontWeight: 600,
+              }}
+              title="Open Full Multimodal Feynman Explanation"
+            >
+              <Brain size={13} color="#c084fc" />
+              <span>Ask Feynman Agent</span>
+            </button>
+
+            {/* Close Button */}
+            <button
+              onClick={closeMentor}
+              className="glass-pill"
+              style={{
+                padding: '6px 12px',
+                cursor: 'pointer',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border-subtle)',
+                transition: 'all 0.15s ease',
+              }}
+              title="Dismiss dialogue [ESC]"
+            >
+              <span style={{ fontSize: '10px', fontWeight: 600 }}>ESC</span>
+              <X size={14} />
+            </button>
+          </div>
         </header>
 
         {/* Navigation Tabs */}

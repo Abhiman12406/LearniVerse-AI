@@ -10,12 +10,14 @@ import {
   Zap,
   BookOpen,
   Sparkles,
+  Brain,
 } from 'lucide-react';
 import { useClassroomStore } from '../../store/useClassroomStore';
 
 export const RecursionConsole: React.FC = () => {
   const activeStation = useClassroomStore((s) => s.activeStation);
   const setActiveStation = useClassroomStore((s) => s.setActiveStation);
+  const openFeynman = useClassroomStore((s) => s.openFeynman);
 
   const recursionFrames = useClassroomStore((s) => s.recursionFrames);
   const recursionMaxDepth = useClassroomStore((s) => s.recursionMaxDepth);
@@ -88,6 +90,14 @@ export const RecursionConsole: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => openFeynman('recursion', 'recursion_lab', "I don't understand why the recursive call pauses and pushes frames to the call stack.")}
+              title="Ask Feynman for Multimodal Explanation"
+              className="px-3 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-200 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            >
+              <Brain className="w-3.5 h-3.5 text-purple-400" />
+              <span>Ask Feynman</span>
+            </button>
             <button
               onClick={() => resetRecursionChamber()}
               title="Reset Elevator State"

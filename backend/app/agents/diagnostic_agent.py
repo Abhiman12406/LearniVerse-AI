@@ -49,6 +49,12 @@ def diagnostic_agent_node(state: AgentState) -> AgentState:
         diagnostic_status = "progressing"
         primary_gap = None
 
+    from backend.app.services.knowledge_graph_service import knowledge_graph_service
+    focus_c = blocking_prereq or target_concept
+    focus_val = float(mastery_dict.get(focus_c, 0.5))
+    gap_val = knowledge_graph_service.compute_gap(focus_c, focus_val)
+    priority_val = knowledge_graph_service.compute_priority(focus_c, focus_val)
+
     elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
 
     input_summary = {
@@ -61,10 +67,13 @@ def diagnostic_agent_node(state: AgentState) -> AgentState:
         "blocking_prerequisite": blocking_prereq,
         "unmet_gaps_count": len(unmet_gaps),
         "primary_gap": primary_gap,
+        "topological_gap": gap_val,
+        "remediation_priority": priority_val,
     }
     reasoning = (
         f"Diagnostic evaluation complete. Identified {len(unmet_gaps)} prerequisite gap(s). "
         f"Target concept '{target_concept}' readiness: {is_target_ready}. "
+        f"Topological priority weight: {priority_val} (gap: {gap_val}). "
         f"Pedagogical status categorized as '{diagnostic_status}'. "
         + (f"Critical barrier: {primary_gap}" if primary_gap else "All foundational prerequisites satisfied.")
     )
