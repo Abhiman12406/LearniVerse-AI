@@ -39,8 +39,8 @@ export function getArchwayCollisionBounds(worldState: WorldState | null): Collis
       centerX,
       centerZ,
       portalWidth: 4.4,
-      // Sealed barrier stands at radius 15.8 (in front of the 17.5 archway lintel)
-      barrierDistance: isSealed ? 15.8 : 22.0,
+      // Sealed barrier stands at radius 15.8; accessible wings allow walking into lab chamber up to 25.5
+      barrierDistance: isSealed ? 15.8 : 25.5,
     };
   });
 }
@@ -78,8 +78,9 @@ export function resolveAvatarCollision(
     const radialDist = resolvedX * dirX + resolvedZ * dirZ;
     const lateralDist = resolvedX * tanX + resolvedZ * tanZ;
 
-    // Must be in the positive radial sector approaching this archway (outer half of atrium)
-    const halfWidth = b.portalWidth / 2;
+    // Within portal opening width or chamber width once inside
+    const allowedWidth = radialDist > 17.5 ? 6.0 : b.portalWidth;
+    const halfWidth = allowedWidth / 2;
     if (radialDist > 10.0 && Math.abs(lateralDist) <= halfWidth) {
       if (b.isSealed && radialDist >= b.barrierDistance) {
         // Avatar is approaching a sealed barrier: clamp to barrier distance
@@ -90,7 +91,7 @@ export function resolveAvatarCollision(
         resolvedZ = clampedRadial * dirZ + lateralDist * tanZ;
         return { x: resolvedX, z: resolvedZ, isBlockedByBarrier: true, blockedWingId: blockedWing };
       } else if (!b.isSealed && radialDist <= b.barrierDistance) {
-        // Portal is accessible: allow passage beyond standard atrium radius up to barrierDistance (22.0)
+        // Portal is accessible: allow passage beyond standard atrium radius up to barrierDistance
         return { x: resolvedX, z: resolvedZ, isBlockedByBarrier: false, blockedWingId: null };
       }
     }

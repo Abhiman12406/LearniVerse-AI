@@ -4,14 +4,14 @@
 
 **Blocked by:** 01: Core Navigable Atrium, Central Dais & Learner Profile Switcher
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Floor Conduits render animated emissive pulse shaders leading from the Atrium toward the recommended Stack Lab Wing
-- [ ] Stack Lab Wing renders at its radial azimuth with ambient cybernetic laboratory lighting
-- [ ] Kinetic 3D Stack Apparatus renders a transparent glass magnetic cylinder with glowing metallic numeric data discs
-- [ ] Dynamic disc animations support spring-damped vertical translation and particle spark effects
-- [ ] Proximity detection prompts `[E] Access Console` when near the Stack Station
-- [ ] Camera smoothly transitions between third-person exploration and fixed cinematic Station framing
-- [ ] Dynamic educational apparatus is built procedurally in Three.js per ASSETS.md Section 11 rather than using static downloaded models
-- [ ] Automated test verifies Conduit target updates and Apparatus disc state management
+- [x] Floor Conduits render animated emissive pulse shaders leading from the Atrium toward the recommended Stack Lab Wing
+- [x] Stack Lab Wing renders at its radial azimuth with ambient cybernetic laboratory lighting
+- [x] Kinetic 3D Stack Apparatus renders a transparent glass magnetic cylinder with glowing metallic numeric data discs
+- [x] Dynamic disc animations support spring-damped vertical translation and particle spark effects
+- [x] Proximity detection prompts `[E] Access Console` when near the Stack Station
+- [x] Camera smoothly transitions between third-person exploration and fixed cinematic Station framing
+- [x] Dynamic educational apparatus is built procedurally in Three.js per ASSETS.md Section 11 rather than using static downloaded models
+- [x] Automated test verifies Conduit target updates and Apparatus disc state management
 

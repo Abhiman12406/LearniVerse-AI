@@ -8,6 +8,8 @@ import { Archways } from './Archways';
 import { Avatar } from './Avatar';
 import { useClassroomStore } from '../../store/useClassroomStore';
 
+import { StackLabWing } from './StackLabWing';
+
 interface CameraFollowerProps {
   cameraAngleRef: React.MutableRefObject<number>;
   cameraPitchRef: React.MutableRefObject<number>;
@@ -17,6 +19,7 @@ const CameraFollower: React.FC<CameraFollowerProps> = ({ cameraAngleRef, cameraP
   const { camera } = useThree();
   const avatar = useClassroomStore((s) => s.avatar);
   const cinematicCamera = useClassroomStore((s) => s.cinematicCamera);
+  const activeStation = useClassroomStore((s) => s.activeStation);
   const currentCamPos = useRef(new THREE.Vector3(0, 3, 15));
   const currentLookAt = useRef(new THREE.Vector3(0, 1.2, 8));
 
@@ -25,11 +28,20 @@ const CameraFollower: React.FC<CameraFollowerProps> = ({ cameraAngleRef, cameraP
     let idealY: number;
     let idealZ: number;
     let targetLookAt: THREE.Vector3;
+    let lerpFactor = 0.08;
 
     if (cinematicCamera && cinematicCamera.active) {
       // Cinematic camera framing (e.g. framing Recursion Lab entrance during barrier dissolve)
       [idealX, idealY, idealZ] = cinematicCamera.position;
       targetLookAt = new THREE.Vector3(...cinematicCamera.lookAt);
+      lerpFactor = 0.05;
+    } else if (activeStation === 'stack_lab') {
+      // Cinematic Fixed Framing: Close-up facing the Stack Apparatus cylinder
+      idealX = 10.2;
+      idealY = 2.4;
+      idealZ = 18.0;
+      targetLookAt = new THREE.Vector3(12.0, 1.9, 21.0);
+      lerpFactor = 0.08;
     } else {
       const [ax, ay, az] = avatar.position;
       const distance = 6.8;
@@ -46,13 +58,11 @@ const CameraFollower: React.FC<CameraFollowerProps> = ({ cameraAngleRef, cameraP
     }
 
     // Smooth lerp camera position with cinematic damping
-    const lerpFactor = cinematicCamera?.active ? 0.05 : 0.08;
     currentCamPos.current.x = THREE.MathUtils.lerp(currentCamPos.current.x, idealX, lerpFactor);
     currentCamPos.current.y = THREE.MathUtils.lerp(currentCamPos.current.y, idealY, lerpFactor);
     currentCamPos.current.z = THREE.MathUtils.lerp(currentCamPos.current.z, idealZ, lerpFactor);
 
     camera.position.copy(currentCamPos.current);
-
     currentLookAt.current.lerp(targetLookAt, lerpFactor + 0.02);
     camera.lookAt(currentLookAt.current);
   });
@@ -119,6 +129,7 @@ export const ClassroomCanvas: React.FC = () => {
           <Atrium />
           <CentralDais />
           <Archways />
+          <StackLabWing />
           <Avatar cameraAngleRef={cameraAngleRef} />
           <CameraFollower
             cameraAngleRef={cameraAngleRef}
