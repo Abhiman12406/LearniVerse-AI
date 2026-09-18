@@ -1,24 +1,24 @@
 import * as THREE from 'three';
 
 export const CLASSROOM_COLORS = {
-  floorBase: '#ecd6bf',
-  floorLines: '#cbb69e',
-  floorDark: '#d8bfa5',
-  wallPlaster: '#f3eee6',
-  wallTaupe: '#7e716c',
-  wallTrim: '#ded6cb',
-  woodLight: '#e4c9a8',
-  woodMedium: '#c29b71',
-  woodDark: '#3d3028',
-  metalBlack: '#222326',
+  floorBase: '#c29a6b',
+  floorLines: '#5c3514',
+  floorDark: '#9e7040',
+  wallPlaster: '#d8cfc4',
+  wallTaupe: '#5c524c',
+  wallTrim: '#c4b5a5',
+  woodLight: '#d4aa7d',
+  woodMedium: '#a8794c',
+  woodDark: '#3d2817',
+  metalBlack: '#1c1d21',
   metalSilver: '#94a3b8',
-  chalkboardGreen: '#203d2b',
-  chalkboardFrame: '#382f2a',
-  whiteboardFrame: '#382f2a',
+  chalkboardGreen: '#1b3b27',
+  chalkboardFrame: '#2c1e14',
+  whiteboardFrame: '#2c1e14',
   whiteboardInner: '#fcfcfd',
   noticeBoardCork: '#b58b54',
-  blindOrange: '#f0745b',
-  blindRibs: '#d95a41',
+  blindOrange: '#ea580c',
+  blindRibs: '#c2410c',
   screenGlow: '#00f0ff',
   screenBg: '#090d16',
   bookBlue: '#2563eb',
@@ -41,7 +41,7 @@ const cachedPortalSignTextures = new Map<string, THREE.CanvasTexture>();
 
 /**
  * Creates or retrieves the cached Staggered Wood Plank Floor Texture (1024x1024).
- * Repeated 4x4 with anisotropic filtering.
+ * Repeated 2x2 with anisotropic filtering.
  */
 export function getWoodFloorTexture(): THREE.CanvasTexture {
   if (cachedWoodFloorTexture) {
@@ -62,12 +62,12 @@ export function getWoodFloorTexture(): THREE.CanvasTexture {
     // Subtle plank tone variation & grain lines
     for (let i = 0; i < numPlanks; i++) {
       const x = i * plankWidth;
-      const tint = i % 3 === 0 ? '#e6cfb6' : i % 3 === 1 ? '#eed9c3' : '#e2caa9';
+      const tint = i % 3 === 0 ? '#b88c5a' : i % 3 === 1 ? '#c79c6b' : '#ad804e';
       ctx.fillStyle = tint;
       ctx.fillRect(x + 1, 0, plankWidth - 2, canvas.height);
 
-      ctx.strokeStyle = 'rgba(180, 150, 125, 0.25)';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(90, 55, 25, 0.35)';
+      ctx.lineWidth = 1.2;
       for (let g = 0; g < 4; g++) {
         const gx = x + (g + 1) * (plankWidth / 5);
         ctx.beginPath();
@@ -79,7 +79,7 @@ export function getWoodFloorTexture(): THREE.CanvasTexture {
 
     // Vertical plank dividers & staggered horizontal joints
     ctx.strokeStyle = CLASSROOM_COLORS.floorLines;
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 3.0;
     for (let i = 0; i <= numPlanks; i++) {
       const x = i * plankWidth;
       ctx.beginPath();
@@ -101,7 +101,7 @@ export function getWoodFloorTexture(): THREE.CanvasTexture {
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(4, 4);
+  tex.repeat.set(2, 2);
   tex.anisotropy = 4;
   cachedWoodFloorTexture = tex;
   return tex;

@@ -3,7 +3,6 @@ import {
   CLASSROOM_COLORS,
   getClassroomMaterials,
   getBookMaterial,
-  getDoorPortalSignMaterial,
   getDoorPortalGlowMaterial,
   getScreenDisplayMaterial,
   clearClassroomSingletons,
@@ -102,50 +101,15 @@ export function createClassroomEnvironment(): ClassroomEnvironment {
   createCorridor(0, 11.0, 0, 10.0);          // South (Stack Lab)
   createCorridor(12.0, 9.9, 0, 7.8);         // South-East (Tree & BST Lab)
 
-  // Doorway Portals on Classroom Perimeter
-  // Structural pillars are key architecture and retain dynamic shadow casting
-  function createDoorPortal(x: number, z: number, rotY: number, title: string, glowColor: string) {
+  // Doorway Threshold Underglows on Classroom Perimeter
+  function createDoorPortal(x: number, z: number, rotY: number, _title: string, glowColor: string) {
     const portalGroup = new THREE.Group();
     portalGroup.position.set(x, 0, z);
     portalGroup.rotation.y = rotY;
     root.add(portalGroup);
 
-    const pillarGeo = trackGeometry(new THREE.BoxGeometry(0.35, 3.4, 0.4));
-    const leftPillar = new THREE.Mesh(pillarGeo, materials.woodDark);
-    leftPillar.position.set(-doorWidth / 2 - 0.15, 1.7, 0);
-    leftPillar.castShadow = true;
-    portalGroup.add(leftPillar);
-
-    const rightPillar = new THREE.Mesh(pillarGeo, materials.woodDark);
-    rightPillar.position.set(doorWidth / 2 + 0.15, 1.7, 0);
-    rightPillar.castShadow = true;
-    portalGroup.add(rightPillar);
-
-    const lintelGeo = trackGeometry(new THREE.BoxGeometry(doorWidth + 0.7, 0.4, 0.45));
-    const lintel = new THREE.Mesh(lintelGeo, materials.woodDark);
-    lintel.position.set(0, 3.5, 0);
-    lintel.castShadow = true;
-    portalGroup.add(lintel);
-
-    // Illuminated Doorway Header Sign
-    const signFrameGeo = trackGeometry(new THREE.BoxGeometry(3.2, 0.65, 0.12));
-    const signFrame = new THREE.Mesh(signFrameGeo, materials.metalBlack);
-    signFrame.position.set(0, 4.0, 0);
-    portalGroup.add(signFrame);
-
-    const signMat = getDoorPortalSignMaterial(title, glowColor);
-    const signPlateGeo = trackGeometry(new THREE.PlaneGeometry(3.05, 0.55));
-    const signPlateFront = new THREE.Mesh(signPlateGeo, signMat);
-    signPlateFront.position.set(0, 4.0, 0.07);
-    portalGroup.add(signPlateFront);
-
-    const signPlateBack = new THREE.Mesh(signPlateGeo, signMat);
-    signPlateBack.position.set(0, 4.0, -0.07);
-    signPlateBack.rotation.y = Math.PI;
-    portalGroup.add(signPlateBack);
-
-    // Emissive Doorway Threshold Underglow
-    const glowGeo = trackGeometry(new THREE.PlaneGeometry(doorWidth, 0.2));
+    // Emissive Doorway Threshold Underglow (Archways component provides pilasters, pediment & LED marquee)
+    const glowGeo = trackGeometry(new THREE.PlaneGeometry(doorWidth, 0.28));
     const glowMat = getDoorPortalGlowMaterial(glowColor);
     const thresholdGlow = new THREE.Mesh(glowGeo, glowMat);
     thresholdGlow.rotation.x = -Math.PI / 2;
@@ -153,13 +117,15 @@ export function createClassroomEnvironment(): ClassroomEnvironment {
     portalGroup.add(thresholdGlow);
   }
 
-  // 4 Main Classroom Exit Portals
+  // 4 Main Classroom Exit Portals (Underglow accents)
   createDoorPortal(-roomSize / 2, 0, Math.PI / 2, 'ARRAY LAB', '#0284c7');
   createDoorPortal(roomSize / 2, 0, -Math.PI / 2, 'LINKED LIST LAB', '#059669');
   createDoorPortal(0, -roomSize / 2, 0, 'RECURSION CHAMBER', '#7c3aed');
   createDoorPortal(0, roomSize / 2, Math.PI, 'STACK LAB', '#f59e0b');
 
   // Perimeter Classroom Walls (with openings for doorWidth = 3.6 in each cardinal direction)
+  // North & West are full-height walls with chalkboard/whiteboard/bookshelves.
+  // South & East are open architectural diorama knee-walls (0.85m) with dark wood cap rails for unobstructed viewing.
   const halfRoom = roomSize / 2;
   const wallSegmentLen = (roomSize - doorWidth) / 2; // (12 - 3.6) / 2 = 4.2
 
@@ -169,25 +135,80 @@ export function createClassroomEnvironment(): ClassroomEnvironment {
     z: number,
     widthX: number,
     widthZ: number,
-    mat: THREE.Material
+    mat: THREE.Material,
+    isDioramaOpen: boolean = false
   ) {
-    const geo = trackGeometry(new THREE.BoxGeometry(widthX, wallHeight, widthZ));
+    const actualHeight = isDioramaOpen ? 0.85 : wallHeight;
+    const geo = trackGeometry(new THREE.BoxGeometry(widthX, actualHeight, widthZ));
     const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(x, wallHeight / 2, z);
+    mesh.position.set(x, actualHeight / 2, z);
     mesh.receiveShadow = true;
     mesh.castShadow = false; // Disable redundant wall shadow casting
     root.add(mesh);
+
+    if (isDioramaOpen) {
+      // Add dark wood cap rail on top of knee wall
+      const isSpanX = widthX > widthZ;
+      const capRailGeo = trackGeometry(
+        new THREE.BoxGeometry(
+          isSpanX ? widthX + 0.08 : widthX + 0.04,
+          0.08,
+          isSpanX ? widthZ + 0.04 : widthZ + 0.08
+        )
+      );
+      const capRail = new THREE.Mesh(capRailGeo, materials.woodDark);
+      capRail.position.set(x, actualHeight + 0.04, z);
+      root.add(capRail);
+
+      // Add baseboard at bottom of knee wall
+      const baseGeo = trackGeometry(
+        new THREE.BoxGeometry(
+          isSpanX ? widthX + 0.06 : widthX + 0.02,
+          0.14,
+          isSpanX ? widthZ + 0.02 : widthZ + 0.06
+        )
+      );
+      const base = new THREE.Mesh(baseGeo, materials.woodDark);
+      base.position.set(x, 0.07, z);
+      root.add(base);
+    } else {
+      // Full height walls: Add dark wood baseboard & crown molding
+      const isSpanX = widthX > widthZ;
+      const baseGeo = trackGeometry(
+        new THREE.BoxGeometry(
+          isSpanX ? widthX : widthX + 0.06,
+          0.18,
+          isSpanX ? widthZ + 0.06 : widthZ
+        )
+      );
+      const base = new THREE.Mesh(baseGeo, materials.woodDark);
+      base.position.set(x, 0.09, z);
+      root.add(base);
+
+      const crownGeo = trackGeometry(
+        new THREE.BoxGeometry(
+          isSpanX ? widthX : widthX + 0.06,
+          0.14,
+          isSpanX ? widthZ + 0.06 : widthZ
+        )
+      );
+      const crown = new THREE.Mesh(crownGeo, materials.woodDark);
+      crown.position.set(x, wallHeight - 0.07, z);
+      root.add(crown);
+    }
+
     registerBoxCollider(name, x, z, widthX, widthZ);
   }
 
-  // North Wall Segments (opening at x in [-1.8, 1.8])
+  // North Wall Segments (Full-height back wall, opening at x in [-1.8, 1.8])
   buildWallSegment(
     'Classroom North Wall (West)',
     -halfRoom + wallSegmentLen / 2,
     -halfRoom - wallThick / 2,
     wallSegmentLen,
     wallThick,
-    materials.wallPlaster
+    materials.wallPlaster,
+    false
   );
   buildWallSegment(
     'Classroom North Wall (East)',
@@ -195,17 +216,19 @@ export function createClassroomEnvironment(): ClassroomEnvironment {
     -halfRoom - wallThick / 2,
     wallSegmentLen,
     wallThick,
-    materials.wallPlaster
+    materials.wallPlaster,
+    false
   );
 
-  // South Wall Segments (opening at x in [-1.8, 1.8])
+  // South Wall Segments (Diorama Knee-Wall with dark wood cap rail, opening at x in [-1.8, 1.8])
   buildWallSegment(
     'Classroom South Wall (West)',
     -halfRoom + wallSegmentLen / 2,
     halfRoom + wallThick / 2,
     wallSegmentLen,
     wallThick,
-    materials.wallPlaster
+    materials.wallPlaster,
+    true
   );
   buildWallSegment(
     'Classroom South Wall (East)',
@@ -213,17 +236,19 @@ export function createClassroomEnvironment(): ClassroomEnvironment {
     halfRoom + wallThick / 2,
     wallSegmentLen,
     wallThick,
-    materials.wallPlaster
+    materials.wallPlaster,
+    true
   );
 
-  // West Wall Segments (opening at z in [-1.8, 1.8])
+  // West Wall Segments (Full-height side wall with bookshelves, opening at z in [-1.8, 1.8])
   buildWallSegment(
     'Classroom West Wall (North)',
     -halfRoom - wallThick / 2,
     -halfRoom + wallSegmentLen / 2,
     wallThick,
     wallSegmentLen,
-    materials.wallTaupe
+    materials.wallTaupe,
+    false
   );
   buildWallSegment(
     'Classroom West Wall (South)',
@@ -231,17 +256,19 @@ export function createClassroomEnvironment(): ClassroomEnvironment {
     halfRoom - wallSegmentLen / 2,
     wallThick,
     wallSegmentLen,
-    materials.wallTaupe
+    materials.wallTaupe,
+    false
   );
 
-  // East Wall Segments (opening at z in [-1.8, 1.8])
+  // East Wall Segments (Diorama Knee-Wall with dark wood cap rail, opening at z in [-1.8, 1.8])
   buildWallSegment(
     'Classroom East Wall (North)',
     halfRoom + wallThick / 2,
     -halfRoom + wallSegmentLen / 2,
     wallThick,
     wallSegmentLen,
-    materials.wallPlaster
+    materials.wallPlaster,
+    true
   );
   buildWallSegment(
     'Classroom East Wall (South)',
@@ -249,7 +276,8 @@ export function createClassroomEnvironment(): ClassroomEnvironment {
     halfRoom - wallSegmentLen / 2,
     wallThick,
     wallSegmentLen,
-    materials.wallPlaster
+    materials.wallPlaster,
+    true
   );
 
   // --- 2. WINDOWS & ORANGE BLINDS ---
@@ -770,21 +798,77 @@ export function createClassroomEnvironment(): ClassroomEnvironment {
   const cardinalCorridorLength = 10.0;
   const lateralCorridorLength = 7.0;
 
+  function buildCorridorWall(
+    name: string,
+    centerX: number,
+    centerZ: number,
+    widthX: number,
+    widthZ: number,
+    height: number = 2.6
+  ) {
+    // 1. Wall mesh
+    const wallGeo = trackGeometry(new THREE.BoxGeometry(widthX, height, widthZ));
+    const wallMesh = new THREE.Mesh(wallGeo, materials.wallTaupe);
+    wallMesh.position.set(centerX, height / 2, centerZ);
+    wallMesh.receiveShadow = true;
+    root.add(wallMesh);
+
+    // 2. Baseboard trim
+    const isSpanX = widthX > widthZ;
+    const baseGeo = trackGeometry(
+      new THREE.BoxGeometry(
+        isSpanX ? widthX : widthX + 0.06,
+        0.16,
+        isSpanX ? widthZ + 0.06 : widthZ
+      )
+    );
+    const baseMesh = new THREE.Mesh(baseGeo, materials.woodDark);
+    baseMesh.position.set(centerX, 0.08, centerZ);
+    root.add(baseMesh);
+
+    // 3. Top cap rail trim
+    const railGeo = trackGeometry(
+      new THREE.BoxGeometry(
+        isSpanX ? widthX : widthX + 0.04,
+        0.08,
+        isSpanX ? widthZ + 0.04 : widthZ
+      )
+    );
+    const railMesh = new THREE.Mesh(railGeo, materials.woodDark);
+    railMesh.position.set(centerX, height + 0.04, centerZ);
+    root.add(railMesh);
+
+    // 4. Subtle glowing guide runner along corridor floor
+    const glowGeo = trackGeometry(
+      new THREE.BoxGeometry(
+        isSpanX ? widthX * 0.96 : 0.04,
+        0.02,
+        isSpanX ? 0.04 : widthZ * 0.96
+      )
+    );
+    const glowMesh = new THREE.Mesh(glowGeo, materials.led);
+    glowMesh.position.set(centerX, 0.015, centerZ);
+    root.add(glowMesh);
+
+    // 5. Register exact obstacle collider
+    registerBoxCollider(name, centerX, centerZ, widthX, widthZ);
+  }
+
   // West corridor side walls (X: -13 to -6)
-  registerBoxCollider('Corridor West North Wall', -9.5, -corridorWidth / 2 - 0.1, lateralCorridorLength, 0.2);
-  registerBoxCollider('Corridor West South Wall', -9.5, corridorWidth / 2 + 0.1, lateralCorridorLength, 0.2);
+  buildCorridorWall('Corridor West North Wall', -9.5, -corridorWidth / 2 - 0.1, lateralCorridorLength, 0.2);
+  buildCorridorWall('Corridor West South Wall', -9.5, corridorWidth / 2 + 0.1, lateralCorridorLength, 0.2);
 
   // East corridor side walls (X: 6 to 13)
-  registerBoxCollider('Corridor East North Wall', 9.5, -corridorWidth / 2 - 0.1, lateralCorridorLength, 0.2);
-  registerBoxCollider('Corridor East South Wall', 9.5, corridorWidth / 2 + 0.1, lateralCorridorLength, 0.2);
+  buildCorridorWall('Corridor East North Wall', 9.5, -corridorWidth / 2 - 0.1, lateralCorridorLength, 0.2);
+  buildCorridorWall('Corridor East South Wall', 9.5, corridorWidth / 2 + 0.1, lateralCorridorLength, 0.2);
 
   // North corridor side walls (Z: -16 to -6)
-  registerBoxCollider('Corridor North West Wall', -corridorWidth / 2 - 0.1, -11.0, 0.2, cardinalCorridorLength);
-  registerBoxCollider('Corridor North East Wall', corridorWidth / 2 + 0.1, -11.0, 0.2, cardinalCorridorLength);
+  buildCorridorWall('Corridor North West Wall', -corridorWidth / 2 - 0.1, -11.0, 0.2, cardinalCorridorLength);
+  buildCorridorWall('Corridor North East Wall', corridorWidth / 2 + 0.1, -11.0, 0.2, cardinalCorridorLength);
 
   // South corridor side walls (Z: 6 to 16)
-  registerBoxCollider('Corridor South West Wall', -corridorWidth / 2 - 0.1, 11.0, 0.2, cardinalCorridorLength);
-  registerBoxCollider('Corridor South East Wall', corridorWidth / 2 + 0.1, 11.0, 0.2, cardinalCorridorLength);
+  buildCorridorWall('Corridor South West Wall', -corridorWidth / 2 - 0.1, 11.0, 0.2, cardinalCorridorLength);
+  buildCorridorWall('Corridor South East Wall', corridorWidth / 2 + 0.1, 11.0, 0.2, cardinalCorridorLength);
 
   // Array Station Lab (West Wing, centered at X = -20, Z = 0, 14x14m: X in [-27, -13], Z in [-7, 7])
   registerBoxCollider('Array Lab West Wall', -27.0, 0.0, 0.4, 14.0);
@@ -832,8 +916,8 @@ export function createClassroomEnvironment(): ClassroomEnvironment {
   registerBoxCollider('Stack Lab Tech Bench (East)', 3.9, 20.0, 1.2, 4.0);
 
   // South-East Corridor Side Walls (connecting Central Atrium to Tree Lab at X = 12.0, Z: 6.0 to 13.8)
-  registerBoxCollider('Corridor South-East West Wall', 9.7, 9.9, 0.2, 7.8);
-  registerBoxCollider('Corridor South-East East Wall', 14.3, 9.9, 0.2, 7.8);
+  buildCorridorWall('Corridor South-East West Wall', 9.7, 9.9, 0.2, 7.8);
+  buildCorridorWall('Corridor South-East East Wall', 14.3, 9.9, 0.2, 7.8);
 
   // --- 11. UPDATE & DISPOSAL ---
   let clockTime = 10 * 3600 + 15 * 60; // 10:15 am

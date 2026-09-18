@@ -126,15 +126,83 @@ export const StackLabWing: React.FC = () => {
         <boxGeometry args={[2.9, 5.6, 0.35]} />
         <primitive object={materials.wallTaupe} attach="material" />
       </mesh>
+      {/* Baseboard & Wainscoting on West Segment */}
+      <mesh position={[-3.35, 0.1, -6.8]}>
+        <boxGeometry args={[2.9, 0.2, 0.15]} />
+        <primitive object={materials.woodDark} attach="material" />
+      </mesh>
+      <mesh position={[-3.35, 5.5, -6.8]}>
+        <boxGeometry args={[2.9, 0.2, 0.15]} />
+        <primitive object={materials.woodDark} attach="material" />
+      </mesh>
+      <mesh position={[-3.35, 0.85, -6.8]}>
+        <boxGeometry args={[2.7, 1.3, 0.06]} />
+        <primitive object={materials.woodMedium} attach="material" />
+      </mesh>
+      {/* Decorative Technical Architecture Plaque on West Entrance Face */}
+      <mesh position={[-3.35, 2.8, -6.8]}>
+        <boxGeometry args={[2.2, 1.6, 0.08]} />
+        <primitive object={materials.metalBlack} attach="material" />
+      </mesh>
+      <mesh position={[-3.35, 2.8, -6.74]}>
+        <planeGeometry args={[2.05, 1.45]} />
+        <primitive object={screenMat1} attach="material" />
+      </mesh>
+
       {/* North Wall East Segment (center X = +3.35, width = 2.9m, Z = -7.0) */}
       <mesh position={[3.35, 2.8, -7.0]} receiveShadow>
         <boxGeometry args={[2.9, 5.6, 0.35]} />
         <primitive object={materials.wallTaupe} attach="material" />
       </mesh>
+      {/* Baseboard & Wainscoting on East Segment */}
+      <mesh position={[3.35, 0.1, -6.8]}>
+        <boxGeometry args={[2.9, 0.2, 0.15]} />
+        <primitive object={materials.woodDark} attach="material" />
+      </mesh>
+      <mesh position={[3.35, 5.5, -6.8]}>
+        <boxGeometry args={[2.9, 0.2, 0.15]} />
+        <primitive object={materials.woodDark} attach="material" />
+      </mesh>
+      <mesh position={[3.35, 0.85, -6.8]}>
+        <boxGeometry args={[2.7, 1.3, 0.06]} />
+        <primitive object={materials.woodMedium} attach="material" />
+      </mesh>
+      {/* Decorative Technical Architecture Plaque on East Entrance Face */}
+      <mesh position={[3.35, 2.8, -6.8]}>
+        <boxGeometry args={[2.2, 1.6, 0.08]} />
+        <primitive object={materials.metalBlack} attach="material" />
+      </mesh>
+      <mesh position={[3.35, 2.8, -6.74]}>
+        <planeGeometry args={[2.05, 1.45]} />
+        <primitive object={screenMat2} attach="material" />
+      </mesh>
+
+      {/* Doorway Pilasters & Amber Edge Accents Framing Portal Opening */}
+      <mesh position={[-1.85, 2.8, -6.8]}>
+        <boxGeometry args={[0.25, 5.6, 0.16]} />
+        <primitive object={materials.woodDark} attach="material" />
+      </mesh>
+      <mesh position={[-1.85, 2.8, -6.7]}>
+        <boxGeometry args={[0.03, 5.2, 0.02]} />
+        <primitive object={materials.led} attach="material" />
+      </mesh>
+      <mesh position={[1.85, 2.8, -6.8]}>
+        <boxGeometry args={[0.25, 5.6, 0.16]} />
+        <primitive object={materials.woodDark} attach="material" />
+      </mesh>
+      <mesh position={[1.85, 2.8, -6.7]}>
+        <boxGeometry args={[0.03, 5.2, 0.02]} />
+        <primitive object={materials.led} attach="material" />
+      </mesh>
+
       {/* North Doorway Lintel across entrance (width 3.8m, height 1.8m, sits at top Y = 4.7) */}
       <mesh position={[0, 4.7, -7.0]} receiveShadow>
         <boxGeometry args={[3.8, 1.8, 0.35]} />
         <primitive object={materials.wallTaupe} attach="material" />
+      </mesh>
+      <mesh position={[0, 3.85, -6.8]}>
+        <boxGeometry args={[3.8, 0.15, 0.15]} />
+        <primitive object={materials.woodDark} attach="material" />
       </mesh>
 
       {/* --- 3. CORRIDOR ENTRANCE PORTAL SIGNBOARD --- */}

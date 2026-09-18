@@ -251,7 +251,7 @@ export const ClassroomCanvas: React.FC = () => {
         gl={{
           antialias: true,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.15,
+          toneMappingExposure: 1.05,
         }}
         shadows
       >
