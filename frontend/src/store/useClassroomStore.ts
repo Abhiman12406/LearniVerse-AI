@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { LearnerProfile, WorldState, AvatarState } from '../types/world';
 import { soundSystem } from '../audio/soundSystem';
+import { StackMission } from '../types/challenge';
+import { STACK_MISSION } from '../data/stackChallenges';
 
 interface ClassroomStore {
   // Authoritative State
@@ -20,6 +22,13 @@ interface ClassroomStore {
   activeStation: string | null;
   stackDiscs: Array<{ id: string; value: number }>;
 
+  // Stack Challenge Console State
+  stackMission: StackMission;
+  activeChallengeIndex: number;
+  selectedAnswers: Record<string, string>;
+  submittedAnswers: Record<string, { isCorrect: boolean; feedback: string }>;
+  isConsoleSubmitting: boolean;
+
   // Actions
   fetchLearnerProfile: () => Promise<void>;
   fetchWorldState: () => Promise<void>;
@@ -30,6 +39,15 @@ interface ClassroomStore {
   setActiveStation: (stationId: string | null) => void;
   pushStackDisc: (value?: number) => void;
   popStackDisc: () => void;
+
+  // Challenge Console Actions
+  setChallengeAnswer: (challengeId: string, optionId: string) => void;
+  submitChallengeAnswer: (challengeId: string) => { isCorrect: boolean; explanation: string };
+  setActiveChallengeIndex: (index: number) => void;
+  nextChallenge: () => void;
+  prevChallenge: () => void;
+  loadChallengeOntoApparatus: (challengeId: string) => void;
+  resetChallengeProgress: () => void;
 }
 
 // Fallback seed profile for initial rendering or offline mock
@@ -268,6 +286,103 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     { id: 'disc-3', value: 42 },
   ],
 
+  // Stack Challenge Console State
+  stackMission: STACK_MISSION,
+  activeChallengeIndex: 0,
+  selectedAnswers: {},
+  submittedAnswers: {},
+  isConsoleSubmitting: false,
+
+  setChallengeAnswer: (challengeId: string, optionId: string) => {
+    soundSystem.playChirp();
+    set((state) => ({
+      selectedAnswers: {
+        ...state.selectedAnswers,
+        [challengeId]: optionId,
+      },
+    }));
+  },
+
+  submitChallengeAnswer: (challengeId: string) => {
+    const state = get();
+    const challenge = state.stackMission.challenges.find((c) => c.id === challengeId);
+    if (!challenge) {
+      return { isCorrect: false, explanation: 'Challenge not found.' };
+    }
+
+    const selected = state.selectedAnswers[challengeId];
+    if (!selected) {
+      soundSystem.playAlert();
+      return { isCorrect: false, explanation: 'Please select an option first.' };
+    }
+
+    const isCorrect = selected === challenge.correctOptionId;
+    if (isCorrect) {
+      soundSystem.playSuccess();
+    } else {
+      soundSystem.playAlert();
+    }
+
+    const chosenOption = challenge.options.find((o) => o.id === selected);
+    const feedback = chosenOption?.explanation || challenge.pedagogicalExplanation;
+
+    set((s) => ({
+      submittedAnswers: {
+        ...s.submittedAnswers,
+        [challengeId]: {
+          isCorrect,
+          feedback,
+        },
+      },
+    }));
+
+    return { isCorrect, explanation: feedback };
+  },
+
+  setActiveChallengeIndex: (index: number) => {
+    const total = get().stackMission.challenges.length;
+    if (index >= 0 && index < total) {
+      soundSystem.playChirp();
+      set({ activeChallengeIndex: index });
+    }
+  },
+
+  nextChallenge: () => {
+    const { activeChallengeIndex, stackMission } = get();
+    if (activeChallengeIndex < stackMission.challenges.length - 1) {
+      soundSystem.playChirp();
+      set({ activeChallengeIndex: activeChallengeIndex + 1 });
+    }
+  },
+
+  prevChallenge: () => {
+    const { activeChallengeIndex } = get();
+    if (activeChallengeIndex > 0) {
+      soundSystem.playChirp();
+      set({ activeChallengeIndex: activeChallengeIndex - 1 });
+    }
+  },
+
+  loadChallengeOntoApparatus: (challengeId: string) => {
+    const challenge = get().stackMission.challenges.find((c) => c.id === challengeId);
+    if (!challenge || !challenge.simulatedStackInitial) return;
+
+    soundSystem.playMagneticThud();
+    const initialDiscs = challenge.simulatedStackInitial.map((val, idx) => ({
+      id: `sim-disc-${idx}-${val}`,
+      value: val,
+    }));
+    set({ stackDiscs: initialDiscs });
+  },
+
+  resetChallengeProgress: () => {
+    set({
+      activeChallengeIndex: 0,
+      selectedAnswers: {},
+      submittedAnswers: {},
+    });
+  },
+
   setActiveStation: (stationId: string | null) => {
     if (stationId) {
       soundSystem.playChirp();
@@ -311,6 +426,9 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
           { id: 'disc-2', value: 25 },
           { id: 'disc-3', value: 42 },
         ],
+        activeChallengeIndex: 0,
+        selectedAnswers: {},
+        submittedAnswers: {},
       });
     } catch {
       // reset locally
@@ -324,6 +442,9 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
           { id: 'disc-2', value: 25 },
           { id: 'disc-3', value: 42 },
         ],
+        activeChallengeIndex: 0,
+        selectedAnswers: {},
+        submittedAnswers: {},
       });
     }
   },
