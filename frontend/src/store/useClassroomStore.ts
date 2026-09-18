@@ -4,7 +4,13 @@ import { MentorGuidance } from '../types/mentor';
 import { soundSystem } from '../audio/soundSystem';
 import { StackMission } from '../types/challenge';
 import { STACK_MISSION } from '../data/stackChallenges';
-import { DeliberationResponse } from '../types/agents';
+import { DeliberationResponse, BktTelemetryTrace } from '../types/agents';
+import {
+  DEFAULT_DELIBERATION_B,
+  DEFAULT_DELIBERATION_A,
+  DEFAULT_BKT_TRACE_B,
+  DEFAULT_BKT_TRACE_A,
+} from '../data/mockDeliberations';
 
 interface ClassroomStore {
   // Authoritative State
@@ -24,6 +30,11 @@ interface ClassroomStore {
   isMentorOpen: boolean;
   isNearMentor: boolean;
   mentorGuidance: MentorGuidance | null;
+
+  // Telemetry Drawer & Inspector State
+  isTelemetryOpen: boolean;
+  activeTelemetryTab: 'explainability' | 'agents' | 'bkt';
+  latestBktTrace: BktTelemetryTrace | null;
 
   // Barrier Dissolve & Cinematic Camera State
   dissolvingWingId: string | null;
@@ -70,6 +81,12 @@ interface ClassroomStore {
   setActiveStation: (stationId: string | null) => void;
   pushStackDisc: (value?: number) => void;
   popStackDisc: () => void;
+
+  // Telemetry Drawer Actions
+  toggleTelemetry: () => void;
+  openTelemetry: (tab?: 'explainability' | 'agents' | 'bkt') => void;
+  closeTelemetry: () => void;
+  setActiveTelemetryTab: (tab: 'explainability' | 'agents' | 'bkt') => void;
 
   // Challenge Console Actions
   setChallengeAnswer: (challengeId: string, optionId: string) => void;
@@ -348,6 +365,11 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   isNearMentor: false,
   mentorGuidance: DEFAULT_MENTOR_GUIDANCE_B,
 
+  isTelemetryOpen: false,
+  activeTelemetryTab: 'explainability',
+  latestDeliberation: DEFAULT_DELIBERATION_B,
+  latestBktTrace: DEFAULT_BKT_TRACE_B,
+
   dissolvingWingId: null,
   dissolvePhase: 'idle',
   cinematicCamera: null,
@@ -358,7 +380,26 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     { id: 'disc-2', value: 25 },
     { id: 'disc-3', value: 42 },
   ],
-  latestDeliberation: null,
+
+  toggleTelemetry: () => {
+    soundSystem.playChirp();
+    set((state) => ({ isTelemetryOpen: !state.isTelemetryOpen }));
+  },
+
+  openTelemetry: (tab: 'explainability' | 'agents' | 'bkt' = 'explainability') => {
+    soundSystem.playChime();
+    set({ isTelemetryOpen: true, activeTelemetryTab: tab });
+  },
+
+  closeTelemetry: () => {
+    soundSystem.playChirp();
+    set({ isTelemetryOpen: false });
+  },
+
+  setActiveTelemetryTab: (tab: 'explainability' | 'agents' | 'bkt') => {
+    soundSystem.playChirp();
+    set({ activeTelemetryTab: tab });
+  },
 
   fetchLearnerProfile: async () => {
     set({ isLoading: true, error: null });
@@ -410,10 +451,13 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       if (res.ok) {
         const data: DeliberationResponse = await res.json();
         set({ latestDeliberation: data });
+        return;
       }
     } catch {
-      // Retain existing state
+      // Retain existing state or fallback below
     }
+    const fallback = lid === 'learner_a' ? DEFAULT_DELIBERATION_A : DEFAULT_DELIBERATION_B;
+    set({ latestDeliberation: fallback });
   },
 
   switchLearner: async (learnerId: string) => {
@@ -426,7 +470,11 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       });
       if (res.ok) {
         const data: LearnerProfile = await res.json();
-        set({ learner: data, isLoading: false });
+        set({
+          learner: data,
+          isLoading: false,
+          latestBktTrace: learnerId === 'learner_a' ? DEFAULT_BKT_TRACE_A : DEFAULT_BKT_TRACE_B,
+        });
         await get().fetchWorldState();
         await get().fetchMentorGuidance(learnerId);
         await get().fetchDeliberation(learnerId);
@@ -440,10 +488,14 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     const fallbackProfile = learnerId === 'learner_a' ? SEED_LEARNER_A : DEFAULT_LEARNER;
     const fallbackWorld = learnerId === 'learner_a' ? WORLD_STATE_A : DEFAULT_WORLD_STATE;
     const fallbackMentor = learnerId === 'learner_a' ? DEFAULT_MENTOR_GUIDANCE_A : DEFAULT_MENTOR_GUIDANCE_B;
+    const fallbackDelib = learnerId === 'learner_a' ? DEFAULT_DELIBERATION_A : DEFAULT_DELIBERATION_B;
+    const fallbackBkt = learnerId === 'learner_a' ? DEFAULT_BKT_TRACE_A : DEFAULT_BKT_TRACE_B;
     set({
       learner: fallbackProfile,
       worldState: fallbackWorld,
       mentorGuidance: fallbackMentor,
+      latestDeliberation: fallbackDelib,
+      latestBktTrace: fallbackBkt,
       isLoading: false,
     });
   },
@@ -589,6 +641,23 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     const state = get();
     const currentMastery = state.learner?.mastery_map[concept as keyof MasteryMap] ?? 0.38;
 
+    // Precalculate exact BKT parameters and probabilities for Telemetry Inspector
+    const p_transit = 0.05;
+    const p_guess = difficulty === 'easy' ? 0.60 : difficulty === 'hard' ? 0.40 : 0.54;
+    const p_slip = difficulty === 'hard' ? 0.14 : 0.11;
+    let num: number;
+    let den: number;
+    let p_obs: number;
+    if (correct) {
+      num = currentMastery * (1.0 - p_slip);
+      den = num + (1.0 - currentMastery) * p_guess;
+      p_obs = den > 0 ? num / den : currentMastery;
+    } else {
+      num = currentMastery * p_slip;
+      den = num + (1.0 - currentMastery) * (1.0 - p_guess);
+      p_obs = den > 0 ? num / den : currentMastery;
+    }
+
     try {
       const res = await fetch('/api/interactions', {
         method: 'POST',
@@ -614,6 +683,23 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
           learner_profile,
         } = data;
 
+        const bktTrace: BktTelemetryTrace = {
+          concept,
+          prior: prior_mastery,
+          correct,
+          difficulty,
+          p_guess,
+          p_slip,
+          p_transit,
+          numerator: Math.round(num * 10000) / 10000,
+          denominator: Math.round(den * 10000) / 10000,
+          p_obs: Math.round(p_obs * 1000) / 1000,
+          posterior: posterior_mastery,
+          delta,
+          threshold_crossed,
+          timestamp: new Date().toISOString(),
+        };
+
         set((s) => ({
           learner: learner_profile,
           worldState: world_delta,
@@ -629,6 +715,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
           isThresholdCrossed: threshold_crossed,
           unlockedWingId: unlocked_wing,
           latestDeliberation: data.deliberation ?? s.latestDeliberation,
+          latestBktTrace: bktTrace,
         }));
 
         if (threshold_crossed) {
@@ -647,20 +734,8 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     }
 
     // Local offline calculation
-    const p_transit = 0.05;
-    const p_guess = difficulty === 'easy' ? 0.60 : difficulty === 'hard' ? 0.40 : 0.54;
-    const p_slip = difficulty === 'hard' ? 0.14 : 0.11;
-    let p_obs: number;
-    if (correct) {
-      const num = currentMastery * (1.0 - p_slip);
-      const den = num + (1.0 - currentMastery) * p_guess;
-      p_obs = den > 0 ? num / den : currentMastery;
-    } else {
-      const num = currentMastery * p_slip;
-      const den = num + (1.0 - currentMastery) * (1.0 - p_guess);
-      p_obs = den > 0 ? num / den : currentMastery;
-    }
-    const posterior = Math.round(Math.min(0.99, Math.max(0.01, p_obs + (1.0 - p_obs) * p_transit)) * 100) / 100;
+    const rawPosterior = p_obs + (1.0 - p_obs) * p_transit;
+    const posterior = Math.round(Math.min(0.99, Math.max(0.01, rawPosterior)) * 100) / 100;
     const delta = Math.round((posterior - currentMastery) * 100) / 100;
     const thresholdCrossed = currentMastery < 0.70 && posterior >= 0.70;
 
@@ -675,6 +750,23 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       updatedWorld.conduits_target_wing = 'recursion_lab';
       unlockedWing = 'recursion_lab';
     }
+
+    const bktTrace: BktTelemetryTrace = {
+      concept,
+      prior: currentMastery,
+      correct,
+      difficulty,
+      p_guess,
+      p_slip,
+      p_transit,
+      numerator: Math.round(num * 10000) / 10000,
+      denominator: Math.round(den * 10000) / 10000,
+      p_obs: Math.round(p_obs * 1000) / 1000,
+      posterior,
+      delta,
+      threshold_crossed: thresholdCrossed,
+      timestamp: new Date().toISOString(),
+    };
 
     set((s) => ({
       learner: {
@@ -694,6 +786,8 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       },
       isThresholdCrossed: thresholdCrossed,
       unlockedWingId: unlockedWing,
+      latestBktTrace: bktTrace,
+      latestDeliberation: thresholdCrossed && concept === 'stack' ? DEFAULT_DELIBERATION_A : s.latestDeliberation,
     }));
 
     if (thresholdCrossed) {
@@ -727,6 +821,23 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
 
     const prior = state.learner?.mastery_map[targetConcept as keyof MasteryMap] ?? 0.38;
 
+    const jumpTrace: BktTelemetryTrace = {
+      concept: targetConcept,
+      prior,
+      correct: true,
+      difficulty: 'medium',
+      p_guess: 0.54,
+      p_slip: 0.11,
+      p_transit: 0.05,
+      numerator: Math.round(prior * (1.0 - 0.11) * 10000) / 10000,
+      denominator: Math.round((prior * (1.0 - 0.11) + (1.0 - prior) * 0.54) * 10000) / 10000,
+      p_obs: Math.round(targetMastery * 0.95 * 1000) / 1000,
+      posterior: targetMastery,
+      delta: Math.round((targetMastery - prior) * 100) / 100,
+      threshold_crossed: prior < 0.70 && targetMastery >= 0.70,
+      timestamp: new Date().toISOString(),
+    };
+
     try {
       const res = await fetch('/api/simulate-mastery-jump', {
         method: 'POST',
@@ -754,7 +865,8 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
           },
           isThresholdCrossed: data.threshold_crossed,
           unlockedWingId: data.unlocked_wing,
-          latestDeliberation: data.deliberation ?? s.latestDeliberation,
+          latestDeliberation: data.deliberation ?? (targetMastery >= 0.70 && targetConcept === 'stack' ? DEFAULT_DELIBERATION_A : s.latestDeliberation),
+          latestBktTrace: jumpTrace,
         }));
         if (data.threshold_crossed && data.unlocked_wing) {
           get().triggerBarrierDissolve(data.unlocked_wing);
@@ -802,6 +914,8 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       },
       isThresholdCrossed: targetMastery >= 0.70 && prior < 0.70,
       unlockedWingId: targetConcept === 'stack' && targetMastery >= 0.70 ? 'recursion_lab' : null,
+      latestBktTrace: jumpTrace,
+      latestDeliberation: targetMastery >= 0.70 && targetConcept === 'stack' ? DEFAULT_DELIBERATION_A : s.latestDeliberation,
     }));
     if (targetConcept === 'stack' && targetMastery >= 0.70 && prior < 0.70) {
       get().triggerBarrierDissolve('recursion_lab');
@@ -907,7 +1021,10 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
         lastMasteryDelta: {},
         isThresholdCrossed: false,
         unlockedWingId: null,
+        latestDeliberation: DEFAULT_DELIBERATION_B,
+        latestBktTrace: DEFAULT_BKT_TRACE_B,
       });
+      await get().fetchDeliberation('learner_b');
     } catch {
       // reset locally
       set({
@@ -931,6 +1048,8 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
         lastMasteryDelta: {},
         isThresholdCrossed: false,
         unlockedWingId: null,
+        latestDeliberation: DEFAULT_DELIBERATION_B,
+        latestBktTrace: DEFAULT_BKT_TRACE_B,
       });
     }
   },

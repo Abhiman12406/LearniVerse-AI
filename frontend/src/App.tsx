@@ -5,6 +5,7 @@ import { useClassroomStore } from './store/useClassroomStore';
 import { soundSystem } from './audio/soundSystem';
 
 import { StationConsoleModal } from './components/ui/StationConsoleModal';
+import { TelemetryDrawer } from './components/ui/TelemetryDrawer';
 
 export const App: React.FC = () => {
   const { fetchLearnerProfile, fetchWorldState } = useClassroomStore();
@@ -35,6 +36,7 @@ export const App: React.FC = () => {
       <ClassroomCanvas />
       <HUD />
       <StationConsoleModal />
+      <TelemetryDrawer />
     </main>
   );
 };

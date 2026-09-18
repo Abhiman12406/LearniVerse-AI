@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, ShieldAlert, CheckCircle2, RotateCcw, Compass, UserCheck, Sparkles, Zap } from 'lucide-react';
+import { Volume2, VolumeX, ShieldAlert, CheckCircle2, RotateCcw, Compass, UserCheck, Sparkles, Zap, Brain } from 'lucide-react';
 import { useClassroomStore } from '../../store/useClassroomStore';
 import { AIMentorDialogue } from './AIMentorDialogue';
 
@@ -17,6 +17,8 @@ export const HUD: React.FC = () => {
     openMentor,
     simulateMasteryJump,
     lastMasteryDelta,
+    isTelemetryOpen,
+    toggleTelemetry,
   } = useClassroomStore();
 
   const isLearnerB = learner?.learner_id === 'learner_b';
@@ -132,7 +134,7 @@ export const HUD: React.FC = () => {
           {learner && learner.mastery_map.stack < 0.7 && (
             <button
               className="cyber-button"
-              onClick={simulateMasteryJump}
+              onClick={() => simulateMasteryJump()}
               title="Cross 70% Stack threshold to trigger Barrier Dissolve & unlock Recursion Wing"
               style={{
                 borderColor: 'var(--cyan-core)',
@@ -183,8 +185,41 @@ export const HUD: React.FC = () => {
           </button>
         </div>
 
-        {/* Right: Audio Synthesizer Mute Toggle */}
-        <div className="ui-interactive">
+        {/* Right: Telemetry Drawer Toggle & Audio Synthesizer Mute Toggle */}
+        <div className="ui-interactive" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            id="btn-agent-brain"
+            onClick={toggleTelemetry}
+            className="glass-panel"
+            style={{
+              padding: '10px 16px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              color: isTelemetryOpen ? '#00f0ff' : 'var(--text-primary)',
+              borderColor: isTelemetryOpen ? 'var(--cyan-core)' : 'var(--border-subtle)',
+              background: isTelemetryOpen ? 'rgba(0, 240, 255, 0.16)' : 'rgba(255, 255, 255, 0.04)',
+              boxShadow: isTelemetryOpen ? '0 0 16px var(--cyan-glow)' : 'none',
+              transition: 'all 0.2s ease',
+            }}
+            title="Inspect 5-Agent Deliberation Pipeline, Guardrails & BKT Belief State"
+          >
+            <Brain size={18} color={isTelemetryOpen ? '#00f0ff' : 'var(--cyan-core)'} />
+            <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', fontWeight: 700, letterSpacing: '0.04em' }}>
+              [🧠 AGENT BRAIN]
+            </span>
+            <span
+              style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: isTelemetryOpen ? '#00f0ff' : '#00ff88',
+                boxShadow: isTelemetryOpen ? '0 0 6px #00f0ff' : '0 0 6px #00ff88',
+              }}
+            />
+          </button>
+
           <button
             onClick={toggleAudioMute}
             className="glass-panel"

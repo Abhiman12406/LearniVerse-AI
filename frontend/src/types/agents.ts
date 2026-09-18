@@ -58,3 +58,21 @@ export interface DeliberationResponse {
   world_instructions: WorldInstructions;
   traces: AgentTraceItem[];
 }
+
+export interface BktTelemetryTrace {
+  concept: string;
+  prior: number;
+  correct: boolean;
+  difficulty: string;
+  p_guess: number;
+  p_slip: number;
+  p_transit: number;
+  numerator: number;
+  denominator: number;
+  p_obs: number;
+  posterior: number;
+  delta: number;
+  threshold_crossed: boolean;
+  timestamp: string;
+}
+
