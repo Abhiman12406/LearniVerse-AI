@@ -8,6 +8,8 @@ import { Archways } from './Archways';
 import { Avatar } from './Avatar';
 import { useClassroomStore } from '../../store/useClassroomStore';
 
+import { StackLabWing } from './StackLabWing';
+
 interface CameraFollowerProps {
   cameraAngleRef: React.MutableRefObject<number>;
   cameraPitchRef: React.MutableRefObject<number>;
@@ -16,10 +18,25 @@ interface CameraFollowerProps {
 const CameraFollower: React.FC<CameraFollowerProps> = ({ cameraAngleRef, cameraPitchRef }) => {
   const { camera } = useThree();
   const avatar = useClassroomStore((s) => s.avatar);
+  const activeStation = useClassroomStore((s) => s.activeStation);
   const currentCamPos = useRef(new THREE.Vector3(0, 3, 15));
   const currentLookAt = useRef(new THREE.Vector3(0, 1.2, 8));
 
   useFrame(() => {
+    if (activeStation === 'stack_lab') {
+      // Cinematic Fixed Framing: Close-up facing the Stack Apparatus cylinder
+      const cinematicPos = new THREE.Vector3(10.2, 2.4, 18.0);
+      const cinematicTarget = new THREE.Vector3(12.0, 1.9, 21.0);
+
+      currentCamPos.current.lerp(cinematicPos, 0.08);
+      currentLookAt.current.lerp(cinematicTarget, 0.08);
+
+      camera.position.copy(currentCamPos.current);
+      camera.lookAt(currentLookAt.current);
+      return;
+    }
+
+    // Third-person exploration follow-cam
     const [ax, ay, az] = avatar.position;
     const distance = 6.8;
     const height = 2.6 + Math.sin(cameraPitchRef.current) * 1.8;
@@ -37,7 +54,7 @@ const CameraFollower: React.FC<CameraFollowerProps> = ({ cameraAngleRef, cameraP
 
     camera.position.copy(currentCamPos.current);
 
-    // Camera targets slightly above avatar torso and toward atrium center
+    // Camera targets slightly above avatar torso and toward movement direction
     const targetLookAt = new THREE.Vector3(ax, ay + 1.2, az);
     currentLookAt.current.lerp(targetLookAt, 0.1);
     camera.lookAt(currentLookAt.current);
@@ -105,6 +122,7 @@ export const ClassroomCanvas: React.FC = () => {
           <Atrium />
           <CentralDais />
           <Archways />
+          <StackLabWing />
           <Avatar cameraAngleRef={cameraAngleRef} />
           <CameraFollower
             cameraAngleRef={cameraAngleRef}

@@ -109,6 +109,52 @@ class SoundSystem {
       // Ignore audio synthesis errors
     }
   }
+
+  public playMagneticThud(): void {
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(55, this.ctx.currentTime + 0.15);
+
+      gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.15);
+    } catch {
+      // Ignore
+    }
+  }
+
+  public playPop(): void {
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(640, this.ctx.currentTime + 0.12);
+
+      gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.12);
+    } catch {
+      // Ignore
+    }
+  }
 }
 
 export const soundSystem = new SoundSystem();

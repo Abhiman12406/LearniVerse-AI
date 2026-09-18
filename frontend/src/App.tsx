@@ -4,6 +4,8 @@ import { HUD } from './components/ui/HUD';
 import { useClassroomStore } from './store/useClassroomStore';
 import { soundSystem } from './audio/soundSystem';
 
+import { StationConsoleModal } from './components/ui/StationConsoleModal';
+
 export const App: React.FC = () => {
   const { fetchLearnerProfile, fetchWorldState } = useClassroomStore();
 
@@ -32,6 +34,7 @@ export const App: React.FC = () => {
     <main style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
       <ClassroomCanvas />
       <HUD />
+      <StationConsoleModal />
     </main>
   );
 };
