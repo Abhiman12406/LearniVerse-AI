@@ -1,4 +1,5 @@
 import { WorldState } from '../types/world';
+import { getCampusObstacleColliders, CampusCollider } from '../components/canvas/ClassroomCampus';
 
 export interface CollisionBounds {
   wingId: string;
@@ -9,6 +10,16 @@ export interface CollisionBounds {
   portalWidth: number;
   barrierDistance: number; // radius threshold where sealed barrier blocks
 }
+
+// Default fallback obstacle colliders for central classroom furniture
+const DEFAULT_CLASSROOM_COLLIDERS: CampusCollider[] = [
+  { name: "Teacher's Podium Desk", minX: -2.6, maxX: -1.4, minZ: -4.3, maxZ: -2.1 },
+  { name: 'Student Workstation #1', minX: 2.0, maxX: 3.6, minZ: -3.8, maxZ: -1.4 },
+  { name: 'Student Workstation #2', minX: 2.0, maxX: 3.6, minZ: 1.4, maxZ: 3.8 },
+  { name: 'Student Workstation #3', minX: -3.6, maxX: -2.0, minZ: 1.4, maxZ: 3.8 },
+  { name: 'Classroom Bookshelf (West)', minX: -5.7, maxX: -4.9, minZ: -4.6, maxZ: -3.0 },
+  { name: 'Classroom Bookshelf (East)', minX: 4.9, maxX: 5.7, minZ: -4.6, maxZ: -3.0 },
+];
 
 /**
  * Calculates collision boundaries for classroom archways and sealed barriers.
@@ -46,24 +57,86 @@ export function getArchwayCollisionBounds(worldState: WorldState | null): Collis
 }
 
 /**
- * Applies physical boundary and sealed barrier collision constraints to the avatar position.
+ * Resolves avatar collision against solid furniture obstacles (teacher desk, student workstations, bookshelves)
+ * using smooth axis-separated pushback.
+ */
+export function resolveObstacleCollision(
+  x: number,
+  z: number,
+  avatarRadius: number = 0.35,
+  customColliders?: CampusCollider[]
+): { x: number; z: number; collided: boolean; colliderName: string | null } {
+  const dynamicColliders = getCampusObstacleColliders();
+  const colliders =
+    customColliders ||
+    (dynamicColliders.length > 0 ? dynamicColliders : DEFAULT_CLASSROOM_COLLIDERS);
+
+  let resX = x;
+  let resZ = z;
+  let collided = false;
+  let colliderName: string | null = null;
+
+  for (const c of colliders) {
+    const minX = c.minX - avatarRadius;
+    const maxX = c.maxX + avatarRadius;
+    const minZ = c.minZ - avatarRadius;
+    const maxZ = c.maxZ + avatarRadius;
+
+    // Check if avatar point is inside expanded obstacle bounding box
+    if (resX > minX && resX < maxX && resZ > minZ && resZ < maxZ) {
+      collided = true;
+      colliderName = c.name;
+
+      // Distance to each edge
+      const dLeft = resX - minX;
+      const dRight = maxX - resX;
+      const dBottom = resZ - minZ;
+      const dTop = maxZ - resZ;
+
+      const minOverlap = Math.min(dLeft, dRight, dBottom, dTop);
+
+      if (minOverlap === dLeft) {
+        resX = minX;
+      } else if (minOverlap === dRight) {
+        resX = maxX;
+      } else if (minOverlap === dBottom) {
+        resZ = minZ;
+      } else {
+        resZ = maxZ;
+      }
+    }
+  }
+
+  return { x: resX, z: resZ, collided, colliderName };
+}
+
+/**
+ * Applies physical obstacle constraints, boundary limits, and sealed barrier constraints to the avatar position.
  * Returns the resolved [x, z] coordinates.
  */
 export function resolveAvatarCollision(
   x: number,
   z: number,
   worldState: WorldState | null,
-  atriumRadius: number = 17.2
+  atriumRadius: number = 17.2,
+  checkObstacles: boolean = true
 ): { x: number; z: number; isBlockedByBarrier: boolean; blockedWingId: string | null } {
   let resolvedX = x;
   let resolvedZ = z;
   let isBlocked = false;
   let blockedWing: string | null = null;
 
+  // 1. Resolve collision against furniture & solid obstacles first (if enabled)
+  if (checkObstacles) {
+    const obs = resolveObstacleCollision(resolvedX, resolvedZ);
+    resolvedX = obs.x;
+    resolvedZ = obs.z;
+  }
+
   const currentDist = Math.hypot(resolvedX, resolvedZ);
   const bounds = getArchwayCollisionBounds(worldState);
 
-  // Check specific archway portals
+  // 2. Check archway portals & sealed barriers
   for (const b of bounds) {
     const angleRad = (b.azimuthDeg * Math.PI) / 180;
     // Direction vector from origin to archway center
@@ -97,7 +170,7 @@ export function resolveAvatarCollision(
     }
   }
 
-  // Standard atrium perimeter clamp if not passing through an accessible portal
+  // 3. Standard atrium perimeter clamp if not passing through an accessible portal
   if (currentDist > atriumRadius) {
     const angle = Math.atan2(resolvedZ, resolvedX);
     resolvedX = Math.cos(angle) * atriumRadius;

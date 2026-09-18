@@ -2,12 +2,11 @@ import React, { useRef, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Lighting } from './Lighting';
-import { Atrium } from './Atrium';
+import { ClassroomCampus } from './ClassroomCampus';
 import { CentralDais } from './CentralDais';
 import { Archways } from './Archways';
 import { Avatar } from './Avatar';
 import { useClassroomStore } from '../../store/useClassroomStore';
-
 import { StackLabWing } from './StackLabWing';
 
 interface CameraFollowerProps {
@@ -45,7 +44,7 @@ const CameraFollower: React.FC<CameraFollowerProps> = ({ cameraAngleRef, cameraP
     } else {
       const [ax, ay, az] = avatar.position;
       const distance = 6.8;
-      const height = 2.6 + Math.sin(cameraPitchRef.current) * 1.8;
+      const height = 2.8 + Math.sin(cameraPitchRef.current) * 1.8;
 
       // Calculate ideal camera position behind avatar based on orbit azimuth
       const angle = cameraAngleRef.current;
@@ -53,11 +52,11 @@ const CameraFollower: React.FC<CameraFollowerProps> = ({ cameraAngleRef, cameraP
       idealZ = az + Math.cos(angle) * distance;
       idealY = ay + height;
 
-      // Camera targets slightly above avatar torso and toward atrium center
+      // Camera targets slightly above avatar torso
       targetLookAt = new THREE.Vector3(ax, ay + 1.2, az);
     }
 
-    // Smooth lerp camera position with cinematic damping
+    // Smooth lerp camera position with cinematic damping across campus
     currentCamPos.current.x = THREE.MathUtils.lerp(currentCamPos.current.x, idealX, lerpFactor);
     currentCamPos.current.y = THREE.MathUtils.lerp(currentCamPos.current.y, idealY, lerpFactor);
     currentCamPos.current.z = THREE.MathUtils.lerp(currentCamPos.current.z, idealZ, lerpFactor);
@@ -71,7 +70,7 @@ const CameraFollower: React.FC<CameraFollowerProps> = ({ cameraAngleRef, cameraP
 };
 
 export const ClassroomCanvas: React.FC = () => {
-  const cameraAngleRef = useRef<number>(0); // 0 = looking towards negative Z (toward dais from Z=8)
+  const cameraAngleRef = useRef<number>(0); // 0 = looking towards negative Z (toward classroom front from Z=8)
   const cameraPitchRef = useRef<number>(0.25); // Pitch angle
   const isDragging = useRef<boolean>(false);
   const lastMousePos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -90,7 +89,7 @@ export const ClassroomCanvas: React.FC = () => {
       const dy = e.clientY - lastMousePos.current.y;
       lastMousePos.current = { x: e.clientX, y: e.clientY };
 
-      // Sensitivity
+      // Orbit sensitivity
       cameraAngleRef.current -= dx * 0.005;
       cameraPitchRef.current = THREE.MathUtils.clamp(
         cameraPitchRef.current + dy * 0.004,
@@ -116,17 +115,17 @@ export const ClassroomCanvas: React.FC = () => {
   return (
     <div className="canvas-container">
       <Canvas
-        camera={{ position: [0, 3, 15], fov: 60, near: 0.1, far: 100 }}
+        camera={{ position: [0, 3, 15], fov: 60, near: 0.1, far: 250 }}
         gl={{
           antialias: true,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.2,
+          toneMappingExposure: 1.15,
         }}
         shadows
       >
         <React.Suspense fallback={null}>
           <Lighting />
-          <Atrium />
+          <ClassroomCampus />
           <CentralDais />
           <Archways />
           <StackLabWing />

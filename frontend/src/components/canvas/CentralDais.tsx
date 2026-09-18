@@ -19,33 +19,27 @@ export const CentralDais: React.FC = () => {
 
   return (
     <group position={[0, 0, 0]}>
-      {/* Lower Step Tier */}
-      <mesh position={[0, 0.125, 0]} receiveShadow>
-        <cylinderGeometry args={[5.2, 5.5, 0.25, 64]} />
-        <meshStandardMaterial color="#0c0e17" roughness={0.4} metalness={0.8} />
-      </mesh>
-
-      {/* Main Elevated Platform */}
-      <mesh position={[0, 0.375, 0]} receiveShadow>
-        <cylinderGeometry args={[4.2, 4.4, 0.25, 64]} />
-        <meshStandardMaterial color="#121624" roughness={0.3} metalness={0.85} />
+      {/* Sleek Flush Floor Medallion Projector Plate */}
+      <mesh position={[0, 0.015, 0]} receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[1.5, 64]} />
+        <meshStandardMaterial color="#1a1c24" roughness={0.35} metalness={0.7} />
       </mesh>
 
       {/* Outer Rotating Emissive Energy Ring */}
-      <mesh ref={outerRingRef} position={[0, 0.505, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[3.8, 4.05, 64]} />
+      <mesh ref={outerRingRef} position={[0, 0.022, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1.35, 1.45, 64]} />
         <meshBasicMaterial color="#00f0ff" side={THREE.DoubleSide} transparent opacity={0.85} />
       </mesh>
 
       {/* Inner Concentric Rune Ring */}
-      <mesh ref={innerRuneRef} position={[0, 0.508, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[2.4, 2.6, 6]} />
+      <mesh ref={innerRuneRef} position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.85, 0.95, 6]} />
         <meshBasicMaterial color="#7928ca" side={THREE.DoubleSide} transparent opacity={0.75} />
       </mesh>
 
-      {/* Center Core Emitter */}
-      <mesh position={[0, 0.51, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[1.2, 32]} />
+      {/* Center Holographic Projector Emitter */}
+      <mesh position={[0, 0.028, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[0.45, 32]} />
         <meshStandardMaterial
           color="#050811"
           emissive="#00f0ff"
@@ -59,7 +53,7 @@ export const CentralDais: React.FC = () => {
       <KnowledgeGraphConstellation />
 
       {/* In-World Holographic AI Mentor Beacon */}
-      <AIMentorBeacon position={[2, 0.5, 2]} />
+      <AIMentorBeacon position={[1.4, 0.05, 1.4]} />
     </group>
   );
 };

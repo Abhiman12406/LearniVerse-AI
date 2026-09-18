@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** closed
 
-- [ ] Create procedural Three.js factory in `frontend/src/assets/3d/createClassroomEnvironment.ts` generating campus architecture and furniture diorama with canvas-rendered staggered wood plank floor textures.
-- [ ] Construct R3F canvas component `ClassroomCampus.tsx` mounting the campus factory with memoized instance management and proper geometry/material disposal.
-- [ ] Update `Lighting.tsx` with warm directional sunlight beams angled from window blinds (#fff3d6), soft ambient fill, and localized apparatus spotlighting.
-- [ ] Update `ClassroomCanvas.tsx` camera framing and bounds to smoothly orbit and follow across the enlarged classroom campus.
-- [ ] Verify solid obstacle collision boxes prevent avatar from clipping through teacher/student desks, bookshelves, and outer walls.
+- [x] Create procedural Three.js factory in `frontend/src/assets/3d/createClassroomEnvironment.ts` generating campus architecture and furniture diorama with canvas-rendered staggered wood plank floor textures.
+- [x] Construct R3F canvas component `ClassroomCampus.tsx` mounting the campus factory with memoized instance management and proper geometry/material disposal.
+- [x] Update `Lighting.tsx` with warm directional sunlight beams angled from window blinds (#fff3d6), soft ambient fill, and localized apparatus spotlighting.
+- [x] Update `ClassroomCanvas.tsx` camera framing and bounds to smoothly orbit and follow across the enlarged classroom campus.
+- [x] Verify solid obstacle collision boxes prevent avatar from clipping through teacher/student desks, bookshelves, and outer walls.

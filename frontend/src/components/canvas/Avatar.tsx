@@ -132,18 +132,10 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
       velocity.current.z *= 0.1;
     }
 
-    const currentDist = Math.hypot(position.current.x, position.current.z);
-
-    // Vertical elevation: step up smoothly onto Central Dais (radius 5.0 has elevation 0.5)
-    let targetY = 0;
-    if (currentDist < 5.0) {
-      targetY = 0.5;
-    } else if (currentDist < 5.4) {
-      // Step ramp
-      const t = (5.4 - currentDist) / 0.4;
-      targetY = 0.5 * t;
-    }
+    // Vertical elevation: grounded smoothly on classroom floor
+    const targetY = 0;
     position.current.y = THREE.MathUtils.lerp(position.current.y, targetY, 0.15);
+
 
     // Walking animation cycle
     if (isMoving) {
