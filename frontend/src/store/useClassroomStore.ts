@@ -151,6 +151,15 @@ interface ClassroomStore {
   } | null;
   perspectiveMode: '3rd_person' | '1st_person';
 
+  // Navigation & Teleport State
+  teleportRequest: [number, number, number] | null;
+
+  // Golden Hour Lighting State
+  isGoldenHour: boolean;
+
+  // Toast Notification State
+  toastMessage: string | null;
+
   // Station Console & Stack Apparatus State
   activeStation: string | null;
   stackDiscs: Array<{ id: string; value: number }>;
@@ -223,6 +232,11 @@ interface ClassroomStore {
   triggerBarrierDissolve: (wingId?: string) => void;
   togglePerspectiveMode: () => void;
   setPerspectiveMode: (mode: '3rd_person' | '1st_person') => void;
+  teleportAvatar: (pos: [number, number, number]) => void;
+  clearTeleportRequest: () => void;
+  toggleGoldenHour: () => void;
+  showToast: (msg: string) => void;
+  clearToast: () => void;
   setActiveStation: (stationId: string | null) => void;
   pushStackDisc: (value?: number) => void;
   popStackDisc: () => void;
@@ -568,6 +582,9 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   dissolvePhase: 'idle',
   cinematicCamera: null,
   perspectiveMode: '3rd_person',
+  teleportRequest: null,
+  isGoldenHour: false,
+  toastMessage: null,
 
   activeStation: null,
   stackDiscs: [
@@ -786,6 +803,35 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   setPerspectiveMode: (mode: '3rd_person' | '1st_person') => {
     soundSystem.playChirp();
     set({ perspectiveMode: mode });
+  },
+
+  teleportAvatar: (pos: [number, number, number]) => {
+    soundSystem.playChirp();
+    set({
+      teleportRequest: pos,
+      avatar: {
+        ...get().avatar,
+        position: pos,
+        isMoving: false,
+      },
+    });
+  },
+
+  clearTeleportRequest: () => {
+    set({ teleportRequest: null });
+  },
+
+  toggleGoldenHour: () => {
+    soundSystem.playChirp();
+    set((state) => ({ isGoldenHour: !state.isGoldenHour }));
+  },
+
+  showToast: (msg: string) => {
+    set({ toastMessage: msg });
+  },
+
+  clearToast: () => {
+    set({ toastMessage: null });
   },
 
   openMentor: () => {
@@ -2063,6 +2109,9 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
         dissolvingWingId: null,
         dissolvePhase: 'idle',
         cinematicCamera: null,
+        teleportRequest: null,
+        isGoldenHour: false,
+        toastMessage: null,
         activeStation: null,
         stackDiscs: [
           { id: 'disc-1', value: 10 },

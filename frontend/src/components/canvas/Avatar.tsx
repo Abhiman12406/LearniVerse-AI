@@ -97,7 +97,16 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
   useFrame((_, delta) => {
     if (!avatarGroupRef.current) return;
 
-    const isMentorOpen = useClassroomStore.getState().isMentorOpen;
+    const { isMentorOpen, teleportRequest, clearTeleportRequest } = useClassroomStore.getState();
+
+    if (teleportRequest) {
+      position.current.set(teleportRequest[0], teleportRequest[1], teleportRequest[2]);
+      velocity.current.set(0, 0, 0);
+      verticalVelocity.current = 0;
+      isJumping.current = false;
+      avatarGroupRef.current.position.copy(position.current);
+      clearTeleportRequest();
+    }
 
     // Movement input vector relative to camera azimuth (suppressed if mentor dialogue is open)
     const forward: number = isMentorOpen

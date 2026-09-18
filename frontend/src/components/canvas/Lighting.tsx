@@ -1,35 +1,44 @@
 import React from 'react';
+import { useClassroomStore } from '../../store/useClassroomStore';
 
 export const Lighting: React.FC = () => {
+  const isGoldenHour = useClassroomStore((s) => s.isGoldenHour);
+
+  const bgColor = isGoldenHour ? '#281119' : '#17070b';
+  const ambientColor = isGoldenHour ? '#fde047' : '#ffedd5';
+  const ambientIntensity = isGoldenHour ? 0.92 : 0.85;
+  const sunColor = isGoldenHour ? '#f97316' : '#fff7ed';
+  const sunIntensity = isGoldenHour ? 3.6 : 2.8;
+
   return (
     <>
       {/* Warm atmospheric campus background and soft fog */}
-      <color attach="background" args={['#1c1815']} />
-      <fog attach="fog" args={['#1c1815', 25, 110]} />
+      <color attach="background" args={[bgColor]} />
+      <fog attach="fog" args={[bgColor, 25, 110]} />
 
       {/* Soft warm ambient fill light for wooden architecture and furniture */}
-      <ambientLight intensity={0.85} color="#ffedd5" />
+      <ambientLight intensity={ambientIntensity} color={ambientColor} />
 
-      {/* Warm directional sunlight beams angled through window blinds (#fff3d6) */}
+      {/* Warm directional sunlight beams */}
       <directionalLight
-        position={[14, 28, -18]}
-        intensity={2.6}
-        color="#fff3d6"
+        position={[12, 30, -20]}
+        intensity={sunIntensity}
+        color={sunColor}
         castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
         shadow-bias={-0.0002}
         shadow-normalBias={0.02}
-        shadow-camera-near={5}
-        shadow-camera-far={70}
-        shadow-camera-left={-22}
-        shadow-camera-right={22}
-        shadow-camera-top={22}
-        shadow-camera-bottom={-22}
+        shadow-camera-near={1.0}
+        shadow-camera-far={100}
+        shadow-camera-left={-35}
+        shadow-camera-right={35}
+        shadow-camera-top={35}
+        shadow-camera-bottom={-35}
       />
 
       {/* Secondary soft cool sky/window bounce fill light from opposite angle */}
-      <directionalLight position={[-20, 16, 20]} intensity={0.45} color="#dbeafe" />
+      <directionalLight position={[-25, 20, 25]} intensity={0.7} color="#dbeafe" />
 
       {/* Central classroom overhead warm luminaire */}
       <pointLight position={[0, 4.6, 0]} intensity={1.2} distance={15} color="#ffedd5" />
