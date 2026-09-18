@@ -97,6 +97,7 @@ describe('Friendly Mentor Companion Bot 3D Model & Interaction Rig', () => {
     expect(rig.hoverRingsGroup.position.y).not.toBe(initialRingY);
 
     // Antenna light pulses
+    expect(rig.antennaLight.intensity).not.toBe(initialLightIntensity);
     expect(rig.antennaLight.intensity).toBeGreaterThan(0.8);
     expect(rig.antennaLight.intensity).toBeLessThan(2.0);
 

@@ -493,6 +493,78 @@ class SoundSystem {
       // Ignore audio synthesis errors
     }
   }
+
+  /**
+   * Subtle procedural footstep sound on wooden classroom planks or metal thresholds.
+   */
+  public playFootstep(surface: 'wood' | 'metal' = 'wood'): void {
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    try {
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const filter = this.ctx.createBiquadFilter();
+
+      filter.type = 'lowpass';
+      if (surface === 'wood') {
+        filter.frequency.setValueAtTime(240, now);
+        filter.frequency.exponentialRampToValueAtTime(70, now + 0.08);
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(110, now);
+        osc.frequency.exponentialRampToValueAtTime(45, now + 0.07);
+
+        gain.gain.setValueAtTime(0.09, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      } else {
+        filter.frequency.setValueAtTime(550, now);
+        filter.frequency.exponentialRampToValueAtTime(120, now + 0.09);
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.09);
+
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+      }
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start(now);
+      osc.stop(now + 0.09);
+    } catch {
+      // Ignore audio synthesis errors
+    }
+  }
+
+  /**
+   * Subtle mechanical switch/relay click for hardware console controls.
+   */
+  public playMechanicalClick(): void {
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    try {
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1400, now);
+      osc.frequency.exponentialRampToValueAtTime(450, now + 0.025);
+
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start(now);
+      osc.stop(now + 0.03);
+    } catch {
+      // Ignore audio synthesis errors
+    }
+  }
 }
 
 export const soundSystem = new SoundSystem();

@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { useClassroomStore } from '../../store/useClassroomStore';
 import { resolveAvatarCollision } from '../../utils/collision';
 import { createStudentAvatar } from '../../assets/3d/createStudentAvatar';
+import { soundSystem } from '../../audio/soundSystem';
 
 interface AvatarProps {
   cameraAngleRef: React.MutableRefObject<number>; // Horizontal orbit angle in radians
@@ -32,6 +33,7 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
   const velocity = useRef(new THREE.Vector3());
   const verticalVelocity = useRef<number>(0);
   const isJumping = useRef<boolean>(false);
+  const stepTimer = useRef<number>(0);
   const keys = useRef<{ [key: string]: boolean }>({});
   const setAvatarState = useClassroomStore((s) => s.setAvatarState);
 
@@ -186,10 +188,23 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
         position.current.y = groundY;
         verticalVelocity.current = 0;
         isJumping.current = false;
+        soundSystem.playFootstep('wood');
       }
     } else {
       // Smoothly step up/down to ground elevation
       position.current.y = THREE.MathUtils.lerp(position.current.y, groundY, 0.25);
+    }
+
+    // Procedural footstep audio synchronized with avatar strides
+    if (isMoving && !isJumping.current) {
+      stepTimer.current += delta;
+      const stepCadence = isSprinting ? 0.28 : 0.42;
+      if (stepTimer.current >= stepCadence) {
+        stepTimer.current = 0;
+        soundSystem.playFootstep('wood');
+      }
+    } else {
+      stepTimer.current = 0;
     }
 
     // Update avatar group position

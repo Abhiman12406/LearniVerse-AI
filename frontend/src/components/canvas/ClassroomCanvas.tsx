@@ -150,20 +150,21 @@ export const ClassroomCanvas: React.FC = () => {
         }}
         shadows
       >
+        <Lighting />
+        <CameraFollower
+          cameraAngleRef={cameraAngleRef}
+          cameraPitchRef={cameraPitchRef}
+        />
+        <ClassroomCampus />
+        <Avatar cameraAngleRef={cameraAngleRef} />
+
         <React.Suspense fallback={null}>
-          <Lighting />
-          <ClassroomCampus />
           <CentralDais />
           <Archways />
           <StackLabWing />
           <ArrayLabWing />
           <LinkedListLab />
           <RecursionLabWing />
-          <Avatar cameraAngleRef={cameraAngleRef} />
-          <CameraFollower
-            cameraAngleRef={cameraAngleRef}
-            cameraPitchRef={cameraPitchRef}
-          />
         </React.Suspense>
       </Canvas>
     </div>

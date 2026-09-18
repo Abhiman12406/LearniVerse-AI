@@ -1250,6 +1250,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   },
 
   jumpToArrayIndex: (index: number) => {
+    soundSystem.playMechanicalClick();
     const bays = get().arrayBays;
     const baseAddr = 0x2000;
     const elementSize = 4;
