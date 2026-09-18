@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useClassroomStore } from '../../store/useClassroomStore';
+import { resolveAvatarCollision } from '../../utils/collision';
 
 interface AvatarProps {
   cameraAngleRef: React.MutableRefObject<number>; // Horizontal orbit angle in radians
@@ -77,14 +78,24 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
     position.current.x += velocity.current.x;
     position.current.z += velocity.current.z;
 
-    // Boundary collision with Atrium perimeter (radius 17.2)
-    const currentDist = Math.hypot(position.current.x, position.current.z);
-    const maxRadius = 17.2;
-    if (currentDist > maxRadius) {
-      const angle = Math.atan2(position.current.z, position.current.x);
-      position.current.x = Math.cos(angle) * maxRadius;
-      position.current.z = Math.sin(angle) * maxRadius;
+    // Boundary collision with Atrium perimeter & sealed Prerequisite Barriers
+    const { worldState } = useClassroomStore.getState();
+    const collision = resolveAvatarCollision(
+      position.current.x,
+      position.current.z,
+      worldState,
+      17.2
+    );
+    position.current.x = collision.x;
+    position.current.z = collision.z;
+
+    if (collision.isBlockedByBarrier) {
+      // Dampen velocity when contacting an energized barrier
+      velocity.current.x *= 0.1;
+      velocity.current.z *= 0.1;
     }
+
+    const currentDist = Math.hypot(position.current.x, position.current.z);
 
     // Vertical elevation: step up smoothly onto Central Dais (radius 5.0 has elevation 0.5)
     let targetY = 0;
