@@ -11,10 +11,9 @@ services:
   # ----------------------------------------------------------------------------
   # 1. 3D Adaptive Virtual Classroom Client (Render Static Site)
   # ----------------------------------------------------------------------------
-  - type: static
+  - type: web
     name: learniverse-frontend
-    plan: free
-    region: singapore
+    runtime: static
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/dist
     envVars:
@@ -33,7 +32,7 @@ services:
   # ----------------------------------------------------------------------------
   - type: web
     name: learniverse-backend
-    env: python
+    runtime: python
     plan: free
     region: singapore
     buildCommand: pip install -r backend/requirements.txt
@@ -72,7 +71,7 @@ services:
   # ----------------------------------------------------------------------------
   - type: web
     name: learniverse-n8n
-    env: docker
+    runtime: docker
     plan: free
     region: singapore
     dockerfilePath: n8n/Dockerfile
