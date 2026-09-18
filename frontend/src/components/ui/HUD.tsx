@@ -1,6 +1,7 @@
 import React from 'react';
-import { Volume2, VolumeX, ShieldAlert, CheckCircle2, RotateCcw, Compass, UserCheck } from 'lucide-react';
+import { Volume2, VolumeX, ShieldAlert, CheckCircle2, RotateCcw, Compass, UserCheck, Sparkles } from 'lucide-react';
 import { useClassroomStore } from '../../store/useClassroomStore';
+import { AIMentorDialogue } from './AIMentorDialogue';
 
 export const HUD: React.FC = () => {
   const {
@@ -11,6 +12,9 @@ export const HUD: React.FC = () => {
     resetWorldSeed,
     avatar,
     worldState,
+    isNearMentor,
+    isMentorOpen,
+    openMentor,
   } = useClassroomStore();
 
   const isLearnerB = learner?.learner_id === 'learner_b';
@@ -19,6 +23,47 @@ export const HUD: React.FC = () => {
 
   return (
     <div className="ui-overlay">
+      {/* Central Dais AI Mentor Floating Proximity Prompt */}
+      {isNearMentor && !isMentorOpen && (
+        <div
+          className="ui-interactive"
+          style={{
+            position: 'absolute',
+            top: '80px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 40,
+            animation: 'pulseGlow 2s infinite ease-in-out',
+          }}
+        >
+          <button
+            onClick={openMentor}
+            className="glass-panel"
+            style={{
+              padding: '10px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              cursor: 'pointer',
+              borderColor: 'var(--purple-bright)',
+              background: 'rgba(168, 85, 247, 0.18)',
+              boxShadow: '0 0 20px rgba(168, 85, 247, 0.4)',
+              color: '#ffffff',
+            }}
+          >
+            <Sparkles size={16} color="var(--purple-bright)" />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', fontWeight: 700, letterSpacing: '0.04em' }}>
+              [E] CONSULT AI MENTOR
+            </span>
+            <span className="glass-pill" style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+              Feynman Guidance
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* AI Mentor Glassmorphic Dialogue Overlay */}
+      <AIMentorDialogue />
       {/* Top Header Bar */}
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
         {/* Left: Project Branding & Zone Indicator */}
