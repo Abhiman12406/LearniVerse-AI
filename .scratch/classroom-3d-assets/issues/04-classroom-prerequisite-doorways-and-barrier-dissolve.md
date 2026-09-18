@@ -4,10 +4,10 @@
 
 **Blocked by:** 01: Reference Blueprints Generation (Nanabanana), 02: Procedural Classroom Campus Diorama & Lighting
 
-**Status:** ready-for-agent
+**Status:** closed
 
-- [ ] Create procedural Three.js factory in `frontend/src/assets/3d/createPrerequisiteDoorModel.ts` based on `asstesimages/classroom_doorway.png`.
-- [ ] Incorporate interactive LED plaque showing prerequisite status (e.g. "Stack Mastery: 38% / Req: 70% - LOCKED").
-- [ ] Mount doorways at the thresholds of all 4 lab wings inside `frontend/src/components/canvas/PrerequisiteBarrier.tsx`.
-- [ ] Connect barrier mesh opacity and shockwave shader animation to `useClassroomStore.dissolvingWingId` and `dissolvePhase`.
-- [ ] Enforce physical blocking colliders when a door is locked (e.g. Recursion locked for Student B) and open passage when unlocked (Student A).
+- [x] Create procedural Three.js factory in `frontend/src/assets/3d/createPrerequisiteDoorModel.ts` based on `asstesimages/classroom_doorway.png`.
+- [x] Incorporate interactive LED plaque showing prerequisite status (e.g. "Stack Mastery: 38% / Req: 70% - LOCKED").
+- [x] Mount doorways at the thresholds of all 4 lab wings inside `frontend/src/components/canvas/PrerequisiteBarrier.tsx`.
+- [x] Connect barrier mesh opacity and shockwave shader animation to `useClassroomStore.dissolvingWingId` and `dissolvePhase`.
+- [x] Enforce physical blocking colliders when a door is locked (e.g. Recursion locked for Student B) and open passage when unlocked (Student A).
