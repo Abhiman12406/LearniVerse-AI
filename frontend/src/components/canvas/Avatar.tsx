@@ -36,6 +36,7 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
   const stepTimer = useRef<number>(0);
   const keys = useRef<{ [key: string]: boolean }>({});
   const setAvatarState = useClassroomStore((s) => s.setAvatarState);
+  const perspectiveMode = useClassroomStore((s) => s.perspectiveMode);
 
   // Procedural Student Avatar Rig
   const rig = useMemo(() => createStudentAvatar(), []);
@@ -232,10 +233,15 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
     );
   });
 
+  const isCharacterVisible = perspectiveMode !== '1st_person';
+  rig.characterGroup.visible = isCharacterVisible;
+
   return (
     <group ref={avatarGroupRef} position={[0, 0, 8]}>
-      {/* Procedural 3D Student Character Rig */}
-      <primitive object={rig.characterGroup} />
+      {/* Procedural 3D Student Character Rig (Hidden in 1P Mode) */}
+      <group visible={isCharacterVisible}>
+        <primitive object={rig.characterGroup} />
+      </group>
 
       {/* Subtle Avatar Ground Spotlight / Shadow Anchor */}
       <pointLight position={[0, 0.2, 0]} intensity={0.6} distance={2.5} color="#00f0ff" />

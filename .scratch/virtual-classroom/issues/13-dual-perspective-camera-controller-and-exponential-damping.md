@@ -4,11 +4,11 @@
 
 **Blocked by:** 12: Performance Prefactoring & Texture Singleton Caching (60 FPS Foundation)
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Camera position and target tracking utilize delta-timed exponential smoothing (`1 - Math.exp(-lambda * delta)`) rather than fixed-step linear interpolation.
-- [ ] The global classroom store supports perspective mode state toggling between `3rd_person` and `1st_person`.
-- [ ] Pressing the 'V' hotkey toggles camera perspective instantly without disrupting avatar locomotion.
-- [ ] A dedicated perspective pill button on the HUD clearly indicates current view mode (`3P` vs `1P`) and allows click-to-toggle.
-- [ ] Scrolling forward with the mouse wheel smoothly zooms toward the avatar and seamlessly enters 1P mode when distance reaches minimum threshold; scrolling backward returns smoothly to 3P mode.
-- [ ] The 3D avatar model geometry is automatically hidden from view while in 1P mode and restored when returning to 3P mode.
+- [x] Camera position and target tracking utilize delta-timed exponential smoothing (`1 - Math.exp(-lambda * delta)`) rather than fixed-step linear interpolation.
+- [x] The global classroom store supports perspective mode state toggling between `3rd_person` and `1st_person`.
+- [x] Pressing the 'V' hotkey toggles camera perspective instantly without disrupting avatar locomotion.
+- [x] A dedicated perspective pill button on the HUD clearly indicates current view mode (`3P` vs `1P`) and allows click-to-toggle.
+- [x] Scrolling forward with the mouse wheel smoothly zooms toward the avatar and seamlessly enters 1P mode when distance reaches minimum threshold; scrolling backward returns smoothly to 3P mode.
+- [x] The 3D avatar model geometry is automatically hidden from view while in 1P mode and restored when returning to 3P mode.

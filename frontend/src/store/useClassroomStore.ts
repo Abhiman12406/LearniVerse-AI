@@ -120,6 +120,7 @@ interface ClassroomStore {
     position: [number, number, number];
     lookAt: [number, number, number];
   } | null;
+  perspectiveMode: '3rd_person' | '1st_person';
 
   // Station Console & Stack Apparatus State
   activeStation: string | null;
@@ -183,6 +184,8 @@ interface ClassroomStore {
   fetchMentorGuidance: (learnerId?: string) => Promise<void>;
   fetchDeliberation: (learnerId?: string) => Promise<void>;
   triggerBarrierDissolve: (wingId?: string) => void;
+  togglePerspectiveMode: () => void;
+  setPerspectiveMode: (mode: '3rd_person' | '1st_person') => void;
   setActiveStation: (stationId: string | null) => void;
   pushStackDisc: (value?: number) => void;
   popStackDisc: () => void;
@@ -522,6 +525,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   dissolvingWingId: null,
   dissolvePhase: 'idle',
   cinematicCamera: null,
+  perspectiveMode: '3rd_person',
 
   activeStation: null,
   stackDiscs: [
@@ -720,6 +724,18 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     set({
       avatar: { position, rotation, isMoving },
     });
+  },
+
+  togglePerspectiveMode: () => {
+    soundSystem.playChirp();
+    set((state) => ({
+      perspectiveMode: state.perspectiveMode === '3rd_person' ? '1st_person' : '3rd_person',
+    }));
+  },
+
+  setPerspectiveMode: (mode: '3rd_person' | '1st_person') => {
+    soundSystem.playChirp();
+    set({ perspectiveMode: mode });
   },
 
   openMentor: () => {

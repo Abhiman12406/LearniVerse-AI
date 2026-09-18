@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Volume2, VolumeX, ShieldAlert, CheckCircle2, RotateCcw, Compass, UserCheck, Sparkles, Zap, Brain, HelpCircle, Activity } from 'lucide-react';
+import { Volume2, VolumeX, ShieldAlert, CheckCircle2, RotateCcw, Compass, UserCheck, Sparkles, Zap, Brain, HelpCircle, Activity, Camera, Eye } from 'lucide-react';
 import { useClassroomStore } from '../../store/useClassroomStore';
 import { AIMentorDialogue } from './AIMentorDialogue';
 import { FeynmanModal } from './FeynmanModal';
@@ -22,20 +22,25 @@ export const HUD: React.FC = () => {
     isTelemetryOpen,
     toggleTelemetry,
     openFeynman,
+    perspectiveMode,
+    togglePerspectiveMode,
   } = useClassroomStore();
 
-  // Keyboard shortcut [F] to open Feynman Agent
+  // Keyboard shortcut [F] to open Feynman Agent, [V] to toggle camera perspective
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
       if (e.key.toLowerCase() === 'f' && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         openFeynman();
+      } else if (e.code === 'KeyV' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        togglePerspectiveMode();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [openFeynman]);
+  }, [openFeynman, togglePerspectiveMode]);
 
   const isLearnerB = learner?.learner_id === 'learner_b';
   const isRemedial = learner?.learning_state.status === 'remediation_required';
@@ -308,8 +313,47 @@ export const HUD: React.FC = () => {
           )}
         </div>
 
-        {/* Right: Telemetry Drawer Toggle & Audio Synthesizer Mute Toggle */}
+        {/* Right: Camera Perspective Pill, Telemetry Drawer Toggle & Audio Mute */}
         <div className="ui-interactive" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Dual-Perspective Mode Toggle Button */}
+          <button
+            id="btn-perspective-mode"
+            onClick={togglePerspectiveMode}
+            className="glass-panel"
+            style={{
+              padding: '10px 14px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '7px',
+              color: perspectiveMode === '1st_person' ? '#ff9900' : 'var(--cyan-core)',
+              borderColor: perspectiveMode === '1st_person' ? 'rgba(255, 153, 0, 0.6)' : 'var(--border-cyan)',
+              background: perspectiveMode === '1st_person' ? 'rgba(255, 153, 0, 0.16)' : 'rgba(0, 240, 255, 0.06)',
+              boxShadow: perspectiveMode === '1st_person' ? '0 0 14px rgba(255, 153, 0, 0.35)' : 'none',
+              transition: 'all 0.2s ease',
+            }}
+            title="Toggle 3P Chase vs 1P Eye-Level Perspective [V or Mouse Wheel]"
+          >
+            {perspectiveMode === '1st_person' ? (
+              <Eye size={17} color="#ff9900" />
+            ) : (
+              <Camera size={17} color="var(--cyan-core)" />
+            )}
+            <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+              {perspectiveMode === '1st_person' ? '1P EYE' : '3P CHASE'}
+            </span>
+            <span
+              className="glass-pill"
+              style={{
+                fontSize: '9px',
+                padding: '1px 5px',
+                color: perspectiveMode === '1st_person' ? '#ff9900' : 'var(--text-muted)',
+              }}
+            >
+              [V]
+            </span>
+          </button>
+
           <button
             id="btn-agent-brain"
             onClick={toggleTelemetry}
@@ -382,6 +426,9 @@ export const HUD: React.FC = () => {
 
             <span className="glass-pill" style={{ color: 'var(--text-primary)', padding: '2px 8px' }}>Mouse Drag</span>
             <span style={{ color: 'var(--text-secondary)' }}>Spherical Camera Orbit</span>
+
+            <span className="glass-pill" style={{ color: 'var(--text-primary)', padding: '2px 8px' }}>V / Wheel</span>
+            <span style={{ color: 'var(--text-secondary)' }}>3P / 1P Perspective Toggle</span>
           </div>
 
           <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
