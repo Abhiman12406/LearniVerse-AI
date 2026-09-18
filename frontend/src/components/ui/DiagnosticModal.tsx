@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
-  AlertTriangle,
   RotateCcw,
   Zap,
   Code2,
@@ -14,15 +13,32 @@ import {
   Check,
   Flame,
   Award,
+  Lock,
+  Unlock,
+  TrendingUp,
+  TrendingDown,
+  ShieldAlert,
+  Compass,
+  ArrowRight,
 } from 'lucide-react';
+
 import { useClassroomStore } from '../../store/useClassroomStore';
 import { DEFAULT_DIAGNOSTIC_ASSESSMENT } from '../../data/diagnosticQuestions';
+
+const WING_TELEPORT_COORDS: Record<string, [number, number, number]> = {
+  array_station: [12.0, 0.0, -20.0],
+  linked_list_lab: [24.0, 0.0, 0.0],
+  stack_lab: [12.0, 0.0, 20.0],
+  recursion_lab: [-24.0, 0.0, 0.0],
+  tree_lab: [-12.0, 0.0, 20.0],
+};
 
 const CONCEPT_THEMES: Record<
   string,
   { name: string; color: string; bg: string; border: string; glow: string }
 > = {
   array: {
+
     name: 'Array Station',
     color: '#38bdf8',
     bg: 'rgba(56, 189, 248, 0.12)',
@@ -68,13 +84,14 @@ export const DiagnosticModal: React.FC = () => {
     diagnosticCurrentIndex,
     diagnosticSubmitted,
     diagnosticResult,
-    isDiagnosticLoading,
     isDiagnosticSubmitting,
     setDiagnosticAnswer,
     setDiagnosticIndex,
     submitDiagnosticAssessment,
     resetDiagnosticAssessment,
+    teleportAvatar,
   } = useClassroomStore();
+
 
   const [showHint, setShowHint] = useState(false);
 
@@ -89,8 +106,8 @@ export const DiagnosticModal: React.FC = () => {
   const answeredCount = Object.keys(diagnosticAnswers).length;
   const totalQuestions = questions.length;
   const progressPercent = Math.round((answeredCount / totalQuestions) * 100);
-  const isCurrentAnswered = currentQ ? !!diagnosticAnswers[currentQ.id] : false;
   const allAnswered = answeredCount === totalQuestions;
+
 
   const handleSelectOption = (optionId: string) => {
     if (diagnosticSubmitted || isDiagnosticSubmitting) return;
@@ -331,10 +348,11 @@ export const DiagnosticModal: React.FC = () => {
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '20px',
+                gap: '22px',
                 animation: 'fadeIn 0.3s ease',
               }}
             >
+              {/* Top Banner Card */}
               <div
                 style={{
                   padding: '20px',
@@ -382,7 +400,7 @@ export const DiagnosticModal: React.FC = () => {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <button
                     onClick={resetDiagnosticAssessment}
                     className="cyber-button"
@@ -423,68 +441,449 @@ export const DiagnosticModal: React.FC = () => {
                 </div>
               </div>
 
-              {/* Concept Breakdown Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px' }}>
-                {questions.map((q) => {
-                  const isCorrect = diagnosticResult.concept_breakdown[q.concept];
-                  const qTheme = CONCEPT_THEMES[q.concept] || CONCEPT_THEMES.array;
-
-                  return (
-                    <div
-                      key={q.id}
-                      style={{
-                        padding: '12px',
-                        borderRadius: '10px',
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        border: `1px solid ${isCorrect ? 'rgba(52, 211, 153, 0.4)' : 'rgba(244, 63, 94, 0.4)'}`,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '6px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span
-                          style={{
-                            fontSize: '10px',
-                            fontWeight: 800,
-                            color: qTheme.color,
-                            textTransform: 'uppercase',
-                            fontFamily: 'var(--font-mono, monospace)',
-                          }}
-                        >
-                          {q.concept.replace('_', ' ')}
-                        </span>
-                        {isCorrect ? (
-                          <span style={{ fontSize: '10px', fontWeight: 700, color: '#34d399', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                            <CheckCircle2 size={12} /> Mastered
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: '10px', fontWeight: 700, color: '#fb7185', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                            <AlertTriangle size={12} /> Gap
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#e2e8f0' }}>{q.title}</div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Question-by-Question Review */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
-                <h4
+              {/* Dynamic Prerequisite Threshold Dissolve Alert Banner */}
+              {diagnosticResult.threshold_crossed && diagnosticResult.unlocked_wing && (
+                <div
                   style={{
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    color: '#94a3b8',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    margin: '0 0 4px 0',
-                    fontFamily: 'var(--font-mono, monospace)',
+                    padding: '16px 20px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(56, 189, 248, 0.15))',
+                    border: '1px solid #10b981',
+                    boxShadow: '0 0 20px rgba(16, 185, 129, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '14px',
                   }}
                 >
-                  Diagnostic Question Review
-                </h4>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div
+                      style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '8px',
+                        background: 'rgba(16, 185, 129, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#34d399',
+                      }}
+                    >
+                      <Unlock size={20} />
+                    </div>
+                    <div>
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: 800,
+                          color: '#34d399',
+                          fontFamily: 'var(--font-mono, monospace)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.04em',
+                        }}
+                      >
+                        PREREQUISITE BARRIER DISSOLVED: {diagnosticResult.unlocked_wing.replace('_', ' ').toUpperCase()} UNLOCKED!
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '2px' }}>
+                        Stack mastery reached the 70% threshold. The crimson laser forcefield is dissolved and the Recursion Wing is now accessible!
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      const coords = WING_TELEPORT_COORDS[diagnosticResult.unlocked_wing!];
+                      if (coords) teleportAvatar(coords);
+                      closeDiagnostic();
+                    }}
+                    className="cyber-button"
+                    style={{
+                      padding: '8px 16px',
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      background: 'linear-gradient(135deg, rgba(52, 211, 153, 0.6), rgba(56, 189, 248, 0.5))',
+                      borderColor: '#34d399',
+                      color: '#090d16',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Compass size={13} color="#090d16" />
+                    <span>Teleport to {diagnosticResult.unlocked_wing.replace('_', ' ').toUpperCase()}</span>
+                  </button>
+                </div>
+              )}
+
+              {/* 1. BKT Mastery Updates Section (Before vs After Deltas) */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Zap size={15} color="#38bdf8" />
+                    <h4
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        color: '#f8fafc',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        margin: 0,
+                        fontFamily: 'var(--font-mono, monospace)',
+                      }}
+                    >
+                      Bayesian Knowledge Tracing (BKT) Prior-to-Posterior Belief Updates
+                    </h4>
+                  </div>
+                  <span style={{ fontSize: '10px', color: '#94a3b8', fontFamily: 'var(--font-mono, monospace)' }}>
+                    P(L_t) Continuous Mastery Engine
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {(diagnosticResult.bkt_updates || []).map((u) => {
+                    const qTheme = CONCEPT_THEMES[u.concept] || CONCEPT_THEMES.array;
+                    const isPositive = u.delta > 0;
+                    const isNegative = u.delta < 0;
+                    const deltaFormatted = isPositive ? `+${Math.round(u.delta * 100)}%` : `${Math.round(u.delta * 100)}%`;
+                    const priorPct = Math.round(u.prior_mastery * 100);
+                    const postPct = Math.round(u.posterior_mastery * 100);
+
+                    const tierColor =
+                      u.classification === 'HIGH'
+                        ? '#34d399'
+                        : u.classification === 'MEDIUM'
+                        ? '#fbbf24'
+                        : u.classification === 'LOW'
+                        ? '#fb7185'
+                        : '#c084fc';
+
+                    return (
+                      <div
+                        key={u.concept}
+                        style={{
+                          padding: '14px 18px',
+                          borderRadius: '10px',
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          border: `1px solid ${u.is_correct ? 'rgba(52, 211, 153, 0.25)' : 'rgba(244, 63, 94, 0.25)'}`,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '10px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span
+                              style={{
+                                fontSize: '10px',
+                                fontWeight: 800,
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                background: qTheme.bg,
+                                color: qTheme.color,
+                                border: `1px solid ${qTheme.border}`,
+                                fontFamily: 'var(--font-mono, monospace)',
+                                textTransform: 'uppercase',
+                              }}
+                            >
+                              {u.concept.replace('_', ' ')}
+                            </span>
+                            <span style={{ fontSize: '13px', fontWeight: 700, color: '#f8fafc' }}>
+                              {u.concept_title}
+                            </span>
+                          </div>
+
+                          {/* Prior -> Posterior and Delta badge */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div
+                              style={{
+                                fontSize: '12px',
+                                fontWeight: 700,
+                                color: '#94a3b8',
+                                fontFamily: 'var(--font-mono, monospace)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                              }}
+                            >
+                              <span>Prior: {priorPct}%</span>
+                              <ArrowRight size={11} color="#64748b" />
+                              <span style={{ color: '#f8fafc', fontWeight: 800 }}>Posterior: {postPct}%</span>
+                            </div>
+
+                            <span
+                              style={{
+                                fontSize: '11px',
+                                fontWeight: 800,
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                background: isPositive
+                                  ? 'rgba(52, 211, 153, 0.15)'
+                                  : isNegative
+                                  ? 'rgba(244, 63, 94, 0.15)'
+                                  : 'rgba(255, 255, 255, 0.08)',
+                                color: isPositive ? '#34d399' : isNegative ? '#fb7185' : '#94a3b8',
+                                border: `1px solid ${isPositive ? '#34d399' : isNegative ? '#fb7185' : 'rgba(255, 255, 255, 0.15)'}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                                fontFamily: 'var(--font-mono, monospace)',
+                              }}
+                            >
+                              {isPositive ? <TrendingUp size={12} /> : isNegative ? <TrendingDown size={12} /> : null}
+                              {deltaFormatted} ΔM
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Animated Visual Mastery Progress Bar */}
+                        <div
+                          style={{
+                            height: '8px',
+                            background: 'rgba(255, 255, 255, 0.08)',
+                            borderRadius: '4px',
+                            overflow: 'hidden',
+                            position: 'relative',
+                          }}
+                        >
+                          {/* Prior Mastery marker */}
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              bottom: 0,
+                              left: `${priorPct}%`,
+                              width: '2px',
+                              background: '#f8fafc',
+                              zIndex: 2,
+                            }}
+                            title={`Prior Mastery: ${priorPct}%`}
+                          />
+                          {/* Posterior Mastery bar */}
+                          <div
+                            style={{
+                              height: '100%',
+                              width: `${postPct}%`,
+                              background: u.is_correct
+                                ? 'linear-gradient(90deg, #38bdf8, #10b981)'
+                                : 'linear-gradient(90deg, #f43f5e, #fb7185)',
+                              borderRadius: '4px',
+                              transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+                            }}
+                          />
+                        </div>
+
+                        {/* Metadata Pills */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', fontSize: '10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-mono, monospace)' }}>
+                            <span style={{ color: '#94a3b8' }}>
+                              IRT Ability θ: <strong style={{ color: '#e2e8f0' }}>{u.irt_ability >= 0 ? `+${u.irt_ability.toFixed(2)}` : u.irt_ability.toFixed(2)}</strong>
+                            </span>
+                            <span style={{ color: '#475569' }}>•</span>
+                            <span style={{ color: '#94a3b8' }}>
+                              Confidence: <strong style={{ color: '#e2e8f0' }}>{Math.round(u.confidence * 100)}%</strong>
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span
+                              style={{
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                background: `${tierColor}18`,
+                                color: tierColor,
+                                border: `1px solid ${tierColor}40`,
+                                fontWeight: 700,
+                                fontFamily: 'var(--font-mono, monospace)',
+                              }}
+                            >
+                              Tier: {u.classification}
+                            </span>
+
+                            {u.barrier_status === 'sealed' ? (
+                              <span
+                                style={{
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  background: 'rgba(244, 63, 94, 0.15)',
+                                  color: '#fb7185',
+                                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                                  fontWeight: 700,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                }}
+                              >
+                                <Lock size={10} /> Barrier Sealed
+                              </span>
+                            ) : (
+                              <span
+                                style={{
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  background: 'rgba(52, 211, 153, 0.15)',
+                                  color: '#34d399',
+                                  border: '1px solid rgba(52, 211, 153, 0.3)',
+                                  fontWeight: 700,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                }}
+                              >
+                                <Unlock size={10} /> Barrier Accessible
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 2. Prerequisite Barrier Forcefield Recalculation Section */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ShieldAlert size={15} color="#fb923c" />
+                    <h4
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        color: '#f8fafc',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        margin: 0,
+                        fontFamily: 'var(--font-mono, monospace)',
+                      }}
+                    >
+                      Classroom Prerequisite Barrier Forcefields
+                    </h4>
+                  </div>
+                  <span style={{ fontSize: '10px', color: '#94a3b8', fontFamily: 'var(--font-mono, monospace)' }}>
+                    Hard Prerequisite Rules Enforced
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
+                  {Object.entries(diagnosticResult.barrier_recalculations || {}).map(([wid, b]) => {
+                    const isSealed = b.status === 'sealed';
+                    const isRecursion = wid === 'recursion_lab';
+                    const qTheme = CONCEPT_THEMES[b.concept] || CONCEPT_THEMES.array;
+
+                    return (
+                      <div
+                        key={wid}
+                        style={{
+                          padding: '12px 14px',
+                          borderRadius: '10px',
+                          background: isSealed
+                            ? 'linear-gradient(135deg, rgba(244, 63, 94, 0.08), rgba(15, 23, 42, 0.8))'
+                            : 'linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(15, 23, 42, 0.8))',
+                          border: `1px solid ${isSealed ? 'rgba(244, 63, 94, 0.4)' : 'rgba(52, 211, 153, 0.4)'}`,
+                          boxShadow: isSealed && isRecursion ? '0 0 16px rgba(244, 63, 94, 0.15)' : 'none',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '8px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              color: qTheme.color,
+                              fontFamily: 'var(--font-mono, monospace)',
+                              textTransform: 'uppercase',
+                            }}
+                          >
+                            {b.name}
+                          </span>
+
+                          <span
+                            style={{
+                              fontSize: '10px',
+                              fontWeight: 800,
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              background: isSealed ? 'rgba(244, 63, 94, 0.2)' : 'rgba(52, 211, 153, 0.2)',
+                              color: isSealed ? '#fb7185' : '#34d399',
+                              border: `1px solid ${isSealed ? '#fb7185' : '#34d399'}`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            {isSealed ? <Lock size={11} /> : <Unlock size={11} />}
+                            {isSealed ? 'FORCEFIELD SEALED' : 'ACCESSIBLE'}
+                          </span>
+                        </div>
+
+                        <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: '1.4' }}>
+                          {isSealed ? (
+                            <span style={{ color: '#fca5a5' }}>
+                              🔒 {b.reason || 'Prerequisite Threshold Unmet'}. Strengthen foundational skills to dissolve this barrier.
+                            </span>
+                          ) : (
+                            <span style={{ color: '#86efac' }}>
+                              ✓ All prerequisite conditions satisfied. Barrier dissolved.
+                            </span>
+                          )}
+                        </div>
+
+                        {!isSealed && (
+                          <button
+                            onClick={() => {
+                              const coords = WING_TELEPORT_COORDS[wid];
+                              if (coords) teleportAvatar(coords);
+                              closeDiagnostic();
+                            }}
+                            style={{
+                              alignSelf: 'flex-start',
+                              marginTop: '2px',
+                              padding: '3px 8px',
+                              borderRadius: '4px',
+                              background: 'rgba(255, 255, 255, 0.06)',
+                              border: '1px solid rgba(255, 255, 255, 0.12)',
+                              color: '#94a3b8',
+                              fontSize: '10px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            <Compass size={10} />
+                            <span>Teleport Here</span>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 3. Question-by-Question Review with Pedagogical Explanations */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <BookOpen size={15} color="#94a3b8" />
+                  <h4
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      color: '#f8fafc',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      margin: 0,
+                      fontFamily: 'var(--font-mono, monospace)',
+                    }}
+                  >
+                    Question-by-Question Pedagogical Review & Foundational Concepts
+                  </h4>
+                </div>
+
                 {diagnosticResult.reviews.map((r, idx) => {
                   const qItem = questions.find((q) => q.id === r.question_id);
                   const qTheme = CONCEPT_THEMES[r.concept] || CONCEPT_THEMES.array;
@@ -539,12 +938,22 @@ export const DiagnosticModal: React.FC = () => {
                           fontSize: '11px',
                           color: '#cbd5e1',
                           background: 'rgba(0, 0, 0, 0.35)',
-                          padding: '8px 12px',
+                          padding: '10px 14px',
                           borderRadius: '6px',
-                          lineHeight: '1.5',
+                          lineHeight: '1.55',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '6px',
                         }}
                       >
-                        <strong>Pedagogical Review: </strong> {r.explanation}
+                        <div>
+                          <strong>Pedagogical Explanation: </strong> {r.explanation}
+                        </div>
+                        {qItem?.feynman_analogy && (
+                          <div style={{ color: '#fde047', fontSize: '11px' }}>
+                            <strong>Intuition & Real-World Metaphor: </strong> {qItem.feynman_analogy}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

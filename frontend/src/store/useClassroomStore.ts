@@ -2521,11 +2521,40 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
 
       if (res.ok) {
         const result: DiagnosticSubmissionResponse = await res.json();
-        set({
+        const storeUpdates: Partial<ClassroomStore> = {
           diagnosticSubmitted: true,
           diagnosticResult: result,
           isDiagnosticSubmitting: false,
-        });
+        };
+
+        if (result.learner_profile) {
+          storeUpdates.learner = result.learner_profile;
+        }
+        if (result.world_state) {
+          storeUpdates.worldState = result.world_state;
+        }
+        if (result.bkt_updates && result.bkt_updates.length > 0) {
+          const newDeltas = { ...state.lastMasteryDelta };
+          for (const u of result.bkt_updates) {
+            newDeltas[u.concept] = {
+              delta: u.delta,
+              oldMastery: u.prior_mastery,
+              newMastery: u.posterior_mastery,
+              timestamp: Date.now(),
+            };
+          }
+          storeUpdates.lastMasteryDelta = newDeltas;
+        }
+
+        set(storeUpdates);
+
+        if (result.threshold_crossed && result.unlocked_wing) {
+          get().triggerBarrierDissolve(result.unlocked_wing);
+          get().showToast(
+            `Prerequisite barrier dissolved! ${result.unlocked_wing.replace('_', ' ').toUpperCase()} is now unlocked!`
+          );
+        }
+
         try {
           soundSystem.playChime();
         } catch {
@@ -2535,12 +2564,73 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       }
       throw new Error(`Submission status: ${res.status}`);
     } catch {
-      // Resilient offline evaluation calculation
+      // Resilient offline 2-step BKT and barrier recalculation
+      const bktParams: Record<string, { p_transit: number; p_guess: number; p_slip: number }> = {
+        array: { p_transit: 0.10, p_guess: 0.25, p_slip: 0.08 },
+        linked_list: { p_transit: 0.12, p_guess: 0.22, p_slip: 0.10 },
+        stack: { p_transit: 0.05, p_guess: 0.54, p_slip: 0.11 },
+        recursion: { p_transit: 0.08, p_guess: 0.20, p_slip: 0.12 },
+        tree: { p_transit: 0.08, p_guess: 0.18, p_slip: 0.12 },
+      };
+
+      const currentMastery = state.learner?.mastery_map || {
+        array: 0.90,
+        linked_list: 0.70,
+        stack: 0.38,
+        recursion: 0.20,
+        tree: 0.10,
+      };
+
       let correctCount = 0;
+      const conceptBreakdown: Record<string, boolean> = {};
+      const newMasteryMap = { ...currentMastery };
+      const bktUpdates: any[] = [];
+
       const reviews = assessment.questions.map((q) => {
         const selected = state.diagnosticAnswers[q.id] || null;
         const isCorrect = selected === q.correct_option_id;
         if (isCorrect) correctCount++;
+        conceptBreakdown[q.concept] = isCorrect;
+
+        const prior = (currentMastery as any)[q.concept] ?? 0.5;
+        const params = bktParams[q.concept] || { p_transit: 0.08, p_guess: 0.20, p_slip: 0.10 };
+
+        let posterior = prior;
+        if (isCorrect) {
+          const num = prior * (1 - params.p_slip);
+          const den = num + (1 - prior) * params.p_guess;
+          const pObs = den > 0 ? num / den : prior;
+          posterior = pObs + (1 - pObs) * params.p_transit;
+        } else {
+          const num = prior * params.p_slip;
+          const den = num + (1 - prior) * (1 - params.p_guess);
+          const pObs = den > 0 ? num / den : prior;
+          posterior = pObs;
+        }
+        posterior = Math.min(0.99, Math.max(0.01, Math.round(posterior * 100) / 100));
+        (newMasteryMap as any)[q.concept] = posterior;
+        const delta = Math.round((posterior - prior) * 100) / 100;
+
+        const classification =
+          posterior >= 0.75 ? 'HIGH' : posterior >= 0.50 ? 'MEDIUM' : posterior >= 0.30 ? 'LOW' : 'UNCERTAIN';
+
+        bktUpdates.push({
+          concept: q.concept,
+          concept_title: q.concept_title,
+          prior_mastery: prior,
+          posterior_mastery: posterior,
+          delta,
+          is_correct: isCorrect,
+          irt_ability: isCorrect ? 0.8 : -0.6,
+          confidence: 0.75,
+          classification,
+          barrier_status: q.concept === 'stack' && posterior < 0.70 ? 'sealed' : 'accessible',
+          barrier_reason:
+            q.concept === 'stack' && posterior < 0.70
+              ? `Requires Stack ≥ 70% | Current: ${Math.round(posterior * 100)}%`
+              : null,
+        });
+
         const opt = q.options.find((o) => o.id === (selected || q.correct_option_id));
         return {
           question_id: q.id,
@@ -2553,6 +2643,101 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
         };
       });
 
+      // Barrier recalculation
+      const recursionWasSealed = (currentMastery.stack ?? 0.38) < 0.70;
+      const recursionIsSealed = newMasteryMap.stack < 0.70;
+      const thresholdCrossed = recursionWasSealed && !recursionIsSealed;
+      const unlockedWing = thresholdCrossed ? 'recursion_lab' : null;
+
+      const barrierRecalculations: Record<string, any> = {
+        array_station: {
+          wing_id: 'array_station',
+          name: 'Array Station',
+          concept: 'array',
+          status: 'accessible',
+          is_ready: true,
+          was_sealed: false,
+          is_sealed: false,
+          dissolved: false,
+        },
+        linked_list_lab: {
+          wing_id: 'linked_list_lab',
+          name: 'Linked List Lab',
+          concept: 'linked_list',
+          status: newMasteryMap.array >= 0.60 ? 'accessible' : 'sealed',
+          is_ready: newMasteryMap.array >= 0.60,
+          was_sealed: currentMastery.array < 0.60,
+          is_sealed: newMasteryMap.array < 0.60,
+          dissolved: currentMastery.array < 0.60 && newMasteryMap.array >= 0.60,
+          reason: newMasteryMap.array < 0.60 ? `Requires Array ≥ 60% | Current: ${Math.round(newMasteryMap.array * 100)}%` : null,
+        },
+        stack_lab: {
+          wing_id: 'stack_lab',
+          name: 'Stack Lab',
+          concept: 'stack',
+          status: newMasteryMap.linked_list >= 0.50 ? 'accessible' : 'sealed',
+          is_ready: newMasteryMap.linked_list >= 0.50,
+          was_sealed: currentMastery.linked_list < 0.50,
+          is_sealed: newMasteryMap.linked_list < 0.50,
+          dissolved: currentMastery.linked_list < 0.50 && newMasteryMap.linked_list >= 0.50,
+          reason: newMasteryMap.linked_list < 0.50 ? `Requires Linked List ≥ 50% | Current: ${Math.round(newMasteryMap.linked_list * 100)}%` : null,
+        },
+        recursion_lab: {
+          wing_id: 'recursion_lab',
+          name: 'Recursion Lab',
+          concept: 'recursion',
+          status: recursionIsSealed ? 'sealed' : 'accessible',
+          is_ready: !recursionIsSealed,
+          was_sealed: recursionWasSealed,
+          is_sealed: recursionIsSealed,
+          dissolved: thresholdCrossed,
+          reason: recursionIsSealed ? `Requires Stack ≥ 70% | Current: ${Math.round(newMasteryMap.stack * 100)}%` : null,
+        },
+        tree_lab: {
+          wing_id: 'tree_lab',
+          name: 'Tree Lab',
+          concept: 'tree',
+          status: newMasteryMap.recursion >= 0.70 ? 'accessible' : 'sealed',
+          is_ready: newMasteryMap.recursion >= 0.70,
+          was_sealed: currentMastery.recursion < 0.70,
+          is_sealed: newMasteryMap.recursion < 0.70,
+          dissolved: currentMastery.recursion < 0.70 && newMasteryMap.recursion >= 0.70,
+          reason: newMasteryMap.recursion < 0.70 ? `Requires Recursion ≥ 70% | Current: ${Math.round(newMasteryMap.recursion * 100)}%` : null,
+        },
+      };
+
+      const updatedLearner = state.learner
+        ? {
+            ...state.learner,
+            mastery_map: newMasteryMap,
+            learning_state: {
+              ...state.learner.learning_state,
+              status: recursionIsSealed ? ('remediation_required' as const) : ('advanced' as const),
+              primary_focus_concept: recursionIsSealed ? 'stack' : 'recursion',
+              summary: recursionIsSealed
+                ? `Prerequisite Gap: Stack mastery (${Math.round(newMasteryMap.stack * 100)}%) is below the 70% threshold required for Recursion Wing.`
+                : `Stack mastery elevated to ${Math.round(newMasteryMap.stack * 100)}%. Prerequisite barrier dissolved!`,
+              active_prerequisite_gap: recursionIsSealed
+                ? `Stack mastery ${newMasteryMap.stack.toFixed(2)} < 0.70 prerequisite threshold for Recursion`
+                : null,
+            },
+          }
+        : null;
+
+      const updatedWorldState = state.worldState
+        ? {
+            ...state.worldState,
+            wings: {
+              ...state.worldState.wings,
+              recursion_lab: {
+                ...state.worldState.wings['recursion_lab'],
+                status: recursionIsSealed ? ('sealed' as const) : ('accessible' as const),
+                reason: barrierRecalculations.recursion_lab.reason,
+              },
+            },
+          }
+        : null;
+
       const result: DiagnosticSubmissionResponse = {
         assessment_id: assessment.assessment_id,
         student_id: studentId,
@@ -2561,19 +2746,43 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
         correct_count: correctCount,
         score_percentage: Math.round((correctCount / assessment.questions.length) * 100),
         reviews,
-        concept_breakdown: reviews.reduce(
-          (acc, r) => ({ ...acc, [r.concept]: r.is_correct }),
-          {} as Record<string, boolean>
-        ),
+        concept_breakdown: conceptBreakdown,
+        bkt_updates: bktUpdates,
+        barrier_recalculations: barrierRecalculations,
+        learner_profile: updatedLearner,
+        world_state: updatedWorldState,
+        threshold_crossed: thresholdCrossed,
+        unlocked_wing: unlockedWing,
         status: 'evaluated',
         evaluation_timestamp: new Date().toISOString(),
       };
+
+      const newDeltas = { ...state.lastMasteryDelta };
+      for (const u of bktUpdates) {
+        newDeltas[u.concept] = {
+          delta: u.delta,
+          oldMastery: u.prior_mastery,
+          newMastery: u.posterior_mastery,
+          timestamp: Date.now(),
+        };
+      }
 
       set({
         diagnosticSubmitted: true,
         diagnosticResult: result,
         isDiagnosticSubmitting: false,
+        learner: updatedLearner,
+        worldState: updatedWorldState,
+        lastMasteryDelta: newDeltas,
       });
+
+      if (thresholdCrossed && unlockedWing) {
+        get().triggerBarrierDissolve(unlockedWing);
+        get().showToast(
+          `Prerequisite barrier dissolved! ${unlockedWing.replace('_', ' ').toUpperCase()} is now unlocked!`
+        );
+      }
+
       try {
         soundSystem.playChime();
       } catch {

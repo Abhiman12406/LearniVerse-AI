@@ -83,7 +83,67 @@ describe('AI Diagnostic Assessment Delivery & Store', () => {
       expect(state.diagnosticResult.concept_breakdown.recursion).toBe(false);
       expect(state.diagnosticResult.concept_breakdown.tree).toBe(true);
       expect(state.diagnosticResult.reviews).toHaveLength(5);
+      expect(state.diagnosticResult.bkt_updates).toBeDefined();
+      expect(state.diagnosticResult.bkt_updates).toHaveLength(5);
+
+      const bktMap = (state.diagnosticResult.bkt_updates || []).reduce(
+        (acc, u) => ({ ...acc, [u.concept]: u }),
+        {} as Record<string, any>
+      );
+
+      // Array was correct -> positive delta
+      expect(bktMap.array.is_correct).toBe(true);
+      expect(bktMap.array.delta).toBeGreaterThanOrEqual(0);
+
+      // Stack was incorrect -> delta <= 0
+      expect(bktMap.stack.is_correct).toBe(false);
+      expect(bktMap.stack.delta).toBeLessThanOrEqual(0);
+
+      // Check barrier recalculation
+      expect(state.diagnosticResult.barrier_recalculations).toBeDefined();
+      expect(state.diagnosticResult.barrier_recalculations?.recursion_lab).toBeDefined();
+      expect(state.diagnosticResult.barrier_recalculations?.recursion_lab.status).toBe('sealed');
+      expect(state.diagnosticResult.barrier_recalculations?.recursion_lab.reason).toContain('Stack');
+
+      // Check store learner profile updated
+      expect(state.learner).not.toBeNull();
+      expect(state.learner?.mastery_map.array).toBe(bktMap.array.posterior_mastery);
+      expect(state.learner?.mastery_map.stack).toBe(bktMap.stack.posterior_mastery);
     }
+  });
+
+  it('dissolves Recursion Wing barrier when Stack mastery reaches 70%', async () => {
+    const store = useClassroomStore.getState();
+    store.openDiagnostic();
+
+    // Pre-set learner stack mastery close to threshold
+    if (store.learner) {
+      useClassroomStore.setState({
+        learner: {
+          ...store.learner,
+          mastery_map: {
+            ...store.learner.mastery_map,
+            stack: 0.68,
+          },
+        },
+      });
+    }
+
+    // Submit with Stack correct (opt_stk_01_a is correct)
+    store.setDiagnosticAnswer('diag_arr_01', 'opt_arr_01_a');
+    store.setDiagnosticAnswer('diag_ll_01', 'opt_ll_01_a');
+    store.setDiagnosticAnswer('diag_stk_01', 'opt_stk_01_a'); // Correct -> pushes stack >= 70%
+    store.setDiagnosticAnswer('diag_rec_01', 'opt_rec_01_a');
+    store.setDiagnosticAnswer('diag_tree_01', 'opt_tree_01_a');
+
+    await store.submitDiagnosticAssessment();
+
+    const state = useClassroomStore.getState();
+    expect(state.diagnosticResult?.threshold_crossed).toBe(true);
+    expect(state.diagnosticResult?.unlocked_wing).toBe('recursion_lab');
+    expect(state.diagnosticResult?.barrier_recalculations?.recursion_lab.status).toBe('accessible');
+    expect(state.diagnosticResult?.barrier_recalculations?.recursion_lab.dissolved).toBe(true);
+    expect(state.worldState?.wings.recursion_lab.status).toBe('accessible');
   });
 
   it('resets diagnostic assessment progress cleanly upon retake', async () => {
@@ -103,3 +163,4 @@ describe('AI Diagnostic Assessment Delivery & Store', () => {
     expect(state.diagnosticCurrentIndex).toBe(0);
   });
 });
+

@@ -12,13 +12,21 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from backend.app.models.assessment import (
+    BarrierRecalculationDetail,
     DiagnosticAnswerReview,
     DiagnosticAssessmentResponse,
+    DiagnosticBktDelta,
     DiagnosticOption,
     DiagnosticQuestion,
     DiagnosticSubmissionRequest,
     DiagnosticSubmissionResponse,
 )
+from backend.app.services.bkt_service import bkt_service
+from backend.app.services.irt_service import irt_service
+from backend.app.services.learner_service import WING_DEFINITIONS, learner_service
+from backend.app.services.multidimensional_mastery_service import multidimensional_mastery_service
+from backend.app.services.prerequisite_service import prerequisite_service
+
 
 
 CURATED_OFFLINE_QUESTIONS: List[DiagnosticQuestion] = [
@@ -389,19 +397,87 @@ Respond STRICTLY in valid JSON matching this schema:
         )
 
     def evaluate_submission(self, req: DiagnosticSubmissionRequest) -> DiagnosticSubmissionResponse:
-        """Evaluate submitted diagnostic answers against the question bank."""
+        """Evaluate submitted diagnostic answers, execute 2-step BKT belief updates across all 5 nodes,
+
+        atomically persist learner profile, and recalculate classroom prerequisite barrier forcefields.
+        """
+        lid = req.student_id or "learner_b"
+        profile = learner_service.get_learner_profile(lid)
+        if not profile:
+            profile = learner_service.get_active_learner_profile()
+            lid = profile.learner_id
+
+        # 1. Capture prior wing barrier accessibility states across all wings
+        prior_wing_status: Dict[str, str] = {
+            wid: prerequisite_service.evaluate_concept(meta["concept"], profile.mastery_map).status
+            for wid, meta in WING_DEFINITIONS.items()
+        }
+
+        # 2. Capture prior mastery beliefs
+        prior_masteries: Dict[str, float] = {
+            "array": float(profile.mastery_map.array),
+            "linked_list": float(profile.mastery_map.linked_list),
+            "stack": float(profile.mastery_map.stack),
+            "recursion": float(profile.mastery_map.recursion),
+            "tree": float(profile.mastery_map.tree),
+        }
+
         reviews: List[DiagnosticAnswerReview] = []
         correct_count = 0
         concept_breakdown: Dict[str, bool] = {}
+        new_masteries: Dict[str, float] = {}
+        deltas: Dict[str, float] = {}
+        thetas: Dict[str, float] = {}
+        confidences: Dict[str, float] = {}
 
+        # Resolve questions to evaluate (match offline bank or question index)
+        questions_to_eval: List[DiagnosticQuestion] = []
         for q in self._offline_bank:
+            q_obj = self._question_index.get(q.id, q)
+            questions_to_eval.append(q_obj)
+
+        # 3. Process each submitted answer through 2-Step BKT and 2PL IRT
+        for q in questions_to_eval:
             selected_opt_id = req.answers.get(q.id)
             is_correct = (selected_opt_id == q.correct_option_id) if selected_opt_id else False
 
             if is_correct:
                 correct_count += 1
 
-            concept_breakdown[q.concept] = is_correct
+            concept = q.concept
+            concept_breakdown[concept] = is_correct
+            prior_m = prior_masteries.get(concept, 0.5)
+
+            # §3.0: 2-Step Bayesian Knowledge Tracing with concept-calibrated parameters
+            posterior_m = bkt_service.compute_posterior(
+                prior=prior_m,
+                correct=is_correct,
+                concept=concept,
+                difficulty=q.difficulty or "medium",
+                validity_score=1.0,
+            )
+            delta_m = round(posterior_m - prior_m, 2)
+            new_masteries[concept] = posterior_m
+            deltas[concept] = delta_m
+
+            # §4.0: 2PL IRT Ability Estimation
+            irt_service.record_response(
+                student_id=lid,
+                concept=concept,
+                item_id=q.id,
+                correct=is_correct,
+                difficulty_level=q.difficulty or "medium",
+            )
+            thetas[concept] = irt_service.estimate_ability(lid, concept)
+
+            # §6.0, §7.0: Multi-dimensional cognitive observation & confidence
+            multidimensional_mastery_service.record_observation(
+                student_id=lid,
+                concept=concept,
+                correct=is_correct,
+                dimension="understanding",
+            )
+            confidences[concept] = multidimensional_mastery_service.compute_confidence(lid, concept)
 
             # Find explanation
             explanation = "No response provided."
@@ -419,7 +495,7 @@ Respond STRICTLY in valid JSON matching this schema:
             reviews.append(
                 DiagnosticAnswerReview(
                     question_id=q.id,
-                    concept=q.concept,
+                    concept=concept,
                     selected_option_id=selected_opt_id,
                     correct_option_id=q.correct_option_id,
                     is_correct=is_correct,
@@ -428,19 +504,111 @@ Respond STRICTLY in valid JSON matching this schema:
                 )
             )
 
-        total_questions = len(self._offline_bank)
+        # 4. Classify updated masteries into 4-tier categories (HIGH | MEDIUM | LOW | UNCERTAIN)
+        classifications: Dict[str, str] = {
+            c: multidimensional_mastery_service.classify_mastery(
+                lid, c, new_masteries[c], new_masteries
+            )
+            for c in ["array", "linked_list", "stack", "recursion", "tree"]
+        }
+
+        # 5. Atomically update learner evidence and profile in authoritative store
+        for c in ["array", "linked_list", "stack", "recursion", "tree"]:
+            learner_service.update_learner_evidence(
+                learner_id=lid,
+                concept=c,
+                new_mastery=new_masteries[c],
+                theta=thetas[c],
+                confidence=confidences[c],
+                classification=classifications[c],
+            )
+        updated_profile = learner_service.get_learner_profile(lid)
+
+        # 6. Recalculate Prerequisite Barrier Forcefield states across all wings
+        barrier_recalculations: Dict[str, BarrierRecalculationDetail] = {}
+        dissolved_wings: List[str] = []
+
+        for wid, meta in WING_DEFINITIONS.items():
+            was_sealed = prior_wing_status.get(wid) == "sealed"
+            eval_res = prerequisite_service.evaluate_concept(meta["concept"], updated_profile.mastery_map)
+            is_sealed = eval_res.status == "sealed"
+            dissolved = was_sealed and not is_sealed
+            if dissolved:
+                dissolved_wings.append(wid)
+
+            barrier_recalculations[wid] = BarrierRecalculationDetail(
+                wing_id=wid,
+                name=meta["name"],
+                concept=meta["concept"],
+                status=eval_res.status,
+                is_ready=eval_res.is_ready,
+                was_sealed=was_sealed,
+                is_sealed=is_sealed,
+                dissolved=dissolved,
+                reason=eval_res.reason,
+                required_mastery=meta["required_mastery"],
+            )
+
+        threshold_crossed = bool(dissolved_wings) or (
+            prior_masteries.get("stack", 0.38) < 0.70 and new_masteries.get("stack", 0.38) >= 0.70
+        )
+        unlocked_wing = (
+            dissolved_wings[0]
+            if dissolved_wings
+            else ("recursion_lab" if threshold_crossed else None)
+        )
+
+        # 7. Construct Concept-to-Gated Barrier Mapping for BKT Delta telemetry
+        concept_gated_wing = {
+            "array": "linked_list_lab",
+            "linked_list": "stack_lab",
+            "stack": "recursion_lab",
+            "recursion": "tree_lab",
+            "tree": "tree_lab",
+        }
+
+        bkt_updates: List[DiagnosticBktDelta] = []
+        for q in questions_to_eval:
+            c = q.concept
+            gated_wid = concept_gated_wing.get(c, "array_station")
+            barrier_item = barrier_recalculations.get(gated_wid)
+
+            bkt_updates.append(
+                DiagnosticBktDelta(
+                    concept=c,
+                    concept_title=q.concept_title,
+                    prior_mastery=prior_masteries.get(c, 0.5),
+                    posterior_mastery=new_masteries.get(c, 0.5),
+                    delta=deltas.get(c, 0.0),
+                    is_correct=concept_breakdown.get(c, False),
+                    irt_ability=thetas.get(c, 0.0),
+                    confidence=confidences.get(c, 0.5),
+                    classification=classifications.get(c, "MEDIUM"),
+                    barrier_status=barrier_item.status if barrier_item else "accessible",
+                    barrier_reason=barrier_item.reason if barrier_item else None,
+                )
+            )
+
+        world_state = learner_service.get_world_state(lid)
+        total_questions = len(questions_to_eval)
         answered_count = len([k for k in req.answers.values() if k])
         score_percentage = round((correct_count / total_questions) * 100.0, 1)
 
         return DiagnosticSubmissionResponse(
             assessment_id=req.assessment_id,
-            student_id=req.student_id,
+            student_id=lid,
             total_questions=total_questions,
             answered_count=answered_count,
             correct_count=correct_count,
             score_percentage=score_percentage,
             reviews=reviews,
             concept_breakdown=concept_breakdown,
+            bkt_updates=bkt_updates,
+            barrier_recalculations=barrier_recalculations,
+            learner_profile=updated_profile,
+            world_state=world_state,
+            threshold_crossed=threshold_crossed,
+            unlocked_wing=unlocked_wing,
             status="evaluated",
             evaluation_timestamp=datetime.now(timezone.utc).isoformat(),
         )

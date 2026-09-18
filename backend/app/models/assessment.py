@@ -53,6 +53,9 @@ class DiagnosticSubmissionRequest(BaseModel):
     time_taken_ms: Optional[int] = Field(None, description="Total time taken to complete the test in ms")
 
 
+from backend.app.models.learner import LearnerProfile, WorldState
+
+
 class DiagnosticAnswerReview(BaseModel):
     question_id: str
     concept: str
@@ -61,6 +64,33 @@ class DiagnosticAnswerReview(BaseModel):
     is_correct: bool
     explanation: str
     title: str
+
+
+class DiagnosticBktDelta(BaseModel):
+    concept: str = Field(..., description="Curriculum concept: array | linked_list | stack | recursion | tree")
+    concept_title: str = Field(..., description="Human-readable concept title")
+    prior_mastery: float = Field(..., description="Prior mastery belief P(L_{t-1}) in [0, 1]")
+    posterior_mastery: float = Field(..., description="Posterior mastery belief P(L_t) in [0, 1]")
+    delta: float = Field(..., description="Mastery delta ΔM = P(L_t) - P(L_{t-1})")
+    is_correct: bool = Field(..., description="Whether the diagnostic question was answered correctly")
+    irt_ability: float = Field(default=0.0, description="Estimated 2PL IRT ability theta in [-4, 4]")
+    confidence: float = Field(default=0.5, description="Confidence estimate in [0, 1]")
+    classification: str = Field(default="MEDIUM", description="Classification tier: HIGH | MEDIUM | LOW | UNCERTAIN")
+    barrier_status: str = Field(default="accessible", description="Corresponding wing barrier status: accessible | sealed")
+    barrier_reason: Optional[str] = Field(None, description="Barrier lock explanation if sealed")
+
+
+class BarrierRecalculationDetail(BaseModel):
+    wing_id: str = Field(..., description="Wing identifier: array_station | linked_list_lab | stack_lab | recursion_lab | tree_lab")
+    name: str = Field(..., description="Wing human-readable name")
+    concept: str = Field(..., description="Wing curriculum concept")
+    status: str = Field(..., description="Current status: accessible | sealed")
+    is_ready: bool = Field(..., description="Whether prerequisite threshold constraints are satisfied")
+    was_sealed: bool = Field(default=False, description="Whether wing was sealed prior to evaluation")
+    is_sealed: bool = Field(default=False, description="Whether wing is sealed after evaluation")
+    dissolved: bool = Field(default=False, description="True if wing transitioned from sealed to accessible")
+    reason: Optional[str] = Field(None, description="Prerequisite threshold explanation")
+    required_mastery: Optional[Dict[str, float]] = Field(None, description="Threshold requirements")
 
 
 class DiagnosticSubmissionResponse(BaseModel):
@@ -72,8 +102,15 @@ class DiagnosticSubmissionResponse(BaseModel):
     score_percentage: float
     reviews: List[DiagnosticAnswerReview]
     concept_breakdown: Dict[str, bool]
+    bkt_updates: List[DiagnosticBktDelta] = Field(default_factory=list, description="BKT belief update deltas per concept")
+    barrier_recalculations: Dict[str, BarrierRecalculationDetail] = Field(default_factory=dict, description="Recalculated barrier states per wing")
+    learner_profile: Optional[LearnerProfile] = Field(None, description="Updated authoritative learner profile")
+    world_state: Optional[WorldState] = Field(None, description="Updated virtual classroom world state")
+    threshold_crossed: bool = Field(default=False, description="Whether any prerequisite threshold was crossed")
+    unlocked_wing: Optional[str] = Field(None, description="ID of newly unlocked wing if barrier dissolved")
     status: str = Field(default="evaluated", description="Status: evaluated")
     evaluation_timestamp: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat(),
         description="Evaluation timestamp",
     )
+
