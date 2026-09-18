@@ -44,6 +44,7 @@ export const StationConsoleModal: React.FC = () => {
   const lastMasteryDelta = useClassroomStore((s) => s.lastMasteryDelta);
   const isThresholdCrossed = useClassroomStore((s) => s.isThresholdCrossed);
   const unlockedWingId = useClassroomStore((s) => s.unlockedWingId);
+  const simulateMasteryJump = useClassroomStore((s) => s.simulateMasteryJump);
 
   const currentChallenge = stackMission.challenges[activeChallengeIndex];
   const selectedOptionId = currentChallenge ? selectedAnswers[currentChallenge.id] : undefined;
@@ -248,10 +249,34 @@ export const StationConsoleModal: React.FC = () => {
           })}
         </nav>
 
-        {/* Right: Exit Action */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Right: Exit Action & Pitch Jump Accelerator */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {(learner?.mastery_map['stack'] ?? 0.38) < 0.70 && (
+            <button
+              id="btn-console-mastery-jump"
+              className="cyber-button"
+              onClick={() => simulateMasteryJump('learner_b', 'stack', 0.74)}
+              style={{
+                borderColor: '#f59e0b',
+                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(0, 240, 255, 0.2))',
+                color: '#f59e0b',
+                fontSize: '11px',
+                padding: '5px 10px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontWeight: 700,
+                boxShadow: '0 0 10px rgba(245, 158, 11, 0.25)',
+              }}
+              title="Simulate Mastery Jump (38% → 74%) & trigger barrier dissolve"
+            >
+              <Zap size={12} color="#f59e0b" />
+              <span>Simulate Jump (38% → 74%)</span>
+            </button>
+          )}
+
           <span className="glass-pill" style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-            [ESC] to return to Exploration
+            [ESC] to return
           </span>
 
           <button

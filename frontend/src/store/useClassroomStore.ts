@@ -529,6 +529,11 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   },
 
   triggerBarrierDissolve: (wingId: string = 'recursion_lab') => {
+    // Exit active station if open so the cinematic camera pan and dissolution are in full view
+    if (get().activeStation) {
+      set({ activeStation: null });
+    }
+
     // 1. Synthesize procedural ascending unlock arpeggio
     soundSystem.playUnlockArpeggio();
 
@@ -720,6 +725,11 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
 
         if (threshold_crossed) {
           soundSystem.playSuccess();
+          if (unlocked_wing) {
+            get().triggerBarrierDissolve(unlocked_wing);
+          } else if (concept === 'stack') {
+            get().triggerBarrierDissolve('recursion_lab');
+          }
         }
 
         return {
@@ -792,6 +802,11 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
 
     if (thresholdCrossed) {
       soundSystem.playSuccess();
+      if (unlockedWing) {
+        get().triggerBarrierDissolve(unlockedWing);
+      } else if (concept === 'stack') {
+        get().triggerBarrierDissolve('recursion_lab');
+      }
     }
 
     return {
@@ -805,18 +820,18 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   simulateMasteryJump: async (
     targetOrLearnerId?: number | string,
     concept: string = 'stack',
-    target: number = 0.75
+    target: number = 0.74
   ) => {
     const state = get();
     let learnerId = state.learner?.learner_id || 'learner_b';
-    let targetMastery = 0.75;
+    let targetMastery = 0.74;
     let targetConcept = concept;
 
     if (typeof targetOrLearnerId === 'number') {
       targetMastery = targetOrLearnerId;
     } else if (typeof targetOrLearnerId === 'string') {
       learnerId = targetOrLearnerId;
-      targetMastery = typeof target === 'number' ? target : 0.75;
+      targetMastery = typeof target === 'number' ? target : 0.74;
     }
 
     const prior = state.learner?.mastery_map[targetConcept as keyof MasteryMap] ?? 0.38;
@@ -1006,6 +1021,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       set({
         avatar: { position: [0, 0, 8], rotation: 0, isMoving: false },
         isMentorOpen: false,
+        isTelemetryOpen: false,
         dissolvingWingId: null,
         dissolvePhase: 'idle',
         cinematicCamera: null,
@@ -1033,6 +1049,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
         mentorGuidance: DEFAULT_MENTOR_GUIDANCE_B,
         avatar: { position: [0, 0, 8], rotation: 0, isMoving: false },
         isMentorOpen: false,
+        isTelemetryOpen: false,
         dissolvingWingId: null,
         dissolvePhase: 'idle',
         cinematicCamera: null,

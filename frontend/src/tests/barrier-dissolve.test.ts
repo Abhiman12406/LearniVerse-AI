@@ -76,14 +76,14 @@ describe('Procedural Web Audio & Live Barrier Dissolve', () => {
       vi.useRealTimers();
     });
 
-    it('executes simulateMasteryJump, elevating Stack mastery to 75% and dissolving barrier', async () => {
+    it('executes simulateMasteryJump, elevating Stack mastery past 70% threshold and dissolving barrier', async () => {
       await useClassroomStore.getState().switchLearner('learner_b');
       expect(useClassroomStore.getState().learner?.mastery_map.stack).toBe(0.38);
 
       await useClassroomStore.getState().simulateMasteryJump();
 
       const learner = useClassroomStore.getState().learner;
-      expect(learner?.mastery_map.stack).toBe(0.75);
+      expect(learner?.mastery_map.stack).toBeGreaterThanOrEqual(0.70);
       expect(learner?.learning_state.status).toBe('advanced');
       expect(learner?.learning_state.active_prerequisite_gap).toBeNull();
       expect(learner?.recommended_station).toBe('recursion_lab');

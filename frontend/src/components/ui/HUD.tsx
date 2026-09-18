@@ -1,9 +1,10 @@
-import React from 'react';
-import { Volume2, VolumeX, ShieldAlert, CheckCircle2, RotateCcw, Compass, UserCheck, Sparkles, Zap, Brain } from 'lucide-react';
+import React, { useState } from 'react';
+import { Volume2, VolumeX, ShieldAlert, CheckCircle2, RotateCcw, Compass, UserCheck, Sparkles, Zap, Brain, HelpCircle, Activity } from 'lucide-react';
 import { useClassroomStore } from '../../store/useClassroomStore';
 import { AIMentorDialogue } from './AIMentorDialogue';
 
 export const HUD: React.FC = () => {
+  const [showPitchGuide, setShowPitchGuide] = useState(false);
   const {
     learner,
     isMuted,
@@ -95,94 +96,176 @@ export const HUD: React.FC = () => {
           </div>
         </div>
 
-        {/* Center: Learner Profile Switcher for Live Demo */}
-        <div className="glass-panel ui-interactive" style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-            Learner Persona:
-          </span>
-
-          <button
-            className="cyber-button"
-            onClick={() => switchLearner('learner_b')}
+        {/* Center: Learner Profile Switcher & 90-Second Hero Pitch Demo Controls */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+          <div
+            className="glass-panel ui-interactive"
             style={{
-              borderColor: isLearnerB ? 'var(--crimson-alert)' : 'transparent',
-              background: isLearnerB ? 'rgba(255, 0, 85, 0.18)' : 'rgba(255, 255, 255, 0.05)',
-              color: isLearnerB ? '#ff6699' : 'var(--text-secondary)',
-              fontSize: '10px',
-              padding: '6px 12px',
+              padding: '8px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              borderColor: 'rgba(0, 240, 255, 0.25)',
+              boxShadow: '0 0 20px rgba(0, 0, 0, 0.6)',
             }}
           >
-            <ShieldAlert size={12} />
-            Learner B (Remedial)
-          </button>
+            <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Hero Demo:
+            </span>
 
-          <button
-            className="cyber-button"
-            onClick={() => switchLearner('learner_a')}
-            style={{
-              borderColor: !isLearnerB ? 'var(--emerald-mastery)' : 'transparent',
-              background: !isLearnerB ? 'rgba(0, 255, 136, 0.18)' : 'rgba(255, 255, 255, 0.05)',
-              color: !isLearnerB ? '#00ffaa' : 'var(--text-secondary)',
-              fontSize: '10px',
-              padding: '6px 12px',
-            }}
-          >
-            <CheckCircle2 size={12} />
-            Learner A (Advanced)
-          </button>
-
-          {learner && learner.mastery_map.stack < 0.7 && (
             <button
+              id="btn-learner-b"
               className="cyber-button"
-              onClick={() => simulateMasteryJump()}
-              title="Cross 70% Stack threshold to trigger Barrier Dissolve & unlock Recursion Wing"
+              onClick={() => switchLearner('learner_b')}
               style={{
-                borderColor: 'var(--cyan-core)',
-                background: 'rgba(0, 240, 255, 0.18)',
-                color: '#00f0ff',
+                borderColor: isLearnerB ? 'var(--crimson-alert)' : 'transparent',
+                background: isLearnerB ? 'rgba(255, 0, 85, 0.18)' : 'rgba(255, 255, 255, 0.05)',
+                color: isLearnerB ? '#ff6699' : 'var(--text-secondary)',
+                fontSize: '10px',
+                padding: '6px 10px',
+                fontWeight: isLearnerB ? 700 : 500,
+              }}
+              title="Learner B (Remedial): 38% Stack, sealed Recursion Lab"
+            >
+              <ShieldAlert size={12} />
+              <span>Learner B (38% Stack)</span>
+            </button>
+
+            <button
+              id="btn-learner-a"
+              className="cyber-button"
+              onClick={() => switchLearner('learner_a')}
+              style={{
+                borderColor: !isLearnerB ? 'var(--emerald-mastery)' : 'transparent',
+                background: !isLearnerB ? 'rgba(0, 255, 136, 0.18)' : 'rgba(255, 255, 255, 0.05)',
+                color: !isLearnerB ? '#00ffaa' : 'var(--text-secondary)',
+                fontSize: '10px',
+                padding: '6px 10px',
+                fontWeight: !isLearnerB ? 700 : 500,
+              }}
+              title="Learner A (Advanced): 84% Stack, unlocked Recursion Lab"
+            >
+              <CheckCircle2 size={12} />
+              <span>Learner A (Advanced)</span>
+            </button>
+
+            {/* Single click on "Simulate Mastery Jump (38% → 74%)" triggers dramatic camera pan, sound arpeggio, and cyan particle Barrier Dissolve */}
+            <button
+              id="btn-simulate-jump"
+              className="cyber-button"
+              onClick={() => simulateMasteryJump('learner_b', 'stack', 0.74)}
+              title="Single click on Simulate Mastery Jump (38% → 74%) triggers dramatic camera pan, sound arpeggio, and cyan particle Barrier Dissolve"
+              style={{
+                borderColor: '#f59e0b',
+                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(0, 240, 255, 0.2))',
+                color: '#f59e0b',
                 fontSize: '10px',
                 padding: '6px 12px',
-                fontWeight: 700,
-                boxShadow: '0 0 12px var(--cyan-glow)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontWeight: 800,
+                boxShadow: '0 0 14px rgba(245, 158, 11, 0.3)',
+              }}
+            >
+              <Zap size={12} color="#f59e0b" />
+              <span>Simulate Mastery Jump (38% → 74%)</span>
+            </button>
+
+            <button
+              id="btn-reset-seed"
+              className="cyber-button"
+              onClick={resetWorldSeed}
+              title="Reset Seed to Initial Clean Demonstration Conditions"
+              style={{
+                padding: '6px 12px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderColor: 'var(--border-subtle)',
+                color: 'var(--text-primary)',
+                fontSize: '10px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
               }}
             >
-              <Zap size={12} color="#00f0ff" />
-              Simulate 75% Mastery Jump
+              <RotateCcw size={12} color="var(--text-muted)" />
+              <span>Reset Seed</span>
             </button>
+
+            <button
+              id="btn-pitch-guide-toggle"
+              className="cyber-button"
+              onClick={() => setShowPitchGuide(!showPitchGuide)}
+              title="Toggle 90-Second Hero Pitch Flow Guide"
+              style={{
+                padding: '6px 8px',
+                background: showPitchGuide ? 'rgba(0, 240, 255, 0.18)' : 'rgba(255, 255, 255, 0.04)',
+                borderColor: showPitchGuide ? 'var(--cyan-core)' : 'var(--border-subtle)',
+                color: showPitchGuide ? '#00f0ff' : 'var(--text-muted)',
+                fontSize: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <HelpCircle size={12} />
+              <span>90s Pitch</span>
+            </button>
+          </div>
+
+          {/* Collapsible 90-Second Hero Pitch Stepper Card */}
+          {showPitchGuide && (
+            <div
+              id="hero-pitch-guide"
+              className="glass-panel ui-interactive"
+              style={{
+                padding: '12px 16px',
+                width: '100%',
+                maxWidth: '680px',
+                background: 'rgba(11, 16, 32, 0.95)',
+                borderColor: 'rgba(0, 240, 255, 0.4)',
+                boxShadow: '0 8px 30px rgba(0, 0, 0, 0.8)',
+                animation: 'fadeIn 0.25s ease-out',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Activity size={13} color="var(--cyan-core)" />
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '11px', fontWeight: 800, color: 'var(--cyan-core)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                    90-Second Hero Pitch Sequence
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', fontSize: '9px', fontFamily: 'var(--font-mono)' }}>
+                  <span className="glass-pill" style={{ color: '#00ff88' }}>60 FPS RENDER</span>
+                  <span className="glass-pill" style={{ color: '#00f0ff' }}>&lt;200ms LATENCY</span>
+                  <span className="glass-pill" style={{ color: '#ffb700' }}>0 ASSET DOWNLOADS</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px', fontSize: '10px', fontFamily: 'var(--font-mono)' }}>
+                <div style={{ padding: '6px', borderRadius: '4px', background: 'rgba(255, 0, 85, 0.1)', border: '1px solid rgba(255, 0, 85, 0.3)' }}>
+                  <div style={{ color: '#ff6699', fontWeight: 700 }}>1. Learner B</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '9px' }}>Stack 38%, Recursion sealed, conduits guide</div>
+                </div>
+                <div style={{ padding: '6px', borderRadius: '4px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                  <div style={{ color: '#f59e0b', fontWeight: 700 }}>2. Stack Lab</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '9px' }}>Enter archway, [E] Console, answer challenge</div>
+                </div>
+                <div style={{ padding: '6px', borderRadius: '4px', background: 'rgba(0, 240, 255, 0.1)', border: '1px solid rgba(0, 240, 255, 0.3)' }}>
+                  <div style={{ color: '#00f0ff', fontWeight: 700 }}>3. 1-Click Jump</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '9px' }}>Click Simulate Jump (38% → 74%)</div>
+                </div>
+                <div style={{ padding: '6px', borderRadius: '4px', background: 'rgba(0, 255, 136, 0.1)', border: '1px solid rgba(0, 255, 136, 0.3)' }}>
+                  <div style={{ color: '#00ff88', fontWeight: 700 }}>4. Dissolve</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '9px' }}>Camera pans, arpeggio, 360 cyan particles</div>
+                </div>
+                <div style={{ padding: '6px', borderRadius: '4px', background: 'rgba(168, 85, 247, 0.1)', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
+                  <div style={{ color: '#c084fc', fontWeight: 700 }}>5. Brain Proof</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '9px' }}>[🧠 AGENT BRAIN] verifies 5-agent trace</div>
+                </div>
+              </div>
+            </div>
           )}
-
-          <button
-            className="cyber-button"
-            onClick={resetWorldSeed}
-            title="Reset to Initial Seed"
-            style={{ padding: '6px 10px', background: 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--border-subtle)' }}
-          >
-            <RotateCcw size={12} color="var(--text-muted)" />
-          </button>
-
-          <button
-            id="btn-demo-jump"
-            className="cyber-button"
-            onClick={() => simulateMasteryJump(learner?.learner_id || 'learner_b', 'stack')}
-            title="Demo Acceleration: Instantly advance Stack Mastery past 70% to trigger Recursion Lab unlock"
-            style={{
-              borderColor: '#f59e0b',
-              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(0, 255, 136, 0.18))',
-              color: '#f59e0b',
-              fontSize: '10px',
-              padding: '6px 10px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-              fontWeight: 700,
-            }}
-          >
-            <Zap size={12} color="#f59e0b" />
-            <span>Demo Jump (38% → 74%)</span>
-          </button>
         </div>
 
         {/* Right: Telemetry Drawer Toggle & Audio Synthesizer Mute Toggle */}
