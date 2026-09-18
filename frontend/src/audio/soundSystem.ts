@@ -383,6 +383,82 @@ class SoundSystem {
       // Ignore
     }
   }
+
+  public playFramePush(): void {
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(140, this.ctx.currentTime + 0.12);
+
+      gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.12);
+    } catch {
+      // Ignore
+    }
+  }
+
+  public playAscend(): void {
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    try {
+      const freqs = [523.25, 659.25, 783.99, 1046.5, 1318.51]; // C5, E5, G5, C6, E6
+      freqs.forEach((f, i) => {
+        if (!this.ctx || !this.masterGain) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const t = this.ctx.currentTime + i * 0.09;
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f, t);
+
+        gain.gain.setValueAtTime(0.14, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+
+        osc.start(t);
+        osc.stop(t + 0.22);
+      });
+    } catch {
+      // Ignore
+    }
+  }
+
+  public playOverflowWarning(): void {
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    try {
+      for (let i = 0; i < 3; i++) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const t = this.ctx.currentTime + i * 0.14;
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(880, t);
+        osc.frequency.setValueAtTime(440, t + 0.06);
+
+        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+
+        osc.start(t);
+        osc.stop(t + 0.12);
+      }
+    } catch {
+      // Ignore
+    }
+  }
 }
 
 export const soundSystem = new SoundSystem();

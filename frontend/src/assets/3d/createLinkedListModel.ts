@@ -792,11 +792,12 @@ export function createLinkedListModel(options: LinkedListModelOptions = {}): Lin
       rig.crystalMesh.rotation.y += delta * 0.8;
       rig.crystalMesh.rotation.x = Math.sin(timeElapsed * 1.5 + nodeIndex) * 0.15;
 
-      // Highlight active node during traversal
+      // Highlight active node during traversal or dim if severed
       const isActive = activeNodeIdState === rig.id;
+      const isSeveredNode = isSeveredState && severedNodeIdState === rig.id;
       const crystalMat = rig.crystalMesh.material as THREE.MeshStandardMaterial;
-      crystalMat.emissiveIntensity = isActive ? 1.8 : 0.85;
-      rig.crystalLight.intensity = isActive ? 2.2 : 1.2;
+      crystalMat.emissiveIntensity = isSeveredNode ? 0.25 : isActive ? 1.8 : 0.85;
+      rig.crystalLight.intensity = isSeveredNode ? 0.3 : isActive ? 2.2 : 1.2;
 
       // Spring-based translation easing for node position
       rig.currentPos.lerp(rig.targetPos, Math.min(1.0, delta * 7.5));

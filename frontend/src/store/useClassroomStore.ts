@@ -64,6 +64,29 @@ export const DEFAULT_LINKED_LIST_NODES: LinkedListNodeElement[] = [
   { id: 'node_c', label: 'C', value: 30, address: '0x3F80', crystalColor: '#f43f5e', nextId: null },
 ];
 
+export interface RecursionFrameElement {
+  id: string;
+  n: number;
+  callLabel: string;
+  argValue: number;
+  returnValue: number | null;
+  status: 'active' | 'base_case' | 'resolved';
+}
+
+export interface RecursionOperationDetail {
+  type: 'push' | 'unwind' | 'overflow' | 'reset' | 'base_case';
+  title: string;
+  description: string;
+  depth: number;
+  timestamp: number;
+}
+
+export const DEFAULT_RECURSION_FRAMES: RecursionFrameElement[] = [
+  { id: 'frame-3', n: 3, callLabel: 'f(3)', argValue: 3, returnValue: null, status: 'active' },
+  { id: 'frame-2', n: 2, callLabel: 'f(2)', argValue: 2, returnValue: null, status: 'active' },
+  { id: 'frame-1', n: 1, callLabel: 'f(1)', argValue: 1, returnValue: null, status: 'base_case' },
+];
+
 interface ClassroomStore {
   // Authoritative State
   learner: LearnerProfile | null;
@@ -121,6 +144,15 @@ interface ClassroomStore {
   linkedListNullError: string | null;
   linkedListOperation: LinkedListOperationDetail | null;
 
+  // Recursion Chamber State & Mechanics
+  recursionFrames: RecursionFrameElement[];
+  recursionMaxDepth: number;
+  recursionIsExecuting: boolean;
+  recursionIsUnwinding: boolean;
+  recursionReturnStep: number;
+  recursionStackOverflow: boolean;
+  recursionOperation: RecursionOperationDetail | null;
+
   // Stack Challenge Console State
   stackMission: StackMission;
   activeChallengeIndex: number;
@@ -170,6 +202,15 @@ interface ClassroomStore {
   triggerNullPointerDereference: () => void;
   clearLinkedListError: () => void;
   resetLinkedList: () => void;
+
+  // Recursion Chamber Actions
+  pushRecursionCall: (n?: number) => void;
+  popRecursionCall: () => void;
+  triggerRecursionReturn: () => Promise<void>;
+  triggerStackOverflowError: () => void;
+  clearRecursionOverflow: () => void;
+  resetRecursionChamber: () => void;
+  runRecursiveFactorialDemo: (n?: number) => Promise<void>;
 
   // Telemetry Drawer Actions
   toggleTelemetry: () => void;
@@ -505,6 +546,21 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     codeSnippet: 'Node* head = &nodeA;\nnodeA.next = &nodeB;\nnodeB.next = &nodeC;\nnodeC.next = NULL;',
     activeNodeId: null,
     stepsCount: 3,
+  },
+
+  // Recursion Chamber Initial State
+  recursionFrames: DEFAULT_RECURSION_FRAMES,
+  recursionMaxDepth: 5,
+  recursionIsExecuting: false,
+  recursionIsUnwinding: false,
+  recursionReturnStep: 0,
+  recursionStackOverflow: false,
+  recursionOperation: {
+    type: 'base_case',
+    title: 'Call Stack Initialized',
+    description: 'Call frames stacked in elevator shaft: f(3) → f(2) → f(1) [Base Case].',
+    depth: 3,
+    timestamp: Date.now(),
   },
 
   toggleTelemetry: () => {
@@ -1587,6 +1643,184 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     });
   },
 
+  // Recursion Chamber Actions
+  pushRecursionCall: (n?: number) => {
+    const currentFrames = get().recursionFrames;
+    if (get().recursionStackOverflow) {
+      soundSystem.playAlert();
+      return;
+    }
+
+    if (currentFrames.length >= get().recursionMaxDepth) {
+      soundSystem.playOverflowWarning();
+      set({
+        recursionStackOverflow: true,
+        recursionOperation: {
+          type: 'overflow',
+          title: 'Stack Overflow Detected!',
+          description: `Maximum recursion depth (${get().recursionMaxDepth}) exceeded! Call stack memory exhausted.`,
+          depth: currentFrames.length + 1,
+          timestamp: Date.now(),
+        },
+      });
+      return;
+    }
+
+    const topFrame = currentFrames[0];
+    const newN = n !== undefined ? n : (topFrame ? Math.max(1, topFrame.n - 1) : 1);
+    const newFrame: RecursionFrameElement = {
+      id: `frame-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      n: newN,
+      callLabel: `f(${newN})`,
+      argValue: newN,
+      returnValue: null,
+      status: newN === 1 ? 'base_case' : 'active',
+    };
+
+    soundSystem.playFramePush();
+    const updated = [newFrame, ...currentFrames];
+    set({
+      recursionFrames: updated,
+      recursionStackOverflow: false,
+      recursionOperation: {
+        type: newN === 1 ? 'base_case' : 'push',
+        title: newN === 1 ? 'Base Case Reached: f(1)' : `Recursive Call: f(${newN})`,
+        description: newN === 1
+          ? 'Base case termination condition reached! n <= 1 triggers upward return cascade.'
+          : `Invocation f(${newN}) pushed onto Call Stack. Halts current frame and descends.`,
+        depth: updated.length,
+        timestamp: Date.now(),
+      },
+    });
+  },
+
+  popRecursionCall: () => {
+    const current = get().recursionFrames;
+    if (current.length === 0) return;
+    const popped = current[0];
+    const remaining = current.slice(1);
+    soundSystem.playChirp();
+    set({
+      recursionFrames: remaining,
+      recursionStackOverflow: false,
+      recursionOperation: {
+        type: 'unwind',
+        title: `Frame Popped: ${popped.callLabel}`,
+        description: `Popped ${popped.callLabel} from Call Stack. Control returned to caller.`,
+        depth: remaining.length,
+        timestamp: Date.now(),
+      },
+    });
+  },
+
+  triggerRecursionReturn: async () => {
+    const frames = [...get().recursionFrames];
+    if (frames.length === 0 || get().recursionIsUnwinding) return;
+
+    set({
+      recursionIsUnwinding: true,
+      recursionStackOverflow: false,
+      recursionReturnStep: 0,
+    });
+
+    soundSystem.playAscend();
+
+    let accumulatedReturn = 1;
+    for (let i = frames.length - 1; i >= 0; i--) {
+      const frame = frames[i];
+      if (frame.n <= 1) {
+        accumulatedReturn = 1;
+      } else {
+        accumulatedReturn = frame.n * accumulatedReturn;
+      }
+
+      frames[i] = {
+        ...frame,
+        returnValue: accumulatedReturn,
+        status: 'resolved',
+      };
+
+      set({
+        recursionFrames: [...frames],
+        recursionReturnStep: frames.length - i,
+        recursionOperation: {
+          type: 'unwind',
+          title: `Resolved ${frame.callLabel} → ${accumulatedReturn}`,
+          description: `Frame ${frame.callLabel} received return value ${accumulatedReturn}. Upward cascade active.`,
+          depth: i + 1,
+          timestamp: Date.now(),
+        },
+      });
+
+      soundSystem.playChime();
+      await new Promise((r) => setTimeout(r, 450));
+    }
+
+    soundSystem.playSuccess();
+    set({
+      recursionIsUnwinding: false,
+      recursionOperation: {
+        type: 'unwind',
+        title: `Recursive Computation Complete!`,
+        description: `Root call returned final result: ${accumulatedReturn}. Call stack unwound to base.`,
+        depth: 0,
+        timestamp: Date.now(),
+      },
+    });
+  },
+
+  triggerStackOverflowError: () => {
+    soundSystem.playOverflowWarning();
+    set({
+      recursionStackOverflow: true,
+      recursionOperation: {
+        type: 'overflow',
+        title: 'Stack Overflow Simulated!',
+        description: 'Infinite recursion without a base case has exhausted the memory call stack limit!',
+        depth: 6,
+        timestamp: Date.now(),
+      },
+    });
+  },
+
+  clearRecursionOverflow: () => {
+    set({ recursionStackOverflow: false });
+  },
+
+  resetRecursionChamber: () => {
+    soundSystem.playChirp();
+    set({
+      recursionFrames: DEFAULT_RECURSION_FRAMES,
+      recursionIsExecuting: false,
+      recursionIsUnwinding: false,
+      recursionReturnStep: 0,
+      recursionStackOverflow: false,
+      recursionOperation: {
+        type: 'reset',
+        title: 'Recursion Chamber Reset',
+        description: 'Elevator shaft restored with default 3-tier call stack (f(3) → f(2) → f(1)).',
+        depth: 3,
+        timestamp: Date.now(),
+      },
+    });
+  },
+
+  runRecursiveFactorialDemo: async (startN = 3) => {
+    if (get().recursionIsExecuting) return;
+    set({ recursionIsExecuting: true, recursionStackOverflow: false });
+
+    set({ recursionFrames: [] });
+    await new Promise((r) => setTimeout(r, 200));
+
+    for (let current = startN; current >= 1; current--) {
+      get().pushRecursionCall(current);
+      await new Promise((r) => setTimeout(r, 600));
+    }
+
+    await get().triggerRecursionReturn();
+    set({ recursionIsExecuting: false });
+  },
+
   resetWorldSeed: async () => {
     try {
       await fetch('/api/learner/reset', { method: 'POST' });
@@ -1627,6 +1861,18 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
           codeSnippet: 'Node* head = &nodeA;\nnodeA.next = &nodeB;\nnodeB.next = &nodeC;\nnodeC.next = NULL;',
           activeNodeId: null,
           stepsCount: 3,
+        },
+        recursionFrames: DEFAULT_RECURSION_FRAMES,
+        recursionIsExecuting: false,
+        recursionIsUnwinding: false,
+        recursionReturnStep: 0,
+        recursionStackOverflow: false,
+        recursionOperation: {
+          type: 'reset',
+          title: 'Recursion Chamber Reset',
+          description: 'Elevator shaft restored with default 3-tier call stack (f(3) → f(2) → f(1)).',
+          depth: 3,
+          timestamp: Date.now(),
         },
         activeChallengeIndex: 0,
         selectedAnswers: {},
@@ -1677,6 +1923,18 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
           codeSnippet: 'Node* head = &nodeA;\nnodeA.next = &nodeB;\nnodeB.next = &nodeC;\nnodeC.next = NULL;',
           activeNodeId: null,
           stepsCount: 3,
+        },
+        recursionFrames: DEFAULT_RECURSION_FRAMES,
+        recursionIsExecuting: false,
+        recursionIsUnwinding: false,
+        recursionReturnStep: 0,
+        recursionStackOverflow: false,
+        recursionOperation: {
+          type: 'reset',
+          title: 'Recursion Chamber Reset',
+          description: 'Elevator shaft restored with default 3-tier call stack (f(3) → f(2) → f(1)).',
+          depth: 3,
+          timestamp: Date.now(),
         },
         activeChallengeIndex: 0,
         selectedAnswers: {},

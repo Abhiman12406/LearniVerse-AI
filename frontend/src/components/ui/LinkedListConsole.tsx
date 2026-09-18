@@ -361,7 +361,7 @@ export const LinkedListConsole: React.FC = () => {
               <ArrowRight size={18} color="#38bdf8" />
 
               {/* Render Nodes */}
-              {linkedListNodes.map((node, idx) => {
+              {linkedListNodes.map((node) => {
                 const isActive = linkedListActiveNodeId === node.id;
                 const isNodeSevered = linkedListIsSevered && linkedListSeveredNodeId === node.id;
 
