@@ -364,31 +364,35 @@ export const HUD: React.FC = () => {
             flexDirection: 'column',
             alignItems: 'flex-end',
             gap: '6px',
-            maxWidth: '380px',
+            flexShrink: 0,
           }}
         >
           <div
             className="glass-panel"
             style={{
-              padding: '6px 8px',
+              padding: '7px 10px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '5px',
-              background: 'rgba(22, 10, 16, 0.92)',
+              gap: '6px',
+              background: 'rgba(20, 10, 16, 0.94)',
               borderColor: 'rgba(255, 255, 255, 0.14)',
+              borderRadius: '8px',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
+              backdropFilter: 'blur(12px)',
             }}
           >
             {/* Row 1: Demo Profiles & Simulation Jump */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'nowrap', justifyContent: 'flex-end' }}>
               <span
                 style={{
                   fontSize: '9px',
                   fontFamily: 'var(--font-mono)',
                   color: '#fb923c',
                   textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  fontWeight: 800,
                   marginRight: '2px',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 Demo:
@@ -403,11 +407,13 @@ export const HUD: React.FC = () => {
                   background: isLearnerB ? 'rgba(255, 0, 85, 0.2)' : 'rgba(255, 255, 255, 0.05)',
                   color: isLearnerB ? '#ff6699' : 'var(--text-secondary)',
                   fontSize: '10px',
-                  padding: '4px 7px',
-                  height: '26px',
+                  padding: '0 8px',
+                  height: '28px',
                   boxSizing: 'border-box',
                   fontWeight: isLearnerB ? 700 : 500,
-                  gap: '4px',
+                  gap: '5px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
                 title="Learner B (Remedial): 38% Stack, sealed Recursion Lab"
               >
@@ -424,11 +430,13 @@ export const HUD: React.FC = () => {
                   background: !isLearnerB ? 'rgba(0, 255, 136, 0.2)' : 'rgba(255, 255, 255, 0.05)',
                   color: !isLearnerB ? '#00ffaa' : 'var(--text-secondary)',
                   fontSize: '10px',
-                  padding: '4px 7px',
-                  height: '26px',
+                  padding: '0 8px',
+                  height: '28px',
                   boxSizing: 'border-box',
                   fontWeight: !isLearnerB ? 700 : 500,
-                  gap: '4px',
+                  gap: '5px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
                 title="Learner A (Advanced): 84% Stack, unlocked Recursion Lab"
               >
@@ -446,14 +454,16 @@ export const HUD: React.FC = () => {
                   background: 'linear-gradient(135deg, rgba(234, 88, 12, 0.35), rgba(249, 115, 22, 0.25))',
                   color: '#fdba74',
                   fontSize: '10px',
-                  padding: '4px 8px',
-                  height: '26px',
+                  padding: '0 9px',
+                  height: '28px',
                   boxSizing: 'border-box',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '4px',
+                  gap: '5px',
                   fontWeight: 800,
                   boxShadow: '0 0 10px rgba(234, 88, 12, 0.4)',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
               >
                 <Zap size={11} color="#fdba74" />
@@ -466,8 +476,8 @@ export const HUD: React.FC = () => {
                 onClick={resetWorldSeed}
                 title="Reset Seed to Initial Clean Demonstration Conditions"
                 style={{
-                  padding: '4px 7px',
-                  height: '26px',
+                  padding: '0 8px',
+                  height: '28px',
                   boxSizing: 'border-box',
                   background: 'rgba(255, 255, 255, 0.05)',
                   borderColor: 'var(--border-subtle)',
@@ -475,7 +485,9 @@ export const HUD: React.FC = () => {
                   fontSize: '10px',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '4px',
+                  gap: '5px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
               >
                 <RotateCcw size={11} color="var(--text-muted)" />
@@ -484,14 +496,14 @@ export const HUD: React.FC = () => {
             </div>
 
             {/* Row 2: AI Intelligence & Inspection Tools */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
               <button
                 id="btn-diagnostic-assessment"
                 onClick={() => openDiagnostic()}
                 className="cyber-button"
                 style={{
-                  padding: '4px 8px',
-                  height: '26px',
+                  padding: '0 8px',
+                  height: '28px',
                   boxSizing: 'border-box',
                   cursor: 'pointer',
                   color: isDiagnosticOpen ? '#38bdf8' : '#e0f2fe',
@@ -504,13 +516,15 @@ export const HUD: React.FC = () => {
                   boxShadow: !diagnosticSubmitted ? '0 0 10px rgba(56, 189, 248, 0.4)' : 'none',
                   fontSize: '10px',
                   fontWeight: 700,
-                  gap: '4px',
+                  gap: '5px',
                   position: 'relative',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
                 title="Launch AI-Powered 5-Question DSA Diagnostic Assessment"
               >
                 <ClipboardList size={12} color={isDiagnosticOpen ? '#38bdf8' : '#38bdf8'} />
-                <span>[📝 DIAGNOSTIC]</span>
+                <span>Diagnostic</span>
                 {!diagnosticSubmitted && (
                   <span
                     style={{
@@ -532,8 +546,8 @@ export const HUD: React.FC = () => {
                 onClick={toggleTelemetry}
                 className="cyber-button"
                 style={{
-                  padding: '4px 8px',
-                  height: '26px',
+                  padding: '0 8px',
+                  height: '28px',
                   boxSizing: 'border-box',
                   cursor: 'pointer',
                   color: isTelemetryOpen ? '#00f0ff' : 'var(--text-primary)',
@@ -542,12 +556,14 @@ export const HUD: React.FC = () => {
                   boxShadow: isTelemetryOpen ? '0 0 12px var(--cyan-glow)' : 'none',
                   fontSize: '10px',
                   fontWeight: 700,
-                  gap: '4px',
+                  gap: '5px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
                 title="Inspect 5-Agent Deliberation Pipeline, Guardrails & BKT Belief State"
               >
                 <Brain size={12} color={isTelemetryOpen ? '#00f0ff' : 'var(--cyan-core)'} />
-                <span>[🧠 BRAIN]</span>
+                <span>Agent Brain</span>
               </button>
 
               <button
@@ -557,8 +573,8 @@ export const HUD: React.FC = () => {
                 onClick={() => demonstrateFeynmanAgent()}
                 title="Demonstrate Feynman Multimodal Adaptive Explanation Agent [F]"
                 style={{
-                  padding: '4px 9px',
-                  height: '26px',
+                  padding: '0 9px',
+                  height: '28px',
                   boxSizing: 'border-box',
                   background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(0, 240, 255, 0.2))',
                   borderColor: '#c084fc',
@@ -567,10 +583,12 @@ export const HUD: React.FC = () => {
                   fontWeight: 700,
                   gap: '5px',
                   boxShadow: '0 0 10px rgba(168, 85, 247, 0.35)',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
               >
                 <Sparkles size={11} color="#c084fc" />
-                <span>Demonstrate Feynman Agent</span>
+                <span>Demo Feynman</span>
               </button>
 
               <button
@@ -579,8 +597,8 @@ export const HUD: React.FC = () => {
                 onClick={() => setShowPitchGuide(!showPitchGuide)}
                 title="Toggle 90-Second Hero Pitch Flow Guide"
                 style={{
-                  padding: '4px 7px',
-                  height: '26px',
+                  padding: '0 8px',
+                  height: '28px',
                   boxSizing: 'border-box',
                   background: showPitchGuide ? 'rgba(240, 116, 91, 0.25)' : 'rgba(255, 255, 255, 0.04)',
                   borderColor: showPitchGuide ? '#ea580c' : 'var(--border-subtle)',
@@ -588,7 +606,9 @@ export const HUD: React.FC = () => {
                   fontSize: '10px',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '4px',
+                  gap: '5px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
               >
                 <HelpCircle size={11} />
@@ -599,11 +619,17 @@ export const HUD: React.FC = () => {
                 onClick={toggleAudioMute}
                 className="cyber-button"
                 style={{
-                  padding: '4px 7px',
-                  height: '26px',
+                  padding: '0',
+                  height: '28px',
+                  width: '28px',
                   boxSizing: 'border-box',
                   color: isMuted ? 'var(--text-muted)' : '#fdba74',
                   borderColor: isMuted ? 'var(--border-subtle)' : 'rgba(240, 116, 91, 0.5)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
                 title={isMuted ? 'Unmute Ambient Sound' : 'Mute Ambient Sound'}
               >
