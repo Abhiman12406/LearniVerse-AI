@@ -170,4 +170,19 @@ describe('Dual-Layer Glassmorphic Challenge Console & Stack DSA Missions', () =>
     expect(useClassroomStore.getState().selectedAnswers).toEqual({});
     expect(useClassroomStore.getState().submittedAnswers).toEqual({});
   });
+
+  it('executes animated execution trace on 3D apparatus via animateChallengeTrace', async () => {
+    const { animateChallengeTrace } = useClassroomStore.getState();
+
+    // Run trace for stack_push_pop_trace:
+    // PUSH(15) -> PUSH(30) -> POP() -> PUSH(45) -> PUSH(60) -> POP() -> PUSH(75)
+    // Resulting final state must be [15, 45, 75]
+    await animateChallengeTrace('stack_push_pop_trace');
+
+    const discs = useClassroomStore.getState().stackDiscs;
+    expect(discs).toHaveLength(3);
+    expect(discs[0].value).toBe(15);
+    expect(discs[1].value).toBe(45);
+    expect(discs[2].value).toBe(75);
+  });
 });

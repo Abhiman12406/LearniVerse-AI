@@ -95,6 +95,7 @@ interface ClassroomStore {
   nextChallenge: () => void;
   prevChallenge: () => void;
   loadChallengeOntoApparatus: (challengeId: string) => void;
+  animateChallengeTrace: (challengeId: string) => Promise<void>;
   resetChallengeProgress: () => void;
 
   // BKT & Interaction Actions
@@ -619,6 +620,10 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     const isCorrect = selected === challenge.correctOptionId;
     if (isCorrect) {
       soundSystem.playSuccess();
+      // Animate corresponding operation on 3D apparatus to demonstrate LIFO mechanics
+      if (challenge.id === 'stack_lifo_order' && get().stackDiscs.length > 0) {
+        get().popStackDisc();
+      }
     } else {
       soundSystem.playAlert();
     }
@@ -972,6 +977,57 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       value: val,
     }));
     set({ stackDiscs: initialDiscs });
+  },
+
+  animateChallengeTrace: async (challengeId: string) => {
+    const challenge = get().stackMission.challenges.find((c) => c.id === challengeId);
+    if (!challenge) return;
+
+    if (challengeId === 'stack_lifo_order') {
+      // 1. Stage 4 discs [10, 20, 30, 40]
+      set({
+        stackDiscs: [
+          { id: 'trace-1', value: 10 },
+          { id: 'trace-2', value: 20 },
+          { id: 'trace-3', value: 30 },
+          { id: 'trace-4', value: 40 },
+        ],
+      });
+      soundSystem.playMagneticThud();
+
+      // 2. Sequentially pop discs in LIFO order (40, 30, 20, 10)
+      for (let i = 0; i < 4; i++) {
+        await new Promise((r) => setTimeout(r, 450));
+        get().popStackDisc();
+      }
+    } else if (challengeId === 'stack_push_pop_trace') {
+      // Sequence: PUSH(15) -> PUSH(30) -> POP() -> PUSH(45) -> PUSH(60) -> POP() -> PUSH(75)
+      set({ stackDiscs: [] });
+      await new Promise((r) => setTimeout(r, 150));
+
+      get().pushStackDisc(15);
+      await new Promise((r) => setTimeout(r, 300));
+      get().pushStackDisc(30);
+      await new Promise((r) => setTimeout(r, 300));
+      get().popStackDisc();
+      await new Promise((r) => setTimeout(r, 300));
+      get().pushStackDisc(45);
+      await new Promise((r) => setTimeout(r, 300));
+      get().pushStackDisc(60);
+      await new Promise((r) => setTimeout(r, 300));
+      get().popStackDisc();
+      await new Promise((r) => setTimeout(r, 300));
+      get().pushStackDisc(75);
+    } else if (challengeId === 'stack_overflow_underflow') {
+      // Fill to 6 discs to illustrate buffer capacity
+      set({ stackDiscs: [] });
+      for (const val of [10, 20, 30, 40, 50, 60]) {
+        await new Promise((r) => setTimeout(r, 180));
+        get().pushStackDisc(val);
+      }
+    } else {
+      get().loadChallengeOntoApparatus(challengeId);
+    }
   },
 
   resetChallengeProgress: () => {

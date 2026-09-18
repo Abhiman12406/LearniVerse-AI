@@ -15,6 +15,7 @@ import {
   Unlock,
   TrendingUp,
   TrendingDown,
+  Play,
 } from 'lucide-react';
 import { useClassroomStore } from '../../store/useClassroomStore';
 
@@ -38,6 +39,7 @@ export const StationConsoleModal: React.FC = () => {
   const nextChallenge = useClassroomStore((s) => s.nextChallenge);
   const prevChallenge = useClassroomStore((s) => s.prevChallenge);
   const loadChallengeOntoApparatus = useClassroomStore((s) => s.loadChallengeOntoApparatus);
+  const animateChallengeTrace = useClassroomStore((s) => s.animateChallengeTrace);
 
   // BKT & Learner State
   const learner = useClassroomStore((s) => s.learner);
@@ -358,25 +360,44 @@ export const StationConsoleModal: React.FC = () => {
               </h1>
             </div>
 
-            {/* Test on 3D Apparatus quick action button */}
-            {currentChallenge.simulatedStackInitial && (
+            {/* Test on 3D Apparatus & Animate Trace action buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {currentChallenge.simulatedStackInitial && (
+                <button
+                  id="btn-stage-apparatus"
+                  onClick={() => loadChallengeOntoApparatus(currentChallenge.id)}
+                  className="cyber-button"
+                  style={{
+                    padding: '6px 10px',
+                    fontSize: '10px',
+                    background: 'rgba(245, 158, 11, 0.12)',
+                    borderColor: 'rgba(245, 158, 11, 0.4)',
+                    color: '#f59e0b',
+                  }}
+                  title="Stage this challenge's disc values onto the 3D kinetic apparatus"
+                >
+                  <RotateCcw size={12} />
+                  <span>Stage in 3D</span>
+                </button>
+              )}
+
               <button
-                id="btn-stage-apparatus"
-                onClick={() => loadChallengeOntoApparatus(currentChallenge.id)}
+                id="btn-animate-trace"
+                onClick={() => animateChallengeTrace(currentChallenge.id)}
                 className="cyber-button"
                 style={{
                   padding: '6px 10px',
                   fontSize: '10px',
-                  background: 'rgba(245, 158, 11, 0.12)',
-                  borderColor: 'rgba(245, 158, 11, 0.4)',
-                  color: '#f59e0b',
+                  background: 'rgba(0, 240, 255, 0.12)',
+                  borderColor: 'rgba(0, 240, 255, 0.4)',
+                  color: '#00f0ff',
                 }}
-                title="Stage this challenge's disc values onto the 3D kinetic apparatus"
+                title="Animate this challenge's physical execution trace in the 3D cylinder"
               >
-                <RotateCcw size={12} />
-                <span>Stage in 3D</span>
+                <Play size={12} />
+                <span>Animate Trace in 3D</span>
               </button>
-            )}
+            </div>
           </div>
 
           {/* Objective Statement */}

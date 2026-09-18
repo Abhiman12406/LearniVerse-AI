@@ -4,10 +4,10 @@
 
 **Blocked by:** 01: Reference Blueprints Generation (Nanabanana), 02: Procedural Classroom Campus Diorama & Lighting
 
-**Status:** ready-for-agent
+**Status:** closed
 
-- [ ] Create procedural Three.js factory in `frontend/src/assets/3d/createStackTowerModel.ts` based on `asstesimages/stack_apparatus.png`.
-- [ ] Implement smooth vertical translation physics/easing for pushing discs into the stack and popping them out.
-- [ ] Mount apparatus into `frontend/src/components/canvas/StackApparatus.tsx`, replacing the previous sci-fi mesh.
-- [ ] Bind disc state dynamically to `useClassroomStore.stackDiscs`, `pushStackDisc`, and `popStackDisc`.
-- [ ] Integrate with the Challenge Console UI so answering stack questions animates corresponding push/pop operations.
+- [x] Create procedural Three.js factory in `frontend/src/assets/3d/createStackTowerModel.ts` based on `asstesimages/stack_apparatus.png`.
+- [x] Implement smooth vertical translation physics/easing for pushing discs into the stack and popping them out.
+- [x] Mount apparatus into `frontend/src/components/canvas/StackApparatus.tsx`, replacing the previous sci-fi mesh.
+- [x] Bind disc state dynamically to `useClassroomStore.stackDiscs`, `pushStackDisc`, and `popStackDisc`.
+- [x] Integrate with the Challenge Console UI so answering stack questions animates corresponding push/pop operations.
