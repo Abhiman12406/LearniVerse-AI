@@ -12,16 +12,16 @@ export const ArrayLabWing: React.FC = () => {
 
   const [isNear, setIsNear] = useState(false);
 
-  // Position of Array Station Wing Chamber (Azimuth 30°, Radius 24)
-  const wingPos: [number, number, number] = [12.0, 0.0, -20.8];
+  // Position of Array Station Wing Chamber (West Wing at X = -20.0, Z = 0)
+  const wingPos: [number, number, number] = [-20.0, 0.0, 0.0];
   // Console apparatus anchor point on chamber platform
-  const consolePos: [number, number, number] = [12.0, 0.0, -21.4];
+  const consolePos: [number, number, number] = [-20.0, 0.0, 0.0];
 
   // Proximity detection
   useFrame(() => {
     const [ax, , az] = avatar.position;
     const dist = Math.hypot(ax - consolePos[0], az - consolePos[2]);
-    const near = dist <= 3.8;
+    const near = dist <= 4.0;
     if (near !== isNear) {
       setIsNear(near);
     }
@@ -30,6 +30,8 @@ export const ArrayLabWing: React.FC = () => {
   // Handle [E] to engage console and [ESC] to exit
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+
       if (e.code === 'KeyE' && isNear && !activeStation) {
         setActiveStation('array_station');
       } else if (e.code === 'Escape' && activeStation === 'array_station') {
@@ -41,8 +43,8 @@ export const ArrayLabWing: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isNear, activeStation, setActiveStation]);
 
-  // Face inward toward atrium origin (azimuth 30° + 180°)
-  const chamberRotationY = (30 * Math.PI) / 180 + Math.PI;
+  // Face archway entrance (facing East toward central classroom)
+  const chamberRotationY = Math.PI / 2;
 
   return (
     <group position={wingPos} rotation={[0, chamberRotationY, 0]}>

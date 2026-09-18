@@ -12,10 +12,10 @@ export const RecursionLabWing: React.FC = () => {
 
   const [isNear, setIsNear] = useState(false);
 
-  // Position of Recursion Lab Wing Chamber (Azimuth 270° West, Radius 24.0)
-  const wingPos: [number, number, number] = [-24.0, 0.0, 0.0];
+  // Position of Recursion Lab Wing Chamber (North Wing at X = 0, Z = -20.0)
+  const wingPos: [number, number, number] = [0.0, 0.0, -20.0];
   // Console apparatus anchor point on chamber platform
-  const consolePos: [number, number, number] = [-24.0, 0.0, 0.0];
+  const consolePos: [number, number, number] = [0.0, 0.0, -20.0];
 
   // Proximity detection
   useFrame(() => {
@@ -43,8 +43,8 @@ export const RecursionLabWing: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isNear, activeStation, setActiveStation]);
 
-  // Face archway entrance (toward atrium center, azimuth 270° + 180° = 90° / Math.PI / 2)
-  const chamberRotationY = Math.PI / 2;
+  // Face archway entrance (facing South toward central classroom)
+  const chamberRotationY = 0;
 
   return (
     <group position={wingPos} rotation={[0, chamberRotationY, 0]}>

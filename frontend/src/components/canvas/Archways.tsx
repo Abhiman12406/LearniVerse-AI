@@ -6,23 +6,17 @@ import { DiagnosticPlaque } from './DiagnosticPlaque';
 interface ArchwayProps {
   id: string;
   name: string;
-  azimuthDeg: number;
-  radius: number;
+  position: [number, number, number];
+  rotationY: number;
 }
 
-const ArchwayPortal: React.FC<ArchwayProps> = ({ id, name, azimuthDeg, radius }) => {
+const ArchwayPortal: React.FC<ArchwayProps> = ({ id, name, position, rotationY }) => {
   const worldState = useClassroomStore((s) => s.worldState);
   const learner = useClassroomStore((s) => s.learner);
   const wingInfo = worldState?.wings[id];
   const isSealed = wingInfo?.status === 'sealed';
 
-  // Compute archway position on atrium perimeter
-  const angleRad = (azimuthDeg * Math.PI) / 180;
-  const x = Math.sin(angleRad) * radius;
-  const z = -Math.cos(angleRad) * radius;
-
-  // Face inward toward origin
-  const rotationY = angleRad + Math.PI;
+  const [x, y, z] = position;
 
   // Compute prerequisite text for the doorway LED marquee
   const isRecursion = id === 'recursion_lab';
@@ -42,7 +36,7 @@ const ArchwayPortal: React.FC<ArchwayProps> = ({ id, name, azimuthDeg, radius })
     : 'Access Granted';
 
   return (
-    <group position={[x, 0, z]} rotation={[0, rotationY, 0]}>
+    <group position={[x, y, z]} rotation={[0, rotationY, 0]}>
       {/* Procedural Prerequisite Doorway, LED Marquee & Honeycomb Forcefield */}
       <PrerequisiteBarrier
         wingId={id}
@@ -58,30 +52,29 @@ const ArchwayPortal: React.FC<ArchwayProps> = ({ id, name, azimuthDeg, radius })
       <DiagnosticPlaque
         wingInfo={wingInfo}
         isSealed={!!isSealed}
-        position={[0, 2.7, 2.0]}
+        position={[0, 2.7, 1.6]}
       />
     </group>
   );
 };
 
 export const Archways: React.FC = () => {
-  const wings = [
-    { id: 'array_station', name: 'Array Station', azimuthDeg: 30 },
-    { id: 'linked_list_lab', name: 'Linked List Lab', azimuthDeg: 90 },
-    { id: 'stack_lab', name: 'Stack Lab', azimuthDeg: 150 },
-    { id: 'tree_lab', name: 'Tree Lab', azimuthDeg: 210 },
-    { id: 'recursion_lab', name: 'Recursion Lab', azimuthDeg: 270 },
+  const doorways: ArchwayProps[] = [
+    { id: 'array_station', name: 'Array Station', position: [-6.0, 0, 0], rotationY: Math.PI / 2 },
+    { id: 'linked_list_lab', name: 'Linked List Lab', position: [6.0, 0, 0], rotationY: -Math.PI / 2 },
+    { id: 'recursion_lab', name: 'Recursion Lab', position: [0, 0, -6.0], rotationY: 0 },
+    { id: 'stack_lab', name: 'Stack Lab', position: [0, 0, 6.0], rotationY: Math.PI },
   ];
 
   return (
     <group name="ClassroomLabDoorways">
-      {wings.map((w) => (
+      {doorways.map((d) => (
         <ArchwayPortal
-          key={w.id}
-          id={w.id}
-          name={w.name}
-          azimuthDeg={w.azimuthDeg}
-          radius={17.5}
+          key={d.id}
+          id={d.id}
+          name={d.name}
+          position={d.position}
+          rotationY={d.rotationY}
         />
       ))}
     </group>

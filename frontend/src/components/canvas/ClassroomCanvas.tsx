@@ -38,35 +38,32 @@ const CameraFollower: React.FC<CameraFollowerProps> = ({ cameraAngleRef, cameraP
       targetLookAt = new THREE.Vector3(...cinematicCamera.lookAt);
       lerpFactor = 0.05;
     } else if (activeStation === 'stack_lab') {
-      // Cinematic Fixed Framing: Close-up facing the Stack Apparatus cylinder
-      idealX = 10.2;
+      // Cinematic Fixed Framing: Facing the South Wing Stack Apparatus
+      idealX = 0.0;
       idealY = 2.4;
-      idealZ = 18.0;
-      targetLookAt = new THREE.Vector3(12.0, 1.9, 21.0);
+      idealZ = 17.5;
+      targetLookAt = new THREE.Vector3(0.0, 1.8, 20.0);
       lerpFactor = 0.08;
     } else if (activeStation === 'array_station') {
-      // Cinematic Fixed Framing: Close-up facing the Array Station apparatus
-      // Array Wing is at [12.0, 0, -20.8], apparatus table at [12.0, 0.8, -20.3]
-      idealX = 10.5;
-      idealY = 2.3;
-      idealZ = -18.2;
-      targetLookAt = new THREE.Vector3(12.0, 1.6, -20.8);
+      // Cinematic Fixed Framing: Facing the West Wing Array Station
+      idealX = -17.5;
+      idealY = 2.4;
+      idealZ = 0.0;
+      targetLookAt = new THREE.Vector3(-20.0, 1.8, 0.0);
       lerpFactor = 0.08;
     } else if (activeStation === 'linked_list_lab') {
-      // Cinematic Fixed Framing: Close-up facing the Linked List apparatus
-      // East Wing is at [24.0, 0, 0], chamber faces inward (rotationY = -Math.PI / 2)
-      idealX = 21.2;
-      idealY = 2.3;
-      idealZ = 2.4;
-      targetLookAt = new THREE.Vector3(24.0, 1.6, 0.0);
+      // Cinematic Fixed Framing: Facing the East Wing Linked List apparatus
+      idealX = 17.5;
+      idealY = 2.4;
+      idealZ = 0.0;
+      targetLookAt = new THREE.Vector3(20.0, 1.8, 0.0);
       lerpFactor = 0.08;
     } else if (activeStation === 'recursion_lab') {
-      // Cinematic Fixed Framing: Close-up facing the Recursion elevator shaft
-      // Recursion Wing is at [-24.0, 0, 0], chamber faces inward (rotationY = Math.PI / 2)
-      idealX = -21.2;
+      // Cinematic Fixed Framing: Facing the North Wing Recursion elevator shaft
+      idealX = 0.0;
       idealY = 2.4;
-      idealZ = 2.4;
-      targetLookAt = new THREE.Vector3(-24.0, 1.9, 0.0);
+      idealZ = -17.5;
+      targetLookAt = new THREE.Vector3(0.0, 1.8, -20.0);
       lerpFactor = 0.08;
     } else {
       const [ax, ay, az] = avatar.position;

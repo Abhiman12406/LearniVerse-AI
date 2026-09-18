@@ -23,9 +23,9 @@ export const LinkedListLab: React.FC = () => {
   const [isNear, setIsNear] = useState(false);
   const sparkParticlesRef = useRef<THREE.Points>(null);
 
-  // Position of Linked List Lab Wing Chamber (Azimuth 90° East, Radius 24.0)
-  const wingPos: [number, number, number] = [24.0, 0.0, 0.0];
-  const consolePos: [number, number, number] = [24.0, 0.0, 0.0];
+  // Position of Linked List Lab Wing Chamber (East Wing at X = 20.0, Z = 0)
+  const wingPos: [number, number, number] = [20.0, 0.0, 0.0];
+  const consolePos: [number, number, number] = [20.0, 0.0, 0.0];
 
   // Proximity detection to apparatus table
   useFrame(() => {
