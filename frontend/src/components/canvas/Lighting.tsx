@@ -16,15 +16,16 @@ export const Lighting: React.FC = () => {
         intensity={2.6}
         color="#fff3d6"
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-        shadow-bias={-0.0001}
-        shadow-camera-near={1}
-        shadow-camera-far={100}
-        shadow-camera-left={-32}
-        shadow-camera-right={32}
-        shadow-camera-top={32}
-        shadow-camera-bottom={-32}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+        shadow-bias={-0.0002}
+        shadow-normalBias={0.02}
+        shadow-camera-near={5}
+        shadow-camera-far={70}
+        shadow-camera-left={-22}
+        shadow-camera-right={22}
+        shadow-camera-top={22}
+        shadow-camera-bottom={-22}
       />
 
       {/* Secondary soft cool sky/window bounce fill light from opposite angle */}
