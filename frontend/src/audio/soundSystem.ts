@@ -186,6 +186,58 @@ class SoundSystem {
       // Ignore
     }
   }
+
+  public playSuccess(): void {
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    try {
+      // Ascending major chord fanfare
+      const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+      notes.forEach((freq, idx) => {
+        if (!this.ctx || !this.masterGain) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const start = this.ctx.currentTime + idx * 0.08;
+        const duration = 0.22;
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, start);
+
+        gain.gain.setValueAtTime(0.15, start);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+
+        osc.start(start);
+        osc.stop(start + duration);
+      });
+    } catch {
+      // Ignore
+    }
+  }
+
+  public playAlert(): void {
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(110, this.ctx.currentTime + 0.2);
+
+      gain.gain.setValueAtTime(0.16, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.2);
+    } catch {
+      // Ignore
+    }
+  }
 }
 
 export const soundSystem = new SoundSystem();
