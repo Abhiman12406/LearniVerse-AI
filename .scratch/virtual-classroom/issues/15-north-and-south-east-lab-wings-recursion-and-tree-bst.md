@@ -4,10 +4,10 @@
 
 **Blocked by:** 14: West & East Lab Wings (Array Station & Linked List Lab with Walk-in Corridors)
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] North corridor leads directly to the Recursion Chamber with solid colliders, glowing violet thematic accents, and the interactive call stack apparatus.
-- [ ] The prerequisite barrier and diagnostic plaque continue to reliably block entrance to the Recursion Chamber when Stack mastery is below 0.70.
-- [ ] South-East corridor connects to an enterable Tree & BST Lab featuring emerald/cyan thematic styling and a hierarchical 3D binary search tree model.
-- [ ] Proximity detection and interactive key prompts (`[E]`) are active in both laboratories, linking to respective station modal interfaces.
-- [ ] Perimeter wall colliders and corridor boundaries prevent avatar clipping and falling into empty world coordinates.
+- [x] North corridor leads directly to the Recursion Chamber with solid colliders, glowing violet thematic accents, and the interactive call stack apparatus.
+- [x] The prerequisite barrier and diagnostic plaque continue to reliably block entrance to the Recursion Chamber when Stack mastery is below 0.70.
+- [x] South-East corridor connects to an enterable Tree & BST Lab featuring emerald/cyan thematic styling and a hierarchical 3D binary search tree model.
+- [x] Proximity detection and interactive key prompts (`[E]`) are active in both laboratories, linking to respective station modal interfaces.
+- [x] Perimeter wall colliders and corridor boundaries prevent avatar clipping and falling into empty world coordinates.

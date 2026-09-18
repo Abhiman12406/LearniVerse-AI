@@ -497,6 +497,7 @@ export interface ClassroomMaterials {
   led: THREE.MeshBasicMaterial;
   clockDial: THREE.MeshBasicMaterial;
   clockSecondHand: THREE.MeshBasicMaterial;
+  lightFixture: THREE.MeshStandardMaterial;
 }
 
 let cachedMaterials: ClassroomMaterials | null = null;
@@ -607,6 +608,11 @@ export function getClassroomMaterials(): ClassroomMaterials {
     }),
     clockSecondHand: new THREE.MeshBasicMaterial({
       color: '#ef4444',
+    }),
+    lightFixture: new THREE.MeshStandardMaterial({
+      color: '#f8fafc',
+      roughness: 0.3,
+      metalness: 0.8,
     }),
   };
 

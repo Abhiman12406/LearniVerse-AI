@@ -803,6 +803,28 @@ export function createClassroomEnvironment(): ClassroomEnvironment {
   registerBoxCollider('Linked List Lab Tech Bench (North)', 20.0, -5.8, 4.0, 1.2);
   registerBoxCollider('Linked List Lab Tech Bench (South)', 20.0, 5.8, 4.0, 1.2);
 
+  // Recursion Chamber (North Wing, centered at X = 0, Z = -20.0, 14x14m: X in [-7, 7], Z in [-27, -13])
+  registerBoxCollider('Recursion Chamber North Wall', 0.0, -27.0, 14.0, 0.4);
+  registerBoxCollider('Recursion Chamber West Wall', -7.0, -20.0, 0.4, 14.0);
+  registerBoxCollider('Recursion Chamber East Wall', 7.0, -20.0, 0.4, 14.0);
+  registerBoxCollider('Recursion Chamber South Wall (West)', -4.45, -13.0, 5.1, 0.4);
+  registerBoxCollider('Recursion Chamber South Wall (East)', 4.45, -13.0, 5.1, 0.4);
+  registerBoxCollider('Recursion Chamber Tech Bench (West)', -5.8, -20.0, 1.2, 4.0);
+  registerBoxCollider('Recursion Chamber Tech Bench (East)', 5.8, -20.0, 1.2, 4.0);
+
+  // Tree & BST Lab (South-East Wing, centered at X = 12.0, Z = 20.8, 14x14m: X in [5, 19], Z in [13.8, 27.8])
+  registerBoxCollider('Tree Lab South Wall', 12.0, 27.8, 14.0, 0.4);
+  registerBoxCollider('Tree Lab East Wall', 19.0, 20.8, 0.4, 14.0);
+  registerBoxCollider('Tree Lab West Wall', 5.0, 20.8, 0.4, 14.0);
+  registerBoxCollider('Tree Lab North Wall (West)', 7.55, 13.8, 5.1, 0.4);
+  registerBoxCollider('Tree Lab North Wall (East)', 16.45, 13.8, 5.1, 0.4);
+  registerBoxCollider('Tree Lab Tech Bench (East)', 17.8, 20.8, 1.2, 4.0);
+  registerBoxCollider('Tree Lab Tech Bench (South)', 12.0, 26.6, 4.0, 1.2);
+
+  // South-East Corridor Side Walls (connecting Central Atrium to Tree Lab at X = 12.0, Z: 6.0 to 13.8)
+  registerBoxCollider('Corridor South-East West Wall', 9.7, 9.9, 0.2, 7.8);
+  registerBoxCollider('Corridor South-East East Wall', 14.3, 9.9, 0.2, 7.8);
+
   // --- 11. UPDATE & DISPOSAL ---
   let clockTime = 10 * 3600 + 15 * 60; // 10:15 am
 

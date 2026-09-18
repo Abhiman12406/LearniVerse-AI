@@ -64,6 +64,7 @@ export const Archways: React.FC = () => {
     { id: 'linked_list_lab', name: 'Linked List Lab', position: [6.0, 0, 0], rotationY: -Math.PI / 2 },
     { id: 'recursion_lab', name: 'Recursion Lab', position: [0, 0, -6.0], rotationY: 0 },
     { id: 'stack_lab', name: 'Stack Lab', position: [0, 0, 6.0], rotationY: Math.PI },
+    { id: 'tree_lab', name: 'Tree & BST Lab', position: [12.0, 0, 13.8], rotationY: 0 },
   ];
 
   return (

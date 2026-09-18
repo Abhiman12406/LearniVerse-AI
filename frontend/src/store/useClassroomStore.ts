@@ -88,6 +88,35 @@ export const DEFAULT_RECURSION_FRAMES: RecursionFrameElement[] = [
   { id: 'frame-1', n: 1, callLabel: 'f(1)', argValue: 1, returnValue: null, status: 'base_case' },
 ];
 
+export interface TreeNodeElement {
+  value: number;
+  level: number;
+  leftChildValue: number | null;
+  rightChildValue: number | null;
+  color: string;
+}
+
+export interface TreeOperationDetail {
+  type: 'in_order_traversal' | 'search' | 'reset';
+  timeComplexity: 'O(log n)' | 'O(n)';
+  description: string;
+  formula: string;
+  visitedNodes: number[];
+  targetValue?: number;
+  found?: boolean;
+  stepsCount: number;
+}
+
+export const DEFAULT_TREE_NODES: TreeNodeElement[] = [
+  { value: 50, level: 0, leftChildValue: 30, rightChildValue: 70, color: '#00f0ff' },
+  { value: 30, level: 1, leftChildValue: 20, rightChildValue: 40, color: '#10b981' },
+  { value: 70, level: 1, leftChildValue: 60, rightChildValue: 80, color: '#10b981' },
+  { value: 20, level: 2, leftChildValue: null, rightChildValue: null, color: '#34d399' },
+  { value: 40, level: 2, leftChildValue: null, rightChildValue: null, color: '#34d399' },
+  { value: 60, level: 2, leftChildValue: null, rightChildValue: null, color: '#34d399' },
+  { value: 80, level: 2, leftChildValue: null, rightChildValue: null, color: '#34d399' },
+];
+
 interface ClassroomStore {
   // Authoritative State
   learner: LearnerProfile | null;
@@ -155,6 +184,14 @@ interface ClassroomStore {
   recursionStackOverflow: boolean;
   recursionOperation: RecursionOperationDetail | null;
 
+  // Tree & BST Lab State & Mechanics
+  treeNodes: TreeNodeElement[];
+  treeActiveNodeValue: number | null;
+  treeTraversingValues: number[];
+  treeSearchTarget: number | null;
+  treeIsTraversing: boolean;
+  treeOperation: TreeOperationDetail | null;
+
   // Stack Challenge Console State
   stackMission: StackMission;
   activeChallengeIndex: number;
@@ -215,6 +252,11 @@ interface ClassroomStore {
   clearRecursionOverflow: () => void;
   resetRecursionChamber: () => void;
   runRecursiveFactorialDemo: (n?: number) => Promise<void>;
+
+  // Tree & BST Actions
+  runTreeInOrderTraversal: (stepDelay?: number) => Promise<number[]>;
+  runTreeSearch: (target: number, stepDelay?: number) => Promise<{ found: boolean; path: number[]; steps: number }>;
+  resetTreeLab: () => void;
 
   // Telemetry Drawer Actions
   toggleTelemetry: () => void;
@@ -584,6 +626,14 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     depth: 3,
     timestamp: Date.now(),
   },
+
+  // Tree & BST Initial State
+  treeNodes: DEFAULT_TREE_NODES,
+  treeActiveNodeValue: null,
+  treeTraversingValues: [],
+  treeSearchTarget: null,
+  treeIsTraversing: false,
+  treeOperation: null,
 
   // Feynman Multimodal Agent Initial State
   isFeynmanOpen: false,
@@ -1864,6 +1914,140 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
 
     await get().triggerRecursionReturn();
     set({ recursionIsExecuting: false });
+  },
+
+  runTreeInOrderTraversal: async (stepDelay: number = 220) => {
+    soundSystem.playChirp();
+    set({ treeIsTraversing: true, treeSearchTarget: null, treeTraversingValues: [] });
+
+    const sortedOrder = [20, 30, 40, 50, 60, 70, 80];
+    const visited: number[] = [];
+
+    for (const val of sortedOrder) {
+      visited.push(val);
+      soundSystem.playFootstep('wood');
+      set({
+        treeActiveNodeValue: val,
+        treeTraversingValues: [...visited],
+        treeOperation: {
+          type: 'in_order_traversal',
+          timeComplexity: 'O(n)',
+          description: `In-Order (Left-Root-Right): Visited node [${val}]. Sorted sequence producing monotonically ascending order.`,
+          formula: 'T(n) = 2T(n/2) + O(1) => O(n) linear scan across all n nodes',
+          visitedNodes: [...visited],
+          stepsCount: visited.length,
+        },
+      });
+      if (stepDelay > 0) {
+        await new Promise((res) => setTimeout(res, stepDelay));
+      }
+    }
+
+    soundSystem.playUnlockArpeggio();
+    set({
+      treeIsTraversing: false,
+      treeActiveNodeValue: null,
+      treeTraversingValues: sortedOrder,
+      treeOperation: {
+        type: 'in_order_traversal',
+        timeComplexity: 'O(n)',
+        description: `In-Order Traversal Complete: [${sortedOrder.join(', ')}]. BST invariant guarantees strictly sorted sequence!`,
+        formula: 'O(n) complete tree visit',
+        visitedNodes: sortedOrder,
+        stepsCount: sortedOrder.length,
+      },
+    });
+    return sortedOrder;
+  },
+
+  runTreeSearch: async (target: number, stepDelay: number = 300) => {
+    soundSystem.playChirp();
+    set({ treeIsTraversing: true, treeSearchTarget: target, treeTraversingValues: [] });
+
+    const path: number[] = [];
+    let curr: number | null = 50;
+
+    const nodeMap: Record<number, { left: number | null; right: number | null }> = {
+      50: { left: 30, right: 70 },
+      30: { left: 20, right: 40 },
+      70: { left: 60, right: 80 },
+      20: { left: null, right: null },
+      40: { left: null, right: null },
+      60: { left: null, right: null },
+      80: { left: null, right: null },
+    };
+
+    let found = false;
+
+    while (curr !== null) {
+      path.push(curr);
+      soundSystem.playChirp();
+      set({
+        treeActiveNodeValue: curr,
+        treeTraversingValues: [...path],
+        treeOperation: {
+          type: 'search',
+          timeComplexity: 'O(log n)',
+          description: `Inspecting node [${curr}] against search key [${target}].`,
+          formula:
+            target < curr
+              ? `${target} < ${curr} => descend LEFT`
+              : target > curr
+              ? `${target} > ${curr} => descend RIGHT`
+              : `MATCH! ${target} == ${curr}`,
+          visitedNodes: [...path],
+          targetValue: target,
+          stepsCount: path.length,
+        },
+      });
+      if (stepDelay > 0) {
+        await new Promise((res) => setTimeout(res, stepDelay));
+      }
+
+      if (curr === target) {
+        found = true;
+        break;
+      } else if (target < curr) {
+        curr = nodeMap[curr]?.left ?? null;
+      } else {
+        curr = nodeMap[curr]?.right ?? null;
+      }
+    }
+
+    if (found) {
+      soundSystem.playUnlockArpeggio();
+    }
+
+    set({
+      treeIsTraversing: false,
+      treeActiveNodeValue: found ? target : null,
+      treeTraversingValues: [...path],
+      treeOperation: {
+        type: 'search',
+        timeComplexity: 'O(log n)',
+        description: found
+          ? `Key [${target}] successfully located in ${path.length} comparisons! Binary search cuts problem space in half each step.`
+          : `Key [${target}] not found in tree canopy after ${path.length} comparisons.`,
+        formula: 'Tree Height = ceil(log2(7 + 1)) = 3 comparisons => O(log n)',
+        visitedNodes: [...path],
+        targetValue: target,
+        found,
+        stepsCount: path.length,
+      },
+    });
+
+    return { found, path, steps: path.length };
+  },
+
+  resetTreeLab: () => {
+    soundSystem.playChirp();
+    set({
+      treeActiveNodeValue: null,
+      treeTraversingValues: [],
+      treeSearchTarget: null,
+      treeIsTraversing: false,
+      treeOperation: null,
+    });
   },
 
   resetWorldSeed: async () => {

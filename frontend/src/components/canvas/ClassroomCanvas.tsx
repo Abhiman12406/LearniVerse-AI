@@ -11,6 +11,7 @@ import { StackLabWing } from './StackLabWing';
 import { ArrayLabWing } from './ArrayLabWing';
 import { LinkedListLab } from './LinkedListLab';
 import { RecursionLabWing } from './RecursionLabWing';
+import { TreeLabWing } from './TreeLabWing';
 import {
   exponentialDamp,
   calculateThirdPersonCamera,
@@ -82,6 +83,14 @@ const CameraFollower: React.FC<CameraFollowerProps> = ({
       idealY = 2.4;
       idealZ = -17.5;
       targetLookAtRef.current.set(0.0, 1.8, -20.0);
+      posLambda = 8.0;
+      lookLambda = 10.0;
+    } else if (activeStation === 'tree_lab') {
+      // Cinematic Fixed Framing: Facing the South-East Wing Tree & BST apparatus
+      idealX = 12.0;
+      idealY = 2.4;
+      idealZ = 18.0;
+      targetLookAtRef.current.set(12.0, 2.0, 20.8);
       posLambda = 8.0;
       lookLambda = 10.0;
     } else if (perspectiveMode === '1st_person') {
@@ -262,6 +271,7 @@ export const ClassroomCanvas: React.FC = () => {
           <ArrayLabWing />
           <LinkedListLab />
           <RecursionLabWing />
+          <TreeLabWing />
         </React.Suspense>
       </Canvas>
     </div>

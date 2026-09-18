@@ -8,6 +8,7 @@ import { StationConsoleModal } from './components/ui/StationConsoleModal';
 import { ArrayStationConsole } from './components/ui/ArrayStationConsole';
 import { LinkedListConsole } from './components/ui/LinkedListConsole';
 import { RecursionConsole } from './components/ui/RecursionConsole';
+import { TreeBSTConsole } from './components/ui/TreeBSTConsole';
 import { TelemetryDrawer } from './components/ui/TelemetryDrawer';
 
 export const App: React.FC = () => {
@@ -42,6 +43,7 @@ export const App: React.FC = () => {
       <ArrayStationConsole />
       <LinkedListConsole />
       <RecursionConsole />
+      <TreeBSTConsole />
       <TelemetryDrawer />
     </main>
   );
