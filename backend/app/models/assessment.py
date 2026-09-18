@@ -53,6 +53,7 @@ class DiagnosticSubmissionRequest(BaseModel):
     time_taken_ms: Optional[int] = Field(None, description="Total time taken to complete the test in ms")
 
 
+from backend.app.models.agents import DeliberationResponse
 from backend.app.models.learner import LearnerProfile, WorldState
 
 
@@ -106,6 +107,7 @@ class DiagnosticSubmissionResponse(BaseModel):
     barrier_recalculations: Dict[str, BarrierRecalculationDetail] = Field(default_factory=dict, description="Recalculated barrier states per wing")
     learner_profile: Optional[LearnerProfile] = Field(None, description="Updated authoritative learner profile")
     world_state: Optional[WorldState] = Field(None, description="Updated virtual classroom world state")
+    deliberation: Optional[DeliberationResponse] = Field(None, description="Authoritative 5-Agent LangGraph deliberation outcome")
     threshold_crossed: bool = Field(default=False, description="Whether any prerequisite threshold was crossed")
     unlocked_wing: Optional[str] = Field(None, description="ID of newly unlocked wing if barrier dissolved")
     status: str = Field(default="evaluated", description="Status: evaluated")
@@ -113,4 +115,5 @@ class DiagnosticSubmissionResponse(BaseModel):
         default_factory=lambda: datetime.now(timezone.utc).isoformat(),
         description="Evaluation timestamp",
     )
+
 

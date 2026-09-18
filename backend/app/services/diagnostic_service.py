@@ -21,6 +21,7 @@ from backend.app.models.assessment import (
     DiagnosticSubmissionRequest,
     DiagnosticSubmissionResponse,
 )
+from backend.app.agents.coordinator import agent_coordinator
 from backend.app.services.bkt_service import bkt_service
 from backend.app.services.irt_service import irt_service
 from backend.app.services.learner_service import WING_DEFINITIONS, learner_service
@@ -594,6 +595,9 @@ Respond STRICTLY in valid JSON matching this schema:
         answered_count = len([k for k in req.answers.values() if k])
         score_percentage = round((correct_count / total_questions) * 100.0, 1)
 
+        # 8. Execute 5-Agent LangGraph Deliberation Pipeline post-evaluation
+        deliberation = agent_coordinator.run_deliberation(student_id=lid)
+
         return DiagnosticSubmissionResponse(
             assessment_id=req.assessment_id,
             student_id=lid,
@@ -607,6 +611,7 @@ Respond STRICTLY in valid JSON matching this schema:
             barrier_recalculations=barrier_recalculations,
             learner_profile=updated_profile,
             world_state=world_state,
+            deliberation=deliberation,
             threshold_crossed=threshold_crossed,
             unlocked_wing=unlocked_wing,
             status="evaluated",

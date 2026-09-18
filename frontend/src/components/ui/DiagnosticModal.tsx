@@ -20,18 +20,22 @@ import {
   ShieldAlert,
   Compass,
   ArrowRight,
+  Brain,
+  Terminal,
+  Target,
 } from 'lucide-react';
 
 import { useClassroomStore } from '../../store/useClassroomStore';
 import { DEFAULT_DIAGNOSTIC_ASSESSMENT } from '../../data/diagnosticQuestions';
 
 const WING_TELEPORT_COORDS: Record<string, [number, number, number]> = {
-  array_station: [12.0, 0.0, -20.0],
-  linked_list_lab: [24.0, 0.0, 0.0],
-  stack_lab: [12.0, 0.0, 20.0],
-  recursion_lab: [-24.0, 0.0, 0.0],
-  tree_lab: [-12.0, 0.0, 20.0],
+  array_station: [-17.5, 0.0, 0.0],
+  linked_list_lab: [17.5, 0.0, 0.0],
+  stack_lab: [0.0, 0.0, 17.5],
+  recursion_lab: [0.0, 0.0, -17.5],
+  tree_lab: [12.0, 0.0, 18.0],
 };
+
 
 const CONCEPT_THEMES: Record<
   string,
@@ -85,12 +89,16 @@ export const DiagnosticModal: React.FC = () => {
     diagnosticSubmitted,
     diagnosticResult,
     isDiagnosticSubmitting,
+    latestDeliberation,
     setDiagnosticAnswer,
     setDiagnosticIndex,
     submitDiagnosticAssessment,
     resetDiagnosticAssessment,
     teleportAvatar,
+    teleportToAssignedLab,
+    openTelemetry,
   } = useClassroomStore();
+
 
 
   const [showHint, setShowHint] = useState(false);
@@ -517,8 +525,424 @@ export const DiagnosticModal: React.FC = () => {
                 </div>
               )}
 
+              {/* 0. LangGraph 5-Agent Deliberation & Station Assignment Card */}
+              {(() => {
+                const delib = diagnosticResult.deliberation || latestDeliberation;
+                if (!delib || !delib.final_decision) return null;
+                const dec = delib.final_decision;
+                const worldInst = delib.world_instructions;
+                const targetStation = worldInst?.recommended_station || 'stack_lab';
+                const stationKey = targetStation.replace('_station', '').replace('_lab', '');
+                const stationTheme = CONCEPT_THEMES[stationKey] || CONCEPT_THEMES.stack;
+                const stationName = stationTheme.name || targetStation.replace('_', ' ').toUpperCase();
+                const isOverruled = dec.overruled || dec.guardrail_status === 'OVERRULED';
+
+                const actionColor =
+                  dec.action === 'REMEDIATE'
+                    ? '#fb923c'
+                    : dec.action === 'CHALLENGE'
+                    ? '#34d399'
+                    : dec.action === 'LEARN'
+                    ? '#38bdf8'
+                    : '#c084fc';
+                const actionBg =
+                  dec.action === 'REMEDIATE'
+                    ? 'rgba(251, 146, 60, 0.15)'
+                    : dec.action === 'CHALLENGE'
+                    ? 'rgba(52, 211, 153, 0.15)'
+                    : dec.action === 'LEARN'
+                    ? 'rgba(56, 189, 248, 0.15)'
+                    : 'rgba(192, 132, 252, 0.15)';
+
+                return (
+                  <div
+                    style={{
+                      padding: '20px',
+                      borderRadius: '14px',
+                      background:
+                        'linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(99, 102, 241, 0.12), rgba(15, 23, 42, 0.95))',
+                      border: '1px solid rgba(56, 189, 248, 0.4)',
+                      boxShadow: '0 0 30px rgba(56, 189, 248, 0.15), inset 0 0 15px rgba(56, 189, 248, 0.05)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '16px',
+                      position: 'relative',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {/* Radial Ambient Accent */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        right: 0,
+                        width: '200px',
+                        height: '100%',
+                        background:
+                          'radial-gradient(circle at top right, rgba(56, 189, 248, 0.18), transparent 70%)',
+                        pointerEvents: 'none',
+                      }}
+                    />
+
+                    {/* Header & Pipeline Stepper */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexWrap: 'wrap',
+                          gap: '10px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div
+                            style={{
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '10px',
+                              background: 'rgba(56, 189, 248, 0.2)',
+                              border: '1px solid #38bdf8',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#38bdf8',
+                              boxShadow: '0 0 12px rgba(56, 189, 248, 0.3)',
+                            }}
+                          >
+                            <Brain size={20} />
+                          </div>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <h4
+                                style={{
+                                  margin: 0,
+                                  fontSize: '13px',
+                                  fontWeight: 800,
+                                  letterSpacing: '0.06em',
+                                  color: '#f8fafc',
+                                  fontFamily: 'var(--font-mono, monospace)',
+                                  textTransform: 'uppercase',
+                                }}
+                              >
+                                LangGraph 5-Agent Deliberation Pipeline
+                              </h4>
+                              <span
+                                style={{
+                                  fontSize: '9px',
+                                  fontWeight: 800,
+                                  padding: '2px 8px',
+                                  borderRadius: '10px',
+                                  background: 'rgba(52, 211, 153, 0.2)',
+                                  color: '#34d399',
+                                  border: '1px solid #34d399',
+                                  fontFamily: 'var(--font-mono, monospace)',
+                                }}
+                              >
+                                LIVE DECISION
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                              Autonomous Pedagogical Routing • Deterministic Prerequisite Guardrails Enforced
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            closeDiagnostic();
+                            openTelemetry('agents');
+                          }}
+                          className="cyber-button"
+                          style={{
+                            padding: '6px 12px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            borderColor: 'rgba(56, 189, 248, 0.3)',
+                            color: '#38bdf8',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            cursor: 'pointer',
+                          }}
+                          title="Inspect full agent deliberation traces in Telemetry Drawer"
+                        >
+                          <Terminal size={12} />
+                          <span>Inspect Traces</span>
+                          <ArrowRight size={12} />
+                        </button>
+                      </div>
+
+                      {/* 5-Agent Pipeline Sequence Visualization */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '10px 14px',
+                          background: 'rgba(0, 0, 0, 0.45)',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          overflowX: 'auto',
+                        }}
+                      >
+                        {[
+                          { name: 'Context Agent', role: 'State & BKT' },
+                          { name: 'Diagnostic Agent', role: 'DAG Readiness' },
+                          { name: 'Planner Agent', role: 'Pedagogical ZPD' },
+                          { name: 'Validator Agent', role: 'Guardrails' },
+                          { name: 'Game Agent', role: 'Lab Adaptation' },
+                        ].map((step, idx) => (
+                          <React.Fragment key={step.name}>
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                flexShrink: 0,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: '18px',
+                                  height: '18px',
+                                  borderRadius: '50%',
+                                  background: 'rgba(56, 189, 248, 0.25)',
+                                  border: '1px solid #38bdf8',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '10px',
+                                  fontWeight: 900,
+                                  color: '#38bdf8',
+                                  fontFamily: 'var(--font-mono, monospace)',
+                                }}
+                              >
+                                {idx + 1}
+                              </div>
+                              <div>
+                                <span
+                                  style={{
+                                    fontSize: '11px',
+                                    fontWeight: 800,
+                                    color: '#f8fafc',
+                                  }}
+                                >
+                                  {step.name}
+                                </span>
+                                <span
+                                  style={{
+                                    fontSize: '9px',
+                                    color: '#64748b',
+                                    display: 'block',
+                                  }}
+                                >
+                                  {step.role}
+                                </span>
+                              </div>
+                            </div>
+                            {idx < 4 && (
+                              <div
+                                style={{
+                                  height: '2px',
+                                  width: '18px',
+                                  background: 'linear-gradient(90deg, #38bdf8, #818cf8)',
+                                  flexShrink: 0,
+                                  opacity: 0.6,
+                                }}
+                              />
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Decision Details & 1-Click Teleport CTA */}
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                        gap: '14px',
+                      }}
+                    >
+                      {/* Prescribed Action & Assignment Column */}
+                      <div
+                        style={{
+                          padding: '14px',
+                          background: 'rgba(0, 0, 0, 0.35)',
+                          borderRadius: '10px',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '10px',
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: '10px',
+                              color: '#94a3b8',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.06em',
+                              fontFamily: 'var(--font-mono, monospace)',
+                            }}
+                          >
+                            Pedagogical Action & Station
+                          </span>
+                          <span
+                            style={{
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              background: isOverruled
+                                ? 'rgba(244, 63, 94, 0.2)'
+                                : 'rgba(52, 211, 153, 0.2)',
+                              color: isOverruled ? '#fb7185' : '#34d399',
+                              border: `1px solid ${isOverruled ? '#fb7185' : '#34d399'}`,
+                              fontSize: '10px',
+                              fontWeight: 800,
+                              fontFamily: 'var(--font-mono, monospace)',
+                            }}
+                          >
+                            {isOverruled ? '⚡ GUARDRAIL OVERRULE' : '✓ GUARDRAIL CERTIFIED'}
+                          </span>
+                        </div>
+
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            flexWrap: 'wrap',
+                          }}
+                        >
+                          <span
+                            style={{
+                              padding: '4px 12px',
+                              borderRadius: '8px',
+                              fontSize: '12px',
+                              fontWeight: 900,
+                              letterSpacing: '0.06em',
+                              fontFamily: 'var(--font-mono, monospace)',
+                              background: actionBg,
+                              color: actionColor,
+                              border: `1px solid ${actionColor}`,
+                            }}
+                          >
+                            ACTION: {dec.action}
+                          </span>
+
+                          <span
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: '8px',
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              background: 'rgba(255, 255, 255, 0.08)',
+                              color: '#f8fafc',
+                              border: '1px solid rgba(255, 255, 255, 0.15)',
+                              fontFamily: 'var(--font-mono, monospace)',
+                              textTransform: 'uppercase',
+                            }}
+                          >
+                            DIFFICULTY: {dec.difficulty}
+                          </span>
+                        </div>
+
+                        <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: '1.5' }}>
+                          Target Station: <strong style={{ color: stationTheme.color }}>{stationName}</strong>
+                          {worldInst?.active_mission?.title && (
+                            <div style={{ color: '#94a3b8', fontSize: '11px', marginTop: '2px' }}>
+                              Prescribed Mission: <strong style={{ color: '#f8fafc' }}>{worldInst.active_mission.title}</strong>
+                            </div>
+                          )}
+                          {worldInst?.active_mission?.objective && (
+                            <div style={{ color: '#64748b', fontSize: '10px', marginTop: '2px', fontStyle: 'italic' }}>
+                              Objective: {worldInst.active_mission.objective}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Rationale & 1-Click Teleport Action */}
+                      <div
+                        style={{
+                          padding: '14px',
+                          background: 'rgba(0, 0, 0, 0.35)',
+                          borderRadius: '10px',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          gap: '10px',
+                        }}
+                      >
+                        <div>
+                          <span
+                            style={{
+                              fontSize: '10px',
+                              color: '#94a3b8',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.06em',
+                              fontFamily: 'var(--font-mono, monospace)',
+                            }}
+                          >
+                            Pedagogical Rationale
+                          </span>
+                          <p
+                            style={{
+                              margin: '6px 0 0 0',
+                              fontSize: '12px',
+                              color: '#f1f5f9',
+                              lineHeight: '1.55',
+                            }}
+                          >
+                            {dec.reason}
+                          </p>
+                        </div>
+
+                        {/* 1-Click Teleport CTA */}
+                        <button
+                          onClick={() => teleportToAssignedLab(targetStation)}
+                          className="cyber-button"
+                          style={{
+                            marginTop: '4px',
+                            padding: '11px 18px',
+                            fontSize: '12px',
+                            fontWeight: 900,
+                            letterSpacing: '0.04em',
+                            background: 'linear-gradient(135deg, #0284c7, #38bdf8)',
+                            borderColor: '#38bdf8',
+                            color: '#090d16',
+                            borderRadius: '8px',
+                            boxShadow:
+                              '0 0 20px rgba(56, 189, 248, 0.5), 0 4px 12px rgba(0, 0, 0, 0.5)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            cursor: 'pointer',
+                            transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                          }}
+                        >
+                          <Zap size={16} color="#090d16" />
+                          <span>Teleport to {stationName} (1-Click)</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* 1. BKT Mastery Updates Section (Before vs After Deltas) */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Zap size={15} color="#38bdf8" />

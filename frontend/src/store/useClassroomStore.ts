@@ -340,7 +340,9 @@ interface ClassroomStore {
   setDiagnosticIndex: (index: number) => void;
   submitDiagnosticAssessment: () => Promise<void>;
   resetDiagnosticAssessment: () => void;
+  teleportToAssignedLab: (stationId?: string) => void;
 }
+
 
 // Fallback seed profile for initial rendering or offline mock
 const DEFAULT_LEARNER: LearnerProfile = {
@@ -2533,6 +2535,12 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
         if (result.world_state) {
           storeUpdates.worldState = result.world_state;
         }
+        if (result.deliberation) {
+          storeUpdates.latestDeliberation = result.deliberation;
+          if (result.deliberation.world_instructions?.mentor_guidance) {
+            storeUpdates.mentorGuidance = result.deliberation.world_instructions.mentor_guidance as any;
+          }
+        }
         if (result.bkt_updates && result.bkt_updates.length > 0) {
           const newDeltas = { ...state.lastMasteryDelta };
           for (const u of result.bkt_updates) {
@@ -2738,6 +2746,42 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
           }
         : null;
 
+      const fallbackDelib: DeliberationResponse = newMasteryMap.stack < 0.70
+        ? {
+            ...DEFAULT_DELIBERATION_B,
+            timestamp: new Date().toISOString(),
+            final_decision: {
+              ...DEFAULT_DELIBERATION_B.final_decision,
+              action: 'REMEDIATE',
+              concept: 'stack',
+              difficulty: 'easy',
+              reason: `Stack mastery is ${Math.round(newMasteryMap.stack * 100)}%, below the 70% prerequisite threshold for Recursion. Assigned to Stack Lab for targeted remediation.`,
+              certified: true,
+              guardrail_status: 'CERTIFIED',
+            },
+            traces: DEFAULT_DELIBERATION_B.traces.map((t) => ({
+              ...t,
+              timestamp: new Date().toISOString(),
+            })),
+          }
+        : {
+            ...DEFAULT_DELIBERATION_A,
+            timestamp: new Date().toISOString(),
+            final_decision: {
+              ...DEFAULT_DELIBERATION_A.final_decision,
+              action: 'LEARN',
+              concept: 'recursion',
+              difficulty: 'medium',
+              reason: `Stack mastery (${Math.round(newMasteryMap.stack * 100)}%) satisfies the 70% threshold. Prerequisite barrier dissolved. Assigned to Recursion Chamber.`,
+              certified: true,
+              guardrail_status: 'CERTIFIED',
+            },
+            traces: DEFAULT_DELIBERATION_A.traces.map((t) => ({
+              ...t,
+              timestamp: new Date().toISOString(),
+            })),
+          };
+
       const result: DiagnosticSubmissionResponse = {
         assessment_id: assessment.assessment_id,
         student_id: studentId,
@@ -2751,6 +2795,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
         barrier_recalculations: barrierRecalculations,
         learner_profile: updatedLearner,
         world_state: updatedWorldState,
+        deliberation: fallbackDelib,
         threshold_crossed: thresholdCrossed,
         unlocked_wing: unlockedWing,
         status: 'evaluated',
@@ -2773,6 +2818,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
         isDiagnosticSubmitting: false,
         learner: updatedLearner,
         worldState: updatedWorldState,
+        latestDeliberation: fallbackDelib,
         lastMasteryDelta: newDeltas,
       });
 
@@ -2799,4 +2845,53 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       diagnosticResult: null,
     });
   },
+
+  teleportToAssignedLab: (stationId?: string) => {
+    const state = get();
+    const targetStation =
+      stationId ||
+      state.diagnosticResult?.deliberation?.world_instructions?.recommended_station ||
+      state.latestDeliberation?.world_instructions?.recommended_station ||
+      state.learner?.recommended_station ||
+      'stack_lab';
+
+    const stationConfigs: Record<
+      string,
+      { pos: [number, number, number]; angle: number; name: string }
+    > = {
+      stack_lab: { pos: [0.0, 0.0, 17.5], angle: 0, name: 'Stack Lab' },
+      recursion_lab: { pos: [0.0, 0.0, -17.5], angle: Math.PI, name: 'Recursion Chamber' },
+      array_station: { pos: [-17.5, 0.0, 0.0], angle: Math.PI * 0.5, name: 'Array Station' },
+      linked_list_lab: { pos: [17.5, 0.0, 0.0], angle: -Math.PI * 0.5, name: 'Linked List Lab' },
+      tree_lab: { pos: [12.0, 0.0, 18.0], angle: 0, name: 'Tree & BST Lab' },
+    };
+
+    const cfg = stationConfigs[targetStation] || stationConfigs.stack_lab;
+
+    // 1. Close diagnostic modal
+    set({ isDiagnosticOpen: false });
+
+    // 2. Smoothly reposition avatar and camera angle
+    state.teleportAvatar(cfg.pos, cfg.angle);
+
+    // 3. Automatically open target station console modal
+    set({ activeStation: targetStation });
+
+    // 4. Align difficulty with the deliberation's prescribed difficulty
+    const prescribedDiff =
+      state.diagnosticResult?.deliberation?.final_decision?.difficulty ||
+      state.latestDeliberation?.final_decision?.difficulty;
+    if (prescribedDiff && ['easy', 'medium', 'hard'].includes(prescribedDiff.toLowerCase())) {
+      set({ missionDifficulty: prescribedDiff.toLowerCase() as 'easy' | 'medium' | 'hard' });
+    }
+
+    // 5. Sound & Toast feedback
+    soundSystem.playChirp();
+    const missionTitle =
+      state.diagnosticResult?.deliberation?.world_instructions?.active_mission?.title ||
+      state.latestDeliberation?.world_instructions?.active_mission?.title ||
+      'Targeted Lab Mission';
+    get().showToast(`⚡ Teleported to ${cfg.name} — Active Mission: ${missionTitle}`);
+  },
 }));
+

@@ -34,6 +34,7 @@ export interface DiagnosticAssessment {
   timestamp: string;
 }
 
+import { DeliberationResponse } from './agents';
 import { LearnerProfile, WorldState } from './world';
 
 export interface DiagnosticAnswerReview {
@@ -86,9 +87,11 @@ export interface DiagnosticSubmissionResponse {
   barrier_recalculations?: Record<string, BarrierRecalculationDetail>;
   learner_profile?: LearnerProfile | null;
   world_state?: WorldState | null;
+  deliberation?: DeliberationResponse | null;
   threshold_crossed?: boolean;
   unlocked_wing?: string | null;
   status: string;
   evaluation_timestamp: string;
 }
+
 
