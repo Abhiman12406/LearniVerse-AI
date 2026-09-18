@@ -40,6 +40,30 @@ export const DEFAULT_ARRAY_BAYS: ArrayBayElement[] = [
   { index: 4, value: 56, address: '0x2010', color: '#8b5cf6' },
 ];
 
+export interface LinkedListNodeElement {
+  id: string;
+  label: string;
+  value: number;
+  address: string;
+  crystalColor: string;
+  nextId: string | null;
+}
+
+export interface LinkedListOperationDetail {
+  type: 'traversal' | 'insert' | 'delete' | 'sever' | 'repair' | 'null_dereference';
+  timeComplexity: 'O(1)' | 'O(n)';
+  description: string;
+  codeSnippet: string;
+  activeNodeId?: string | null;
+  stepsCount?: number;
+}
+
+export const DEFAULT_LINKED_LIST_NODES: LinkedListNodeElement[] = [
+  { id: 'node_a', label: 'A', value: 10, address: '0x3F00', crystalColor: '#00d4ff', nextId: 'node_b' },
+  { id: 'node_b', label: 'B', value: 20, address: '0x3F40', crystalColor: '#10b981', nextId: 'node_c' },
+  { id: 'node_c', label: 'C', value: 30, address: '0x3F80', crystalColor: '#f43f5e', nextId: null },
+];
+
 interface ClassroomStore {
   // Authoritative State
   learner: LearnerProfile | null;
@@ -88,6 +112,15 @@ interface ClassroomStore {
   arrayErrorMessage: string | null;
   arrayOperation: ArrayOperationDetail | null;
 
+  // Linked List Apparatus State & Mechanics
+  linkedListNodes: LinkedListNodeElement[];
+  linkedListActiveNodeId: string | null;
+  linkedListIsTraversing: boolean;
+  linkedListIsSevered: boolean;
+  linkedListSeveredNodeId: string | null;
+  linkedListNullError: string | null;
+  linkedListOperation: LinkedListOperationDetail | null;
+
   // Stack Challenge Console State
   stackMission: StackMission;
   activeChallengeIndex: number;
@@ -127,6 +160,16 @@ interface ClassroomStore {
   updateArrayElement: (index: number, newValue: number) => void;
   clearArrayError: () => void;
   resetArrayStation: () => void;
+
+  // Linked List Apparatus Actions
+  traverseLinkedList: () => Promise<{ steps: number; completed: boolean }>;
+  insertLinkedListNode: (targetIndex: number, value: number, label?: string) => void;
+  removeLinkedListNode: (id: string) => void;
+  severLinkedListLink: (nodeId: string) => void;
+  repairLinkedListLink: () => void;
+  triggerNullPointerDereference: () => void;
+  clearLinkedListError: () => void;
+  resetLinkedList: () => void;
 
   // Telemetry Drawer Actions
   toggleTelemetry: () => void;
@@ -446,6 +489,22 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     index: 2,
     targetAddress: '0x2008',
     stepsCount: 1,
+  },
+
+  // Linked List Initial State
+  linkedListNodes: DEFAULT_LINKED_LIST_NODES,
+  linkedListActiveNodeId: null,
+  linkedListIsTraversing: false,
+  linkedListIsSevered: false,
+  linkedListSeveredNodeId: null,
+  linkedListNullError: null,
+  linkedListOperation: {
+    type: 'traversal',
+    timeComplexity: 'O(n)',
+    description: 'Linear node chain linked via forward pointer references (A → B → C → NULL).',
+    codeSnippet: 'Node* head = &nodeA;\nnodeA.next = &nodeB;\nnodeB.next = &nodeC;\nnodeC.next = NULL;',
+    activeNodeId: null,
+    stepsCount: 3,
   },
 
   toggleTelemetry: () => {
@@ -1297,6 +1356,237 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     });
   },
 
+  traverseLinkedList: async () => {
+    const nodes = get().linkedListNodes;
+    set({
+      linkedListIsTraversing: true,
+      linkedListNullError: null,
+    });
+
+    let currentId: string | null = nodes.length > 0 ? nodes[0].id : null;
+    let steps = 0;
+
+    while (currentId) {
+      steps++;
+      const node = nodes.find((n) => n.id === currentId);
+      if (!node) break;
+
+      set({
+        linkedListActiveNodeId: currentId,
+        linkedListOperation: {
+          type: 'traversal',
+          timeComplexity: 'O(n)',
+          description: `Sequential traversal at Node ${node.label} [Val: ${node.value}, Addr: ${node.address}]. Following pointer (*next).`,
+          codeSnippet: `curr = curr->next; // Now at Node ${node.label} (${node.address})`,
+          activeNodeId: currentId,
+          stepsCount: steps,
+        },
+      });
+      soundSystem.playChirp();
+
+      await new Promise((r) => setTimeout(r, 350));
+
+      // Check for severed link
+      if (get().linkedListIsSevered && get().linkedListSeveredNodeId === currentId) {
+        soundSystem.playAlert();
+        set({
+          linkedListIsTraversing: false,
+          linkedListNullError: `BrokenLinkException: Cannot traverse past Node ${node.label}. Pointer connection is severed.`,
+          linkedListOperation: {
+            type: 'sever',
+            timeComplexity: 'O(n)',
+            description: `Traversal halted at severed Node ${node.label}! Downstream nodes unreachable.`,
+            codeSnippet: `// Dangling pointer encountered at Node ${node.label}\nif (curr->next == NULL && !isTerminal) throw BrokenLink;`,
+            activeNodeId: currentId,
+            stepsCount: steps,
+          },
+        });
+        return { steps, completed: false };
+      }
+
+      currentId = node.nextId;
+    }
+
+    soundSystem.playSuccess();
+    set({
+      linkedListActiveNodeId: null,
+      linkedListIsTraversing: false,
+      linkedListOperation: {
+        type: 'traversal',
+        timeComplexity: 'O(n)',
+        description: `Traversal completed across all ${steps} nodes terminating at NULL ground plate.`,
+        codeSnippet: `while (curr != NULL) {\n  visit(curr);\n  curr = curr->next;\n}\n// Terminated cleanly at NULL`,
+        activeNodeId: null,
+        stepsCount: steps,
+      },
+    });
+
+    return { steps, completed: true };
+  },
+
+  insertLinkedListNode: (targetIndex: number, value: number, label?: string) => {
+    const currentNodes = [...get().linkedListNodes];
+    const nodeCount = currentNodes.length;
+    const nodeLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
+    const chosenLabel = label || nodeLabels[nodeCount] || `N${nodeCount}`;
+    const newId = `node_${chosenLabel.toLowerCase()}_${Date.now()}`;
+    const hexAddr = `0x3F${(0x40 * (nodeCount + 1)).toString(16).toUpperCase()}`;
+
+    // Colors matching blueprint palette
+    const crystalColors = ['#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6'];
+    const chosenColor = crystalColors[nodeCount % crystalColors.length];
+
+    soundSystem.playMagneticThud();
+
+    // Insert at index (default index 1: between A and B, or at tail)
+    const safeIdx = Math.max(0, Math.min(targetIndex, currentNodes.length));
+    const nextNode = currentNodes[safeIdx] || null;
+
+    const newNode: LinkedListNodeElement = {
+      id: newId,
+      label: chosenLabel,
+      value,
+      address: hexAddr,
+      crystalColor: chosenColor,
+      nextId: nextNode ? nextNode.id : null,
+    };
+
+    if (safeIdx > 0 && currentNodes[safeIdx - 1]) {
+      currentNodes[safeIdx - 1] = {
+        ...currentNodes[safeIdx - 1],
+        nextId: newId,
+      };
+    }
+
+    currentNodes.splice(safeIdx, 0, newNode);
+
+    set({
+      linkedListNodes: currentNodes,
+      linkedListActiveNodeId: newId,
+      linkedListNullError: null,
+      linkedListOperation: {
+        type: 'insert',
+        timeComplexity: 'O(1)',
+        description: `O(1) Dynamic node insertion of Node ${chosenLabel} (Value: ${value}). Two pointer assignments dynamically allocate and integrate node without memory reallocation.`,
+        codeSnippet: `Node* newNode = (Node*)malloc(sizeof(Node));\nnewNode->val = ${value};\nnewNode->next = prev->next;\nprev->next = newNode;\n// Constant time O(1) pointer redirection!`,
+        activeNodeId: newId,
+        stepsCount: 2,
+      },
+    });
+  },
+
+  removeLinkedListNode: (id: string) => {
+    const currentNodes = [...get().linkedListNodes];
+    if (currentNodes.length <= 1) return; // Retain at least 1 node
+
+    const idx = currentNodes.findIndex((n) => n.id === id);
+    if (idx === -1) return;
+
+    soundSystem.playPop();
+
+    const targetNode = currentNodes[idx];
+    const prevNode = idx > 0 ? currentNodes[idx - 1] : null;
+
+    if (prevNode) {
+      prevNode.nextId = targetNode.nextId;
+    }
+
+    currentNodes.splice(idx, 1);
+
+    set({
+      linkedListNodes: currentNodes,
+      linkedListActiveNodeId: null,
+      linkedListNullError: null,
+      linkedListOperation: {
+        type: 'delete',
+        timeComplexity: 'O(1)',
+        description: `O(1) Node removal of Node ${targetNode.label}. Predecessor pointer safely bypassed target node to connect directly to successor.`,
+        codeSnippet: `prev->next = target->next;\nfree(target);\n// Pointer bypassed node in O(1) time`,
+        activeNodeId: null,
+        stepsCount: 1,
+      },
+    });
+  },
+
+  severLinkedListLink: (nodeId: string) => {
+    soundSystem.playAlert();
+    const nodes = get().linkedListNodes;
+    const node = nodes.find((n) => n.id === nodeId);
+    const label = node ? node.label : nodeId;
+
+    set({
+      linkedListIsSevered: true,
+      linkedListSeveredNodeId: nodeId,
+      linkedListOperation: {
+        type: 'sever',
+        timeComplexity: 'O(1)',
+        description: `Dangling pointer created! Outgoing pointer from Node ${label} has been severed. Any downstream traversal will fail.`,
+        codeSnippet: `// Dangling Pointer Warning!\nnode${label}->next = (Node*)0xDEADBEEF; // Invalid reference\n// Memory leak / unreachable heap nodes downstream!`,
+        activeNodeId: nodeId,
+        stepsCount: 1,
+      },
+    });
+  },
+
+  repairLinkedListLink: () => {
+    soundSystem.playSuccess();
+    set({
+      linkedListIsSevered: false,
+      linkedListSeveredNodeId: null,
+      linkedListNullError: null,
+      linkedListOperation: {
+        type: 'repair',
+        timeComplexity: 'O(1)',
+        description: `Chain repaired! Pointer beam re-knitted with golden energy fusion, restoring contiguous pointer traversal.`,
+        codeSnippet: `// Pointer link restored\ncurr->next = nextValidNode;\n// Memory path verified`,
+        activeNodeId: null,
+        stepsCount: 1,
+      },
+    });
+  },
+
+  triggerNullPointerDereference: () => {
+    soundSystem.playAlert();
+    set({
+      linkedListNullError:
+        'NullPointerException: Attempted to dereference null pointer (*next) pointing to address 0x0000. Segmentation Fault.',
+      linkedListOperation: {
+        type: 'null_dereference',
+        timeComplexity: 'O(1)',
+        description:
+          'CRITICAL: Null Pointer Dereference! Accessing member fields or next pointers on a NULL reference causes an immediate crash / Segmentation Fault.',
+        codeSnippet: `Node* ptr = NULL;\nint val = ptr->val; // 🔥 SIGSEGV: NullPointerException at 0x0000!`,
+        activeNodeId: null,
+        stepsCount: 1,
+      },
+    });
+  },
+
+  clearLinkedListError: () => {
+    set({
+      linkedListNullError: null,
+    });
+  },
+
+  resetLinkedList: () => {
+    set({
+      linkedListNodes: DEFAULT_LINKED_LIST_NODES,
+      linkedListActiveNodeId: null,
+      linkedListIsTraversing: false,
+      linkedListIsSevered: false,
+      linkedListSeveredNodeId: null,
+      linkedListNullError: null,
+      linkedListOperation: {
+        type: 'traversal',
+        timeComplexity: 'O(n)',
+        description: 'Linear node chain linked via forward pointer references (A → B → C → NULL).',
+        codeSnippet: 'Node* head = &nodeA;\nnodeA.next = &nodeB;\nnodeB.next = &nodeC;\nnodeC.next = NULL;',
+        activeNodeId: null,
+        stepsCount: 3,
+      },
+    });
+  },
+
   resetWorldSeed: async () => {
     try {
       await fetch('/api/learner/reset', { method: 'POST' });
@@ -1324,6 +1614,20 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
         arrayScanTargetValue: null,
         arrayOutOfBounds: false,
         arrayErrorMessage: null,
+        linkedListNodes: DEFAULT_LINKED_LIST_NODES,
+        linkedListActiveNodeId: null,
+        linkedListIsTraversing: false,
+        linkedListIsSevered: false,
+        linkedListSeveredNodeId: null,
+        linkedListNullError: null,
+        linkedListOperation: {
+          type: 'traversal',
+          timeComplexity: 'O(n)',
+          description: 'Linear node chain linked via forward pointer references (A → B → C → NULL).',
+          codeSnippet: 'Node* head = &nodeA;\nnodeA.next = &nodeB;\nnodeB.next = &nodeC;\nnodeC.next = NULL;',
+          activeNodeId: null,
+          stepsCount: 3,
+        },
         activeChallengeIndex: 0,
         selectedAnswers: {},
         submittedAnswers: {},
@@ -1360,6 +1664,20 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
         arrayScanTargetValue: null,
         arrayOutOfBounds: false,
         arrayErrorMessage: null,
+        linkedListNodes: DEFAULT_LINKED_LIST_NODES,
+        linkedListActiveNodeId: null,
+        linkedListIsTraversing: false,
+        linkedListIsSevered: false,
+        linkedListSeveredNodeId: null,
+        linkedListNullError: null,
+        linkedListOperation: {
+          type: 'traversal',
+          timeComplexity: 'O(n)',
+          description: 'Linear node chain linked via forward pointer references (A → B → C → NULL).',
+          codeSnippet: 'Node* head = &nodeA;\nnodeA.next = &nodeB;\nnodeB.next = &nodeC;\nnodeC.next = NULL;',
+          activeNodeId: null,
+          stepsCount: 3,
+        },
         activeChallengeIndex: 0,
         selectedAnswers: {},
         submittedAnswers: {},

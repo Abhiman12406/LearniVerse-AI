@@ -4,10 +4,10 @@
 
 **Blocked by:** 01: Reference Blueprints Generation (Nanabanana), 02: Procedural Classroom Campus Diorama & Lighting
 
-**Status:** ready-for-agent
+**Status:** closed
 
-- [ ] Create procedural Three.js factory in `frontend/src/assets/3d/createLinkedListModel.ts` based on `asstesimages/linked_list_apparatus.png`.
-- [ ] Implement curve-extruded dynamic connection beams between nodes with pulsing energy shader animation.
-- [ ] Create R3F canvas component `frontend/src/components/canvas/LinkedListLab.tsx` situated in the Linked List Lab wing.
-- [ ] Implement node insertion and pointer redirection animations (rerouting `prev.next` to a newly inserted node).
-- [ ] Visualize broken links and null pointer dereference errors when a node points to NULL improperly.
+- [x] Create procedural Three.js factory in `frontend/src/assets/3d/createLinkedListModel.ts` based on `asstesimages/linked_list_apparatus.png`.
+- [x] Implement curve-extruded dynamic connection beams between nodes with pulsing energy shader animation.
+- [x] Create R3F canvas component `frontend/src/components/canvas/LinkedListLab.tsx` situated in the Linked List Lab wing.
+- [x] Implement node insertion and pointer redirection animations (rerouting `prev.next` to a newly inserted node).
+- [x] Visualize broken links and null pointer dereference errors when a node points to NULL improperly.

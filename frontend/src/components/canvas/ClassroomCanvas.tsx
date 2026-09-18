@@ -9,6 +9,7 @@ import { Avatar } from './Avatar';
 import { useClassroomStore } from '../../store/useClassroomStore';
 import { StackLabWing } from './StackLabWing';
 import { ArrayLabWing } from './ArrayLabWing';
+import { LinkedListLab } from './LinkedListLab';
 
 interface CameraFollowerProps {
   cameraAngleRef: React.MutableRefObject<number>;
@@ -49,6 +50,14 @@ const CameraFollower: React.FC<CameraFollowerProps> = ({ cameraAngleRef, cameraP
       idealY = 2.3;
       idealZ = -18.2;
       targetLookAt = new THREE.Vector3(12.0, 1.6, -20.8);
+      lerpFactor = 0.08;
+    } else if (activeStation === 'linked_list_lab') {
+      // Cinematic Fixed Framing: Close-up facing the Linked List apparatus
+      // East Wing is at [24.0, 0, 0], chamber faces inward (rotationY = -Math.PI / 2)
+      idealX = 21.2;
+      idealY = 2.3;
+      idealZ = 2.4;
+      targetLookAt = new THREE.Vector3(24.0, 1.6, 0.0);
       lerpFactor = 0.08;
     } else {
       const [ax, ay, az] = avatar.position;
@@ -139,6 +148,7 @@ export const ClassroomCanvas: React.FC = () => {
           <Archways />
           <StackLabWing />
           <ArrayLabWing />
+          <LinkedListLab />
           <Avatar cameraAngleRef={cameraAngleRef} />
           <CameraFollower
             cameraAngleRef={cameraAngleRef}

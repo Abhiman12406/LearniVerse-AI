@@ -696,7 +696,7 @@ export function createPrerequisiteDoorModel(options: PrerequisiteDoorModelOption
     if (isDissolving && dissolvePhase === 'flicker') {
       const strobe = Math.sin(performance.now() * 0.06) > 0;
       barrierUniforms.uScanlineSpeed.value = 16.0;
-      barrierUniforms.uFlicker.value = 2.2 + Math.sin(performance.now() * 0.1) * 0.8;
+      barrierUniforms.uFlicker.value = 2.4 + Math.sin(performance.now() * 0.1) * 0.8;
       barrierUniforms.uColor.value.set(strobe ? '#ffffff' : COLORS.barrierAmber);
       barrierLight.color.set(strobe ? '#ffffff' : COLORS.barrierAmber);
       barrierLight.intensity = 5.0;
