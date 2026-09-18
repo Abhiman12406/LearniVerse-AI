@@ -4,11 +4,11 @@
 
 **Blocked by:** 05: Dual-Layer Glassmorphic Challenge Console & Stack DSA Missions
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Backend Python BKT engine implements exact Bayesian belief update equations and learning transition equations
-- [ ] `POST /api/interactions` endpoint receives answer submissions, updates concept Mastery, and returns updated world delta
-- [ ] HUD displays dynamic animated Mastery probability gauges that update immediately after each interaction
-- [ ] `POST /api/simulate-mastery-jump` endpoint accelerates Learner B's Stack Mastery from 38% to 74% in a single call for live demonstrations
-- [ ] Crossing 70% Stack Mastery automatically evaluates prerequisite readiness and emits an unlock trigger for Recursion Lab
-- [ ] Automated tests verify BKT mathematical bounds, monotonic increases on correct streaks, slip adjustments, and API contracts
+- [x] Backend Python BKT engine implements exact Bayesian belief update equations and learning transition equations
+- [x] `POST /api/interactions` endpoint receives answer submissions, updates concept Mastery, and returns updated world delta
+- [x] HUD displays dynamic animated Mastery probability gauges that update immediately after each interaction
+- [x] `POST /api/simulate-mastery-jump` endpoint accelerates Learner B's Stack Mastery from 38% to 74% in a single call for live demonstrations
+- [x] Crossing 70% Stack Mastery automatically evaluates prerequisite readiness and emits an unlock trigger for Recursion Lab
+- [x] Automated tests verify BKT mathematical bounds, monotonic increases on correct streaks, slip adjustments, and API contracts

@@ -16,6 +16,7 @@ export const HUD: React.FC = () => {
     isMentorOpen,
     openMentor,
     simulateMasteryJump,
+    lastMasteryDelta,
   } = useClassroomStore();
 
   const isLearnerB = learner?.learner_id === 'learner_b';
@@ -159,6 +160,27 @@ export const HUD: React.FC = () => {
           >
             <RotateCcw size={12} color="var(--text-muted)" />
           </button>
+
+          <button
+            id="btn-demo-jump"
+            className="cyber-button"
+            onClick={() => simulateMasteryJump(learner?.learner_id || 'learner_b', 'stack')}
+            title="Demo Acceleration: Instantly advance Stack Mastery past 70% to trigger Recursion Lab unlock"
+            style={{
+              borderColor: '#f59e0b',
+              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(0, 255, 136, 0.18))',
+              color: '#f59e0b',
+              fontSize: '10px',
+              padding: '6px 10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              fontWeight: 700,
+            }}
+          >
+            <Zap size={12} color="#f59e0b" />
+            <span>Demo Jump (38% → 74%)</span>
+          </button>
         </div>
 
         {/* Right: Audio Synthesizer Mute Toggle */}
@@ -242,16 +264,39 @@ export const HUD: React.FC = () => {
               {Object.entries(learner.mastery_map).map(([concept, value]) => {
                 const pct = Math.round(value * 100);
                 const color = value >= 0.7 ? 'var(--emerald-mastery)' : value >= 0.45 ? 'var(--amber-mastery)' : 'var(--crimson-alert)';
+                const delta = lastMasteryDelta[concept];
                 return (
-                  <div key={concept} style={{ flex: 1, textAlign: 'center' }}>
+                  <div key={concept} style={{ flex: 1, textAlign: 'center', position: 'relative' }}>
                     <div style={{ fontSize: '9px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                       {concept === 'linked_list' ? 'List' : concept}
                     </div>
-                    <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', fontWeight: 700, color }}>
-                      {pct}%
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                      <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', fontWeight: 700, color }}>
+                        {pct}%
+                      </span>
+                      {delta && (
+                        <span
+                          style={{
+                            fontSize: '9px',
+                            fontFamily: 'var(--font-mono)',
+                            fontWeight: 700,
+                            color: delta.delta >= 0 ? '#00ff88' : '#ff0055',
+                          }}
+                        >
+                          {delta.delta >= 0 ? `+${Math.round(delta.delta * 100)}%` : `${Math.round(delta.delta * 100)}%`}
+                        </span>
+                      )}
                     </div>
-                    <div style={{ width: '100%', height: '3px', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: '2px', overflow: 'hidden', marginTop: '2px' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', backgroundColor: color }}></div>
+                    <div style={{ width: '100%', height: '4px', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: '2px', overflow: 'hidden', marginTop: '3px' }}>
+                      <div
+                        style={{
+                          width: `${pct}%`,
+                          height: '100%',
+                          backgroundColor: color,
+                          boxShadow: `0 0 8px ${color}`,
+                          transition: 'width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        }}
+                      />
                     </div>
                   </div>
                 );

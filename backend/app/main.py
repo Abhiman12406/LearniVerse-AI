@@ -5,6 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.app.routers.learner import router as learner_router
 from backend.app.routers.world import router as world_router
 from backend.app.routers.mentor import router as mentor_router
+from backend.app.routers.missions import router as missions_router
+from backend.app.routers.interactions import router as interactions_router
+from backend.app.routers.agents import router as agents_router
 
 app = FastAPI(
     title="Adaptive Virtual Classroom API",
@@ -24,6 +27,9 @@ app.add_middleware(
 app.include_router(learner_router)
 app.include_router(world_router)
 app.include_router(mentor_router)
+app.include_router(missions_router)
+app.include_router(interactions_router)
+app.include_router(agents_router)
 
 
 @app.get("/")

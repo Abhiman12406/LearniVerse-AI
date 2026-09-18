@@ -129,6 +129,48 @@ class LearnerService:
         self._active_learner_id = "learner_b"
         return self._profiles[self._active_learner_id]
 
+    def update_concept_mastery(
+        self, learner_id: Optional[str] = None, concept: str = "stack", new_mastery: Optional[float] = None, value: Optional[float] = None
+    ) -> LearnerProfile:
+        """Update a specific concept mastery for a learner and re-evaluate pedagogical state."""
+        lid = learner_id or self._active_learner_id
+        profile = self._profiles.get(lid)
+        if not profile:
+            profile = self._profiles["learner_b"]
+            lid = "learner_b"
+
+        mastery_val = new_mastery if new_mastery is not None else (value if value is not None else 0.5)
+
+        current_map = profile.mastery_map.model_dump()
+        current_map[concept] = round(float(mastery_val), 2)
+        profile.mastery_map = MasteryMap(**current_map)
+
+        # Dynamic re-evaluation of prerequisite constraints
+        recursion_eval = prerequisite_service.evaluate_concept(
+            "recursion", profile.mastery_map
+        )
+        if recursion_eval.is_ready:
+            pct = int(current_map.get("stack", 0.0) * 100)
+            profile.learning_state.status = "advanced"
+            profile.learning_state.active_prerequisite_gap = None
+            profile.learning_state.summary = (
+                f"Stack mastery elevated to {pct}%. Prerequisite barrier dissolved! "
+                "Recursion Wing portal is unlocked and ready for exploration."
+            )
+            profile.learning_state.primary_focus_concept = "recursion"
+            profile.recommended_station = "recursion_lab"
+        else:
+            pct = int(current_map.get("stack", 0.0) * 100)
+            profile.learning_state.status = "remediation_required"
+            profile.learning_state.summary = (
+                f"Prerequisite Gap: Stack mastery ({pct}%) is below the 70% threshold required for Recursion Wing."
+            )
+            profile.learning_state.primary_focus_concept = "stack"
+            profile.learning_state.active_prerequisite_gap = recursion_eval.reason
+            profile.recommended_station = "stack_lab"
+
+        return profile
+
     def get_world_state(self, learner_id: Optional[str] = None) -> WorldState:
         lid = learner_id or self._active_learner_id
         profile = self._profiles.get(lid, self._profiles["learner_b"])
@@ -156,37 +198,6 @@ class LearnerService:
             wings=wings,
             conduits_target_wing=profile.recommended_station,
         )
-
-    def update_concept_mastery(
-        self, learner_id: Optional[str], concept: str, value: float
-    ) -> LearnerProfile:
-        lid = learner_id or self._active_learner_id
-        if lid not in self._profiles:
-            lid = "learner_b"
-        profile = self._profiles[lid]
-
-        if hasattr(profile.mastery_map, concept):
-            setattr(profile.mastery_map, concept, value)
-
-        # Dynamic re-evaluation of prerequisite constraints
-        recursion_eval = prerequisite_service.evaluate_concept(
-            "recursion", profile.mastery_map
-        )
-        if recursion_eval.is_ready:
-            pct = int(value * 100)
-            profile.learning_state.status = "advanced"
-            profile.learning_state.active_prerequisite_gap = None
-            profile.learning_state.summary = (
-                f"Stack mastery elevated to {pct}%. Prerequisite barrier dissolved! "
-                "Recursion Wing portal is unlocked and ready for exploration."
-            )
-            profile.recommended_station = "recursion_lab"
-        else:
-            profile.learning_state.status = "remediation_required"
-            profile.learning_state.active_prerequisite_gap = recursion_eval.reason
-            profile.recommended_station = "stack_lab"
-
-        return profile
 
     def simulate_mastery_jump(
         self, learner_id: Optional[str] = "learner_b", target_stack: float = 0.75
