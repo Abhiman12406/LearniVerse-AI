@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { LearnerProfile, WorldState, AvatarState } from '../types/world';
+import { MentorGuidance } from '../types/mentor';
 import { soundSystem } from '../audio/soundSystem';
 
 interface ClassroomStore {
@@ -16,6 +17,11 @@ interface ClassroomStore {
   // Avatar spatial state
   avatar: AvatarState;
 
+  // AI Mentor Dialog & Proximity State
+  isMentorOpen: boolean;
+  isNearMentor: boolean;
+  mentorGuidance: MentorGuidance | null;
+
   // Actions
   fetchLearnerProfile: () => Promise<void>;
   fetchWorldState: () => Promise<void>;
@@ -23,6 +29,10 @@ interface ClassroomStore {
   toggleAudioMute: () => void;
   setAvatarState: (position: [number, number, number], rotation: number, isMoving: boolean) => void;
   resetWorldSeed: () => Promise<void>;
+  openMentor: () => void;
+  closeMentor: () => void;
+  setIsNearMentor: (isNear: boolean) => void;
+  fetchMentorGuidance: (learnerId?: string) => Promise<void>;
 }
 
 // Fallback seed profile for initial rendering or offline mock
@@ -177,6 +187,90 @@ const WORLD_STATE_A: WorldState = {
   conduits_target_wing: 'recursion_lab',
 };
 
+const DEFAULT_MENTOR_GUIDANCE_B: MentorGuidance = {
+  learner_id: 'learner_b',
+  learner_name: 'Alex Mercer (Learner B - Remedial)',
+  persona_type: 'Remedial - Stack Deficient',
+  status: 'remediation_required',
+  focus_concept: 'stack',
+  recommended_station: 'stack_lab',
+  greeting: 'Greetings, Alex. I detect you are seeking entry to the Recursion Wing.',
+  diagnostic_summary:
+    'Prerequisite barrier engaged. Your current Stack mastery is 38%, which is below the mandatory 70% pedagogical threshold for the Recursion Wing.',
+  feynman_explanation: {
+    concept: 'stack',
+    target_prerequisite_of: 'recursion',
+    analogy:
+      'Imagine a spring-loaded cafeteria tray dispenser. Every clean tray is pressed down on top of the pile. When someone takes a tray, they must take the topmost one that was placed last. This is LIFO: Last-In, First-Out.',
+    conceptual_bridge:
+      'Why must you master Stacks before Recursion? Because computer processors do not have magical memory! When a function calls itself, its execution pauses mid-sentence. The CPU must preserve all local variables and return locations on a physical structure called the Call Stack. If you do not intuitively understand how data pushes and pops in LIFO order, recursive unwinding will feel like an abstract mystery rather than orderly mechanical stack manipulation.',
+    hardware_software_context:
+      'In computer architecture, every recursive call pushes a stack activation record. Without a sound base case, the stack overflows into unallocated memory, triggering a critical segmentation fault.',
+    prerequisite_gap: 'Stack Mastery: 38% (Threshold: 70% required for Recursion Wing)',
+  },
+  interactive_questions: [
+    {
+      id: 'why_stack_first',
+      label: "Why can't I just learn Recursion right now?",
+      answer:
+        'Because recursion without a mental model of stacks is like trying to follow a conversation where each speaker interrupts the previous one with a new question. Without a notebook (the Call Stack) tracking who was waiting for an answer, your mental model will collapse. Master the Stack, and Recursion becomes easy.',
+    },
+    {
+      id: 'call_stack_unwind',
+      label: 'How does the Call Stack unwind upon base case?',
+      answer:
+        'When the deepest recursive call hits the Base Case, it terminates and returns its value. The CPU pops that top frame, instantly resuming the parent frame right where it paused. Frames pop in reverse order until the original caller receives the cumulative result.',
+    },
+    {
+      id: 'stack_lab_guidance',
+      label: 'What will I do in the Stack Lab?',
+      answer:
+        'In the Stack Lab, you will interact with the vertical cylindrical apparatus to push and pop data discs, observe LIFO ordering, and solve practical stack challenges to bring your mastery above 70%.',
+    },
+  ],
+  action_recommendation:
+    'Step down from the Dais and follow the pulsing guidance conduits to the Stack Lab (South-East Archway). Complete the LIFO apparatus challenges to elevate your mastery and dissolve the barrier.',
+};
+
+const DEFAULT_MENTOR_GUIDANCE_A: MentorGuidance = {
+  learner_id: 'learner_a',
+  learner_name: 'Dr. Elena Vance (Learner A - Advanced)',
+  persona_type: 'Advanced - Recursion Ready',
+  status: 'advanced_readiness',
+  focus_concept: 'recursion',
+  recommended_station: 'recursion_lab',
+  greeting: 'Welcome, Dr. Vance. Prerequisite diagnostic checks verified.',
+  diagnostic_summary:
+    'All foundational prerequisites satisfied. Stack mastery is at 84%. The Recursion Wing portal is fully accessible.',
+  feynman_explanation: {
+    concept: 'recursion',
+    target_prerequisite_of: 'tree',
+    analogy:
+      'Imagine a set of Russian Matryoshka nesting dolls. Each doll opens to reveal an identical smaller doll, until you reach the tiny solid wooden doll in the center—the Base Case. Then you reassemble them outward.',
+    conceptual_bridge:
+      'With your Stack mastery verified at 84%, you already understand that each recursive branch is an activation frame pushed onto the Call Stack. You are ready to analyze how recursive branching forms self-similar computation trees and how return values bubble back up through stack frame unwinding.',
+    hardware_software_context:
+      'In high-performance systems, deep recursion can incur memory overhead. You are ready to evaluate tail-call optimization and recursive tree traversal complexities.',
+    prerequisite_gap: null,
+  },
+  interactive_questions: [
+    {
+      id: 'base_case_contract',
+      label: 'What is the golden rule of recursive design?',
+      answer:
+        'Always define and test your Base Case first. Without a verifiable termination condition, the recursion never stops pushing frames to the Call Stack, inevitably producing a Stack Overflow.',
+    },
+    {
+      id: 'recursion_to_trees',
+      label: 'How does Recursion unlock the Tree Lab?',
+      answer:
+        'A tree is fundamentally a recursive data structure: every tree consists of a root node and subtrees that are themselves trees. Mastering recursion is the key that unlocks Tree traversals (pre-order, in-order, post-order).',
+    },
+  ],
+  action_recommendation:
+    'Proceed West through the unlocked Archway into the Recursion Lab. Engage the Call Stack apparatus to tackle nested recursive simulations.',
+};
+
 export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   learner: DEFAULT_LEARNER,
   worldState: DEFAULT_WORLD_STATE,
@@ -190,6 +284,10 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     rotation: 0,
     isMoving: false,
   },
+
+  isMentorOpen: false,
+  isNearMentor: false,
+  mentorGuidance: DEFAULT_MENTOR_GUIDANCE_B,
 
   fetchLearnerProfile: async () => {
     set({ isLoading: true, error: null });
@@ -218,6 +316,22 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     }
   },
 
+  fetchMentorGuidance: async (learnerId?: string) => {
+    const lid = learnerId || get().learner?.learner_id || 'learner_b';
+    try {
+      const res = await fetch(`/api/mentor/guidance?learner_id=${lid}`);
+      if (res.ok) {
+        const data: MentorGuidance = await res.json();
+        set({ mentorGuidance: data });
+        return;
+      }
+    } catch {
+      // Fallback below
+    }
+    const fallback = lid === 'learner_a' ? DEFAULT_MENTOR_GUIDANCE_A : DEFAULT_MENTOR_GUIDANCE_B;
+    set({ mentorGuidance: fallback });
+  },
+
   switchLearner: async (learnerId: string) => {
     set({ isLoading: true });
     try {
@@ -230,6 +344,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
         const data: LearnerProfile = await res.json();
         set({ learner: data, isLoading: false });
         await get().fetchWorldState();
+        await get().fetchMentorGuidance(learnerId);
         return;
       }
     } catch {
@@ -239,7 +354,13 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     // Offline / Standalone Mock Fallback
     const fallbackProfile = learnerId === 'learner_a' ? SEED_LEARNER_A : DEFAULT_LEARNER;
     const fallbackWorld = learnerId === 'learner_a' ? WORLD_STATE_A : DEFAULT_WORLD_STATE;
-    set({ learner: fallbackProfile, worldState: fallbackWorld, isLoading: false });
+    const fallbackMentor = learnerId === 'learner_a' ? DEFAULT_MENTOR_GUIDANCE_A : DEFAULT_MENTOR_GUIDANCE_B;
+    set({
+      learner: fallbackProfile,
+      worldState: fallbackWorld,
+      mentorGuidance: fallbackMentor,
+      isLoading: false,
+    });
   },
 
   toggleAudioMute: () => {
@@ -254,20 +375,40 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     });
   },
 
+  openMentor: () => {
+    soundSystem.playChime();
+    set({ isMentorOpen: true });
+    // Refresh guidance for current learner
+    get().fetchMentorGuidance();
+  },
+
+  closeMentor: () => {
+    soundSystem.playChirp();
+    set({ isMentorOpen: false });
+  },
+
+  setIsNearMentor: (isNear: boolean) => {
+    set({ isNearMentor: isNear });
+  },
+
   resetWorldSeed: async () => {
     try {
       await fetch('/api/learner/reset', { method: 'POST' });
       await get().fetchLearnerProfile();
       await get().fetchWorldState();
+      await get().fetchMentorGuidance('learner_b');
       set({
         avatar: { position: [0, 0, 8], rotation: 0, isMoving: false },
+        isMentorOpen: false,
       });
     } catch {
       // reset locally
       set({
         learner: DEFAULT_LEARNER,
         worldState: DEFAULT_WORLD_STATE,
+        mentorGuidance: DEFAULT_MENTOR_GUIDANCE_B,
         avatar: { position: [0, 0, 8], rotation: 0, isMoving: false },
+        isMentorOpen: false,
       });
     }
   },

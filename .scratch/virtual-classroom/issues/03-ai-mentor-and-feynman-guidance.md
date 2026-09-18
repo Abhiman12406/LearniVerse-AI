@@ -4,13 +4,13 @@
 
 **Blocked by:** 01: Core Navigable Atrium, Central Dais & Learner Profile Switcher
 
-**Status:** ready-for-agent
+**Status:** closed
 
-- [ ] Holographic AI Mentor beacon renders on the Central Dais with an ambient emissive aura
-- [ ] Proximity detection prompts `[E] Consult AI Mentor` when the Avatar approaches the Central Dais
-- [ ] Pressing `[E]` opens a glassmorphic dialogue panel with personalized advice based on the learner's active profile
-- [ ] AI Mentor provides conceptual Feynman-style explanations for prerequisite relationships and recommends the next foundational Station
-- [ ] AI Mentor visual embodiment adheres to ASSETS.md (supporting Quaternius CC0 GLB character or procedural holographic mesh with manifest.json attribution)
-- [ ] Dialogue panel can be dismissed smoothly via `[ESC]` or close control, returning control to Avatar exploration
-- [ ] Automated test verifies mentor advice retrieval and dialogue interaction states
+- [x] Holographic AI Mentor beacon renders on the Central Dais with an ambient emissive aura
+- [x] Proximity detection prompts `[E] Consult AI Mentor` when the Avatar approaches the Central Dais
+- [x] Pressing `[E]` opens a glassmorphic dialogue panel with personalized advice based on the learner's active profile
+- [x] AI Mentor provides conceptual Feynman-style explanations for prerequisite relationships and recommends the next foundational Station
+- [x] AI Mentor visual embodiment adheres to ASSETS.md (supporting Quaternius CC0 GLB character or procedural holographic mesh with manifest.json attribution)
+- [x] Dialogue panel can be dismissed smoothly via `[ESC]` or close control, returning control to Avatar exploration
+- [x] Automated test verifies mentor advice retrieval and dialogue interaction states
 

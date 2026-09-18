@@ -52,6 +52,15 @@
       "creator": "Learniverse AI Core",
       "generated": true,
       "format": "Three.js BufferGeometry"
+    },
+    {
+      "asset_id": "procedural_ai_mentor_beacon",
+      "name": "Central Dais AI Mentor Beacon & Feynman Guidance Hologram",
+      "type": "procedural_mesh",
+      "license": "CC0",
+      "creator": "Learniverse AI Core",
+      "generated": true,
+      "format": "Three.js Dual Gyro Torus + Octahedron Core + Drei Float"
     }
   ]
 }

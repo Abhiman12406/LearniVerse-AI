@@ -109,6 +109,37 @@ class SoundSystem {
       // Ignore audio synthesis errors
     }
   }
+
+  public playChime(): void {
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    try {
+      const chimeOsc1 = this.ctx.createOscillator();
+      const chimeOsc2 = this.ctx.createOscillator();
+      const chimeGain = this.ctx.createGain();
+
+      chimeOsc1.type = 'sine';
+      chimeOsc1.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
+      chimeOsc1.frequency.exponentialRampToValueAtTime(1046.5, this.ctx.currentTime + 0.25); // C6
+
+      chimeOsc2.type = 'sine';
+      chimeOsc2.frequency.setValueAtTime(659.25, this.ctx.currentTime); // E5
+      chimeOsc2.frequency.exponentialRampToValueAtTime(1318.5, this.ctx.currentTime + 0.25); // E6
+
+      chimeGain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+      chimeGain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
+
+      chimeOsc1.connect(chimeGain);
+      chimeOsc2.connect(chimeGain);
+      chimeGain.connect(this.masterGain);
+
+      chimeOsc1.start();
+      chimeOsc2.start();
+      chimeOsc1.stop(this.ctx.currentTime + 0.3);
+      chimeOsc2.stop(this.ctx.currentTime + 0.3);
+    } catch {
+      // Ignore audio synthesis errors
+    }
+  }
 }
 
 export const soundSystem = new SoundSystem();

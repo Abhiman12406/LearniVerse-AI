@@ -22,6 +22,27 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for interaction keys
+      if (e.code === 'KeyE') {
+        const { isNearMentor, isMentorOpen, openMentor, closeMentor } = useClassroomStore.getState();
+        if (isNearMentor) {
+          if (!isMentorOpen) {
+            openMentor();
+          } else {
+            closeMentor();
+          }
+          return;
+        }
+      }
+
+      if (e.code === 'Escape') {
+        const { isMentorOpen, closeMentor } = useClassroomStore.getState();
+        if (isMentorOpen) {
+          closeMentor();
+          return;
+        }
+      }
+
       keys.current[e.code] = true;
     };
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -39,10 +60,26 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
   useFrame((_, delta) => {
     if (!avatarGroupRef.current) return;
 
-    // Movement input vector relative to camera azimuth
-    const forward = (keys.current['KeyW'] || keys.current['ArrowUp']) ? 1 : (keys.current['KeyS'] || keys.current['ArrowDown']) ? -1 : 0;
-    const strafe = (keys.current['KeyA'] || keys.current['ArrowLeft']) ? -1 : (keys.current['KeyD'] || keys.current['ArrowRight']) ? 1 : 0;
-    const isSprinting = !!keys.current['ShiftLeft'] || !!keys.current['ShiftRight'];
+    const isMentorOpen = useClassroomStore.getState().isMentorOpen;
+
+    // Movement input vector relative to camera azimuth (suppressed if mentor dialogue is open)
+    const forward: number = isMentorOpen
+      ? 0
+      : (keys.current['KeyW'] || keys.current['ArrowUp'])
+      ? 1
+      : (keys.current['KeyS'] || keys.current['ArrowDown'])
+      ? -1
+      : 0;
+
+    const strafe: number = isMentorOpen
+      ? 0
+      : (keys.current['KeyA'] || keys.current['ArrowLeft'])
+      ? -1
+      : (keys.current['KeyD'] || keys.current['ArrowRight'])
+      ? 1
+      : 0;
+
+    const isSprinting = !isMentorOpen && (!!keys.current['ShiftLeft'] || !!keys.current['ShiftRight']);
 
     const moveSpeed = (isSprinting ? 9.0 : 5.5) * delta;
     const isMoving = forward !== 0 || strafe !== 0;

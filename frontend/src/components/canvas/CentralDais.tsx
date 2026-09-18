@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { KnowledgeGraphConstellation } from './KnowledgeGraphConstellation';
+import { AIMentorBeacon } from './AIMentorBeacon';
 
 export const CentralDais: React.FC = () => {
   const outerRingRef = useRef<THREE.Mesh>(null);
@@ -57,14 +58,8 @@ export const CentralDais: React.FC = () => {
       {/* 3D Holographic Knowledge Graph Constellation */}
       <KnowledgeGraphConstellation />
 
-      {/* AI Mentor Pedestal Beacon Anchor (At (2, 0.5, 2)) */}
-      <group position={[2, 0.5, 2]}>
-        <mesh position={[0, 0.2, 0]}>
-          <cylinderGeometry args={[0.5, 0.6, 0.4, 16]} />
-          <meshStandardMaterial color="#1a2035" roughness={0.3} metalness={0.9} emissive="#7928ca" emissiveIntensity={0.4} />
-        </mesh>
-        <pointLight position={[0, 0.6, 0]} intensity={1.2} distance={4} color="#a855f7" />
-      </group>
+      {/* In-World Holographic AI Mentor Beacon */}
+      <AIMentorBeacon position={[2, 0.5, 2]} />
     </group>
   );
 };
