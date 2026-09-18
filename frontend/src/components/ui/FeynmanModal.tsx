@@ -1443,7 +1443,7 @@ export const FeynmanModal: React.FC = () => {
                     <button
                       id="btn-dispatch-kinetic-3d"
                       onClick={() => {
-                        dispatchFeynmanKineticApparatus(feynmanConcept, explanation?.three_d_instruction);
+                        dispatchFeynmanKineticApparatus(feynmanConcept, explanation?.three_d_instruction || undefined);
                       }}
                       className="cyber-button"
                       style={{
@@ -1467,7 +1467,7 @@ export const FeynmanModal: React.FC = () => {
                     <button
                       id="btn-feynman-view-3d"
                       onClick={() => {
-                        dispatchFeynmanKineticApparatus(feynmanConcept, explanation?.three_d_instruction);
+                        dispatchFeynmanKineticApparatus(feynmanConcept, explanation?.three_d_instruction || undefined);
                         closeFeynman();
                         soundSystem.playChime();
                       }}

@@ -11,6 +11,7 @@ from backend.app.routers.agents import router as agents_router
 from backend.app.routers.feynman import router as feynman_router
 from backend.app.routers.curriculum import router as curriculum_router
 from backend.app.routers.assessment import router as assessment_router
+from backend.app.routers.cache import router as cache_router
 
 app = FastAPI(
     title="Adaptive Virtual Classroom API",
@@ -36,12 +37,23 @@ app.include_router(agents_router)
 app.include_router(feynman_router)
 app.include_router(curriculum_router)
 app.include_router(assessment_router)
+app.include_router(cache_router)
 
 
 @app.get("/")
 def root_check():
     return {
         "status": "online",
+        "system": "Adaptive Virtual Classroom Core Architecture",
+        "version": "1.0.0",
+    }
+
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "service": "Adaptive Virtual Classroom Core Architecture",
         "system": "Adaptive Virtual Classroom Core Architecture",
         "version": "1.0.0",
     }

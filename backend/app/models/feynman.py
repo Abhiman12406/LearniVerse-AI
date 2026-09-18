@@ -112,6 +112,9 @@ class FeynmanResponse(BaseModel):
     strategy_history: List[Dict[str, Any]] = Field(default_factory=list, description="Personalized strategy history")
     orchestrator: str = Field(default="builtin_engine", description="n8n | builtin_engine")
     llm_mode: str = Field(default="deterministic_fallback", description="gemini | deterministic_fallback")
+    cache_status: Optional[str] = Field(default=None, description="HIT | MISS | BYPASS")
+    cache_provider: Optional[str] = Field(default=None, description="redis_langcache | in_memory_fallback")
+    latency_saved_ms: Optional[float] = Field(default=None, description="Estimated milliseconds saved by cache hit")
     timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 

@@ -14,6 +14,7 @@ import {
 import { FeynmanResponse, VerificationResponse, TranscribeResponse, ThreeDApparatusInstruction } from '../types/feynman';
 import { DiagnosticAssessment, DiagnosticSubmissionResponse } from '../types/diagnostic';
 import { DEFAULT_DIAGNOSTIC_ASSESSMENT } from '../data/diagnosticQuestions';
+import { getApiUrl } from '../api/config';
 
 export interface ArrayBayElement {
   index: number;
@@ -129,6 +130,7 @@ interface ClassroomStore {
   // Transient Audio & HUD State
   isMuted: boolean;
   activeZoneTitle: string;
+  missionDifficulty: 'easy' | 'medium' | 'hard';
 
   // Avatar spatial state
   avatar: AvatarState;
@@ -590,6 +592,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   error: null,
   isMuted: false,
   activeZoneTitle: 'Central Atrium',
+  missionDifficulty: 'medium',
 
   avatar: {
     position: [0, 0, 8],
@@ -725,7 +728,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   fetchLearnerProfile: async () => {
     set({ isLoading: true, error: null });
     try {
-      const res = await fetch('/api/learner/profile');
+      const res = await fetch(getApiUrl('/api/learner/profile'));
       if (res.ok) {
         const data: LearnerProfile = await res.json();
         set({ learner: data, isLoading: false });
@@ -739,7 +742,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
 
   fetchWorldState: async () => {
     try {
-      const res = await fetch('/api/world/state');
+      const res = await fetch(getApiUrl('/api/world/state'));
       if (res.ok) {
         const data: WorldState = await res.json();
         set({ worldState: data });
@@ -752,7 +755,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   fetchMentorGuidance: async (learnerId?: string) => {
     const lid = learnerId || get().learner?.learner_id || 'learner_b';
     try {
-      const res = await fetch(`/api/mentor/guidance?learner_id=${lid}`);
+      const res = await fetch(getApiUrl(`/api/mentor/guidance?learner_id=${lid}`));
       if (res.ok) {
         const data: MentorGuidance = await res.json();
         set({ mentorGuidance: data });
@@ -768,7 +771,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   fetchDeliberation: async (learnerId?: string) => {
     const lid = learnerId || get().learner?.learner_id || 'learner_b';
     try {
-      const res = await fetch(`/api/agents/latest/${lid}`);
+      const res = await fetch(getApiUrl(`/api/agents/latest/${lid}`));
       if (res.ok) {
         const data: DeliberationResponse = await res.json();
         set({ latestDeliberation: data });
@@ -784,7 +787,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   switchLearner: async (learnerId: string) => {
     set({ isLoading: true });
     try {
-      const res = await fetch('/api/learner/switch', {
+      const res = await fetch(getApiUrl('/api/learner/switch'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ learner_id: learnerId }),
@@ -1055,7 +1058,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     }
 
     try {
-      const res = await fetch('/api/interactions', {
+      const res = await fetch(getApiUrl('/api/interactions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1245,7 +1248,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     };
 
     try {
-      const res = await fetch('/api/simulate-mastery-jump', {
+      const res = await fetch(getApiUrl('/api/simulate-mastery-jump'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2163,7 +2166,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
 
   resetWorldSeed: async () => {
     try {
-      await fetch('/api/learner/reset', { method: 'POST' });
+      await fetch(getApiUrl('/api/learner/reset'), { method: 'POST' });
       await get().fetchLearnerProfile();
       await get().fetchWorldState();
       await get().fetchMentorGuidance('learner_b');
@@ -2329,7 +2332,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     soundSystem.playChime();
 
     try {
-      const res = await fetch('/api/feynman/request', {
+      const res = await fetch(getApiUrl('/api/feynman/request'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2371,7 +2374,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     set({ feynmanLoading: true, feynmanError: null });
 
     try {
-      const res = await fetch('/api/feynman/verify', {
+      const res = await fetch(getApiUrl('/api/feynman/verify'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2449,7 +2452,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
         reader.readAsDataURL(audioBlob);
       });
 
-      const res = await fetch('/api/feynman/transcribe', {
+      const res = await fetch(getApiUrl('/api/feynman/transcribe'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2498,10 +2501,9 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       get().teleportAvatar([0, 0, 15], Math.PI);
       useClassroomStore.setState({
         cinematicCamera: {
+          active: true,
           position: [0, 4, 15],
-          target: [0, 2.5, 20],
-          duration: 2.5,
-          startTime: Date.now(),
+          lookAt: [0, 2.5, 20],
         },
       });
     } else if (targetConcept === 'recursion') {
@@ -2513,10 +2515,9 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       get().teleportAvatar([0, 0, -15], 0);
       useClassroomStore.setState({
         cinematicCamera: {
+          active: true,
           position: [0, 4, -15],
-          target: [0, 2.5, -20],
-          duration: 2.5,
-          startTime: Date.now(),
+          lookAt: [0, 2.5, -20],
         },
       });
     } else if (targetConcept === 'array') {
@@ -2524,10 +2525,9 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       get().teleportAvatar([-15, 0, 0], -Math.PI / 2);
       useClassroomStore.setState({
         cinematicCamera: {
+          active: true,
           position: [-15, 3.5, 0],
-          target: [-20, 1.5, 0],
-          duration: 2.5,
-          startTime: Date.now(),
+          lookAt: [-20, 1.5, 0],
         },
       });
     } else if (targetConcept === 'linked_list') {
@@ -2535,10 +2535,9 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       get().teleportAvatar([15, 0, 0], Math.PI / 2);
       useClassroomStore.setState({
         cinematicCamera: {
+          active: true,
           position: [15, 3.5, 0],
-          target: [20, 1.5, 0],
-          duration: 2.5,
-          startTime: Date.now(),
+          lookAt: [20, 1.5, 0],
         },
       });
     } else if (targetConcept === 'tree') {
@@ -2599,7 +2598,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   fetchDiagnosticQuestions: async (forceRefresh = false) => {
     set({ isDiagnosticLoading: true });
     try {
-      const res = await fetch(`/api/assessment/diagnostic?force_refresh=${forceRefresh}`);
+      const res = await fetch(getApiUrl(`/api/assessment/diagnostic?force_refresh=${forceRefresh}`));
       if (res.ok) {
         const data: DiagnosticAssessment = await res.json();
         set({ diagnosticAssessment: data, isDiagnosticLoading: false });
@@ -2645,7 +2644,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
 
     set({ isDiagnosticSubmitting: true });
     try {
-      const res = await fetch('/api/assessment/submit', {
+      const res = await fetch(getApiUrl('/api/assessment/submit'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

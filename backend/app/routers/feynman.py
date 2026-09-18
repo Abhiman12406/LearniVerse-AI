@@ -1,5 +1,6 @@
 """Feynman Agent API router conforming to FEYNMAN.md specification."""
 
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Query
 from backend.app.models.feynman import (
@@ -14,6 +15,16 @@ from backend.app.models.feynman import (
 from backend.app.services.feynman_service import feynman_service
 
 router = APIRouter(prefix="/api/feynman", tags=["Feynman Multimodal Agent"])
+
+
+@router.get("/health")
+def feynman_health_check() -> Dict[str, str]:
+    """Health check endpoint conforming to Render healthCheckPath /api/feynman/health."""
+    return {
+        "status": "healthy",
+        "service": "feynman",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 @router.post("/transcribe", response_model=TranscribeResponse)

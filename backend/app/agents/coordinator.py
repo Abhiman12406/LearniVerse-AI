@@ -15,6 +15,7 @@ from backend.app.models.agents import (
     WorldInstructions,
 )
 from backend.app.services.learner_service import learner_service
+from backend.app.services.render_logger import log_langgraph_deliberation
 
 
 class AgentCoordinatorService:
@@ -62,6 +63,9 @@ class AgentCoordinatorService:
 
         # Cache latest deliberation for Telemetry Drawer inspection
         self._latest_deliberations[target_id] = response
+
+        # Stream structured agent deliberation log to Render live log stream
+        log_langgraph_deliberation(response)
 
         # Sync authoritative recommended station if appropriate
         profile = learner_service.get_learner_profile(target_id)

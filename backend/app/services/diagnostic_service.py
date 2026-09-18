@@ -27,6 +27,7 @@ from backend.app.services.irt_service import irt_service
 from backend.app.services.learner_service import WING_DEFINITIONS, learner_service
 from backend.app.services.multidimensional_mastery_service import multidimensional_mastery_service
 from backend.app.services.prerequisite_service import prerequisite_service
+from backend.app.services.langcache_service import langcache_service
 
 
 
@@ -282,7 +283,20 @@ class DiagnosticAssessmentService:
         return self._question_index.get(question_id)
 
     def _call_gemini_generate_questions(self) -> Optional[List[DiagnosticQuestion]]:
-        """Attempt to dynamically synthesize 5 fresh DSA questions via Gemini AI."""
+        """Attempt to dynamically synthesize 5 fresh DSA questions via Gemini AI with LangCache."""
+        cache_prompt = "diagnostic_assessment_5_concepts_curriculum_standard"
+        cached_match = langcache_service.search(prompt=cache_prompt, namespace="diagnostic")
+        if cached_match and cached_match.get("response"):
+            try:
+                raw_questions = cached_match["response"]
+                validated_questions = [DiagnosticQuestion(**item) for item in raw_questions]
+                if len(validated_questions) == 5:
+                    for q in validated_questions:
+                        self._question_index[q.id] = q
+                    return validated_questions
+            except Exception:
+                pass
+
         api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
         if not api_key:
             return None
@@ -364,6 +378,16 @@ Respond STRICTLY in valid JSON matching this schema:
             # Register into index
             for q in validated_questions:
                 self._question_index[q.id] = q
+
+            # Store in LangCache for subsequent fast retrieval
+            try:
+                langcache_service.set(
+                    prompt=cache_prompt,
+                    response=raw_questions,
+                    namespace="diagnostic",
+                )
+            except Exception:
+                pass
 
             return validated_questions
         except Exception:

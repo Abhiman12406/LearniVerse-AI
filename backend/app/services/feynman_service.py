@@ -40,12 +40,14 @@ from backend.app.models.feynman import (
 from backend.app.services.bkt_service import bkt_service
 from backend.app.services.learner_service import learner_service
 from backend.app.services.knowledge_graph_service import knowledge_graph_service
+from backend.app.services.render_logger import log_feynman_request, log_feynman_verification
 from backend.app.services.feynman.curriculum_content import (
     CURRICULUM_EXPLANATIONS,
     curriculum_repository,
 )
 from backend.app.services.feynman.transcription_adapter import transcription_adapter
 from backend.app.services.feynman.webhook_adapter import webhook_adapter
+from backend.app.services.langcache_service import langcache_service
 
 
 
@@ -288,25 +290,76 @@ class FeynmanService:
         orchestrator, _ = webhook_adapter.dispatch_n8n_sync(payload)
         llm_mode = "deterministic_fallback"
 
-        # Step 5: Execute Gemini reasoning if API key present
-        gemini_result = self._try_gemini_analysis(
-            concept=concept,
-            context=context,
-            student_input=unified_input,
-            selected_modality=selected_modality,
-        )
+        # Step 5: Check Redis LangCache for semantically similar explanation
+        diff_tier = "BEGINNER" if context.mastery < 0.45 else ("INTERMEDIATE" if context.mastery < 0.75 else "ADVANCED")
+        cache_prompt = f"[{concept}:{selected_modality}:{diff_tier}] {unified_input}"
+        
+        cached_match = langcache_service.search(prompt=cache_prompt, namespace="feynman")
+        cache_status = "MISS"
+        cache_provider = langcache_service.get_stats()["active_provider"]
+        latency_saved_ms = None
 
-        if gemini_result:
-            decision, explanation, verify_q = gemini_result
-            llm_mode = "gemini"
-        else:
-            decision, explanation, verify_q = self._build_deterministic_explanation(
+        decision = None
+        explanation = None
+        verify_q = None
+
+        if cached_match:
+            try:
+                cached_data = cached_match["response"]
+                dec_data = dict(cached_data.get("decision", {}))
+                if "modality" not in dec_data or not dec_data["modality"]:
+                    dec_data["modality"] = selected_modality
+                decision = FeynmanDecision(**dec_data)
+                decision.decision_id = f"FD_CACHE_{uuid.uuid4().hex[:4].upper()}"
+
+                expl_data = dict(cached_data.get("explanation", {}))
+                if "modality" not in expl_data or not expl_data["modality"]:
+                    expl_data["modality"] = selected_modality
+                explanation = FeynmanExplanationPayload(**expl_data)
+
+                verify_q = VerificationQuestion(**cached_data["verification"])
+                llm_mode = "cached_gemini"
+                cache_status = "HIT"
+                cache_provider = cached_match.get("provider", cache_provider)
+                latency_saved_ms = cached_match.get("latency_saved_ms", 950.0)
+            except Exception:
+                cached_match = None
+
+        if not cached_match:
+            # Step 5b: Execute Gemini reasoning if API key present
+            gemini_result = self._try_gemini_analysis(
                 concept=concept,
                 context=context,
                 student_input=unified_input,
                 selected_modality=selected_modality,
             )
-            llm_mode = "deterministic_fallback"
+
+            if gemini_result:
+                decision, explanation, verify_q = gemini_result
+                llm_mode = "gemini"
+                cache_status = "MISS"
+                # Store in Redis LangCache
+                try:
+                    langcache_service.set(
+                        prompt=cache_prompt,
+                        response={
+                            "decision": decision.model_dump(),
+                            "explanation": explanation.model_dump(),
+                            "verification": verify_q.model_dump(),
+                        },
+                        namespace="feynman",
+                    )
+                except Exception:
+                    pass
+            else:
+                decision, explanation, verify_q = self._build_deterministic_explanation(
+                    concept=concept,
+                    context=context,
+                    student_input=unified_input,
+                    selected_modality=selected_modality,
+                )
+                llm_mode = "deterministic_fallback"
+                cache_status = "BYPASS"
 
         # Record session for audit and verification matching
         self._sessions[session_id] = {
@@ -325,6 +378,17 @@ class FeynmanService:
 
         history = self._strategy_history.get(student_id, [])
 
+        # Stream structured Feynman Agent diagnosis & explanation to Render live logs
+        log_feynman_request(
+            session_id=session_id,
+            student_id=student_id,
+            concept=concept,
+            user_input=unified_input,
+            gap=", ".join(decision.gaps) if decision.gaps else decision.problem,
+            modality=selected_modality,
+            objective=decision.learning_objective,
+        )
+
         return FeynmanResponse(
             session_id=session_id,
             student_id=student_id,
@@ -337,6 +401,9 @@ class FeynmanService:
             strategy_history=history,
             orchestrator=orchestrator,
             llm_mode=llm_mode,
+            cache_status=cache_status,
+            cache_provider=cache_provider,
+            latency_saved_ms=latency_saved_ms,
         )
 
     def _try_gemini_analysis(
@@ -643,6 +710,17 @@ Your response must be strict JSON matching this exact structure:
             session["mastery_before"] = prior_mastery
             session["mastery_after"] = posterior_mastery
             session["intervention_gain"] = intervention_gain
+
+        # Stream structured Feynman verification evaluation & BKT synchronization to Render live logs
+        log_feynman_verification(
+            session_id=req.session_id,
+            student_id=student_id,
+            concept=concept,
+            correct=correct,
+            prior_mastery=prior_mastery,
+            posterior_mastery=posterior_mastery,
+            threshold_crossed=threshold_crossed,
+        )
 
         return VerificationResponse(
             session_id=req.session_id,

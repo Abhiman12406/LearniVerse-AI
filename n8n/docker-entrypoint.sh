@@ -8,7 +8,25 @@ set -e
 
 # Render assigns a dynamic port via $PORT (defaults to 5678 if unset)
 export N8N_PORT="${PORT:-5678}"
-echo "[Feynman-n8n] Booting orchestrator on port: ${N8N_PORT}"
+
+# Normalize FASTAPI_BACKEND_URL scheme for n8n HTTP Request nodes
+if [ -n "$FASTAPI_BACKEND_URL" ]; then
+  case "$FASTAPI_BACKEND_URL" in
+    http://*|https://*)
+      ;;
+    localhost*|127.0.0.1*)
+      export FASTAPI_BACKEND_URL="http://${FASTAPI_BACKEND_URL}"
+      ;;
+    *)
+      export FASTAPI_BACKEND_URL="https://${FASTAPI_BACKEND_URL}"
+      ;;
+  esac
+  echo "[Feynman-n8n] Target Backend: ${FASTAPI_BACKEND_URL}"
+fi
+
+echo "================================================================================"
+echo "⚡ [FEYNMAN-N8N ORCHESTRATOR] Booting on port: ${N8N_PORT}"
+echo "================================================================================"
 
 # Ensure n8n data directory has proper permissions
 mkdir -p /home/node/.n8n

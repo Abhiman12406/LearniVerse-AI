@@ -29,6 +29,7 @@ from backend.app.services.learner_service import WING_DEFINITIONS, learner_servi
 from backend.app.services.multidimensional_mastery_service import multidimensional_mastery_service
 from backend.app.services.prerequisite_service import prerequisite_service
 from backend.app.services.sm2_service import sm2_service
+from backend.app.services.render_logger import log_interaction_event
 
 
 class LearnerEvaluationPipeline:
@@ -158,6 +159,17 @@ class LearnerEvaluationPipeline:
 
         # Fetch updated world state delta
         world_delta = learner_service.get_world_state(req.student_id)
+
+        # Stream BKT interaction event to Render live logs
+        log_interaction_event(
+            student_id=req.student_id,
+            concept=req.concept,
+            question_id=req.question_id,
+            correct=req.correct,
+            prior_mastery=prior_mastery,
+            posterior_mastery=posterior_mastery,
+            threshold_crossed=threshold_crossed,
+        )
 
         # 8. Run 5-agent deliberation workflow
         deliberation_resp = agent_coordinator.run_deliberation(

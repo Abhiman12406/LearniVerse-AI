@@ -450,5 +450,6 @@ export const RecursionConsole: React.FC = () => {
         </div>
       </div>
     </div>
+  </div>
   );
 };

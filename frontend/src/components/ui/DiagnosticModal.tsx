@@ -22,7 +22,6 @@ import {
   ArrowRight,
   Brain,
   Terminal,
-  Target,
 } from 'lucide-react';
 
 import { useClassroomStore } from '../../store/useClassroomStore';
