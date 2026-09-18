@@ -8,6 +8,7 @@ from backend.app.models.learner import (
     WingInfo,
     WorldState,
 )
+from backend.app.services.prerequisite_service import prerequisite_service
 
 # Seeded default profiles defined in Game Environment.md
 SEED_PROFILES: Dict[str, LearnerProfile] = {
@@ -135,27 +136,18 @@ class LearnerService:
 
         wings: Dict[str, WingInfo] = {}
         for wid, meta in WING_DEFINITIONS.items():
-            req = meta["required_mastery"]
-            status = "accessible"
-            reason = None
-
-            if req:
-                for concept, threshold in req.items():
-                    current_val = getattr(mastery, concept, 0.0)
-                    if current_val < threshold:
-                        status = "sealed"
-                        reason = f"Requires {concept.replace('_', ' ').title()} ≥ {int(threshold * 100)}% | Current: {int(current_val * 100)}%"
-                        break
+            concept = meta["concept"]
+            eval_res = prerequisite_service.evaluate_concept(concept, mastery)
 
             wings[wid] = WingInfo(
                 wing_id=meta["wing_id"],
                 name=meta["name"],
                 concept=meta["concept"],
-                status=status,
+                status=eval_res.status,
                 azimuth_deg=meta["azimuth_deg"],
                 coordinates=meta["coordinates"],
                 required_mastery=meta["required_mastery"],
-                reason=reason,
+                reason=eval_res.reason,
             )
 
         return WorldState(

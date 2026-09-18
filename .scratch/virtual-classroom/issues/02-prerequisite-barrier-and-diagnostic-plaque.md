@@ -4,11 +4,11 @@
 
 **Blocked by:** 01: Core Navigable Atrium, Central Dais & Learner Profile Switcher
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Prerequisite Knowledge Graph model evaluates readiness and marks Recursion Lab as locked when Stack Mastery < 0.70
-- [ ] Procedural crimson laser grid shader renders across the entrance of the Recursion Lab when locked
-- [ ] Floating 3D holographic Diagnostic Plaque displays the required threshold and current mastery
-- [ ] Physical Avatar movement collision prevents passing through sealed Prerequisite Barriers
-- [ ] Toggling between Learner A and Learner B on the HUD immediately updates barrier obstruction and collision state in the 3D scene
-- [ ] Automated test verifies barrier state matches prerequisite evaluation
+- [x] Prerequisite Knowledge Graph model evaluates readiness and marks Recursion Lab as locked when Stack Mastery < 0.70
+- [x] Procedural crimson laser grid shader renders across the entrance of the Recursion Lab when locked
+- [x] Floating 3D holographic Diagnostic Plaque displays the required threshold and current mastery
+- [x] Physical Avatar movement collision prevents passing through sealed Prerequisite Barriers
+- [x] Toggling between Learner A and Learner B on the HUD immediately updates barrier obstruction and collision state in the 3D scene
+- [x] Automated test verifies barrier state matches prerequisite evaluation

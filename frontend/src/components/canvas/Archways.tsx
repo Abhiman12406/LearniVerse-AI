@@ -1,6 +1,8 @@
 import React from 'react';
 import { Text } from '@react-three/drei';
 import { useClassroomStore } from '../../store/useClassroomStore';
+import { PrerequisiteBarrier } from './PrerequisiteBarrier';
+import { DiagnosticPlaque } from './DiagnosticPlaque';
 
 interface ArchwayProps {
   id: string;
@@ -88,6 +90,20 @@ const ArchwayPortal: React.FC<ArchwayProps> = ({ id, name, azimuthDeg, radius })
       >
         {isSealed ? '/// PREREQUISITE SEALED ///' : '>>> ACCESS GRANTED <<<'}
       </Text>
+
+      {/* Procedural Prerequisite Barrier across Portal opening */}
+      <PrerequisiteBarrier
+        isSealed={!!isSealed}
+        width={4.2}
+        height={5.6}
+      />
+
+      {/* In-World Floating 3D Holographic Diagnostic Plaque */}
+      <DiagnosticPlaque
+        wingInfo={wingInfo}
+        isSealed={!!isSealed}
+        position={[0, 2.7, 1.8]}
+      />
     </group>
   );
 };
