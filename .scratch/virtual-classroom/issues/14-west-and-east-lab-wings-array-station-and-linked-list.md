@@ -4,10 +4,10 @@
 
 **Blocked by:** 12: Performance Prefactoring & Texture Singleton Caching (60 FPS Foundation)
 
-**Status:** ready-for-agent
+**Status:** closed
 
-- [ ] West corridor opens directly into an enterable 14x14m Array Station Lab featuring wooden flooring, branded signage, research desks, and wall colliders.
-- [ ] East corridor opens directly into an enterable 14x14m Linked List Lab featuring dynamic node pedestals, tech benches, and solid perimeter boundary colliders.
-- [ ] Collision detection allows smooth, unobstructed passage through corridor doorways while strictly blocking penetration through room perimeter walls.
-- [ ] Interactive 3D apparatuses in both wings trigger proximity detection, show instructional interaction prompts (`[E] Operate Station`), and integrate with the active station store state.
-- [ ] Visual signboards, thematic lighting, and architectural accents match the pedagogical styling established in reference campus designs.
+- [x] West corridor opens directly into an enterable 14x14m Array Station Lab featuring wooden flooring, branded signage, research desks, and wall colliders.
+- [x] East corridor opens directly into an enterable 14x14m Linked List Lab featuring dynamic node pedestals, tech benches, and solid perimeter boundary colliders.
+- [x] Collision detection allows smooth, unobstructed passage through corridor doorways while strictly blocking penetration through room perimeter walls.
+- [x] Interactive 3D apparatuses in both wings trigger proximity detection, show instructional interaction prompts (`[E] Operate Station`), and integrate with the active station store state.
+- [x] Visual signboards, thematic lighting, and architectural accents match the pedagogical styling established in reference campus designs.

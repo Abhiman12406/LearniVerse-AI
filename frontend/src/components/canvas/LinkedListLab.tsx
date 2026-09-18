@@ -7,6 +7,12 @@ import {
   createLinkedListModel,
   LinkedListModelRig,
 } from '../../assets/3d/createLinkedListModel';
+import {
+  getClassroomMaterials,
+  getDoorPortalSignMaterial,
+  getDoorPortalGlowMaterial,
+  getScreenDisplayMaterial,
+} from '../../assets/3d/classroomSingletons';
 
 export const LinkedListLab: React.FC = () => {
   const avatar = useClassroomStore((s) => s.avatar);
@@ -27,11 +33,14 @@ export const LinkedListLab: React.FC = () => {
   const wingPos: [number, number, number] = [20.0, 0.0, 0.0];
   const consolePos: [number, number, number] = [20.0, 0.0, 0.0];
 
+  // Retrieve cached singleton materials
+  const materials = useMemo(() => getClassroomMaterials(), []);
+
   // Proximity detection to apparatus table
   useFrame(() => {
     const [ax, , az] = avatar.position;
     const dist = Math.hypot(ax - consolePos[0], az - consolePos[2]);
-    const near = dist <= 4.0;
+    const near = dist <= 4.2;
     if (near !== isNear) {
       setIsNear(near);
     }
@@ -52,9 +61,6 @@ export const LinkedListLab: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isNear, activeStation, setActiveStation]);
-
-  // Face archway entrance (toward atrium center, azimuth 90° + 180° = -90° / -Math.PI / 2)
-  const chamberRotationY = -Math.PI / 2;
 
   // Initialize procedural 3D Linked List apparatus rig
   const modelRig = useMemo<LinkedListModelRig>(() => {
@@ -110,59 +116,234 @@ export const LinkedListLab: React.FC = () => {
     }
   });
 
+  // Terminal screen materials
+  const screenMat1 = useMemo(
+    () =>
+      getScreenDisplayMaterial('ll_heap_manager', [
+        '// Dynamic Heap Pointer Allocator',
+        'struct Node { int data; Node* next; };',
+        'Node* head = (Node*)malloc(sizeof(Node));',
+        'head->data = 10; head->next = node2;',
+        'status: HEAP_ALLOCATED // addr: 0x4010',
+        'null_guard: active // leak_protection: on',
+      ]),
+    []
+  );
+
+  const screenMat2 = useMemo(
+    () =>
+      getScreenDisplayMaterial('ll_traversal_trace', [
+        '// O(n) Pointer Traversal Engine',
+        'Node* curr = head;',
+        'while (curr != NULL) {',
+        '  visit(curr->data);',
+        '  curr = curr->next; // advance pointer',
+        '}',
+        'terminates: NULL pointer reached',
+      ]),
+    []
+  );
+
+  const portalSignMat = useMemo(
+    () => getDoorPortalSignMaterial('LINKED LIST LAB // EAST WING', '#f59e0b'),
+    []
+  );
+  const portalGlowMat = useMemo(() => getDoorPortalGlowMaterial('#f59e0b'), []);
+
   return (
-    <group position={wingPos} rotation={[0, chamberRotationY, 0]}>
-      {/* Hexagonal Laboratory Chamber Platform */}
-      <mesh position={[0, -0.01, 0]} receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[5.2, 6]} />
-        <meshStandardMaterial
-          color="#0b1120"
-          roughness={0.45}
-          metalness={0.75}
-        />
+    <group position={wingPos}>
+      {/* --- 1. 14x14m ROOM FLOORING (Matching Campus Wood Planks) --- */}
+      <mesh position={[0, -0.2, 0]} receiveShadow>
+        <boxGeometry args={[14.0, 0.4, 14.0]} />
+        <primitive object={materials.floorWood} attach="material" />
       </mesh>
 
-      {/* Outer Chamber Boundary Accent Ring (Gold/Amber Linked List motif) */}
+      {/* Cybernetic Accent Inlays on Floor (Amber & Gold Node Chain motif) */}
       <mesh position={[0, 0.005, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[4.8, 5.1, 6]} />
+        <ringGeometry args={[5.2, 5.4, 32]} />
         <meshBasicMaterial color="#f59e0b" transparent opacity={0.65} side={THREE.DoubleSide} />
       </mesh>
-
-      {/* Cybernetic Floor Grid Concentric Ring */}
       <mesh position={[0, 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[2.8, 2.92, 32]} />
+        <ringGeometry args={[3.2, 3.32, 32]} />
         <meshBasicMaterial color="#fbbf24" transparent opacity={0.4} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Linked List Lab Wing Atmospheric Illumination */}
-      <pointLight position={[0, 4.2, 0]} color="#f59e0b" intensity={1.5} distance={8.5} />
-      <pointLight position={[-2.5, 2.5, 2.0]} color="#00d4ff" intensity={1.1} distance={5.0} />
-      <pointLight position={[2.5, 2.5, -2.0]} color="#10b981" intensity={0.9} distance={5.0} />
+      {/* --- 2. 14x14m ENCLOSED PERIMETER WALLS (Height: 5.6m, Thickness: 0.35m) --- */}
+      {/* East Exterior Wall (X = +7.0, spanning Z: -7.0 to +7.0) */}
+      <mesh position={[7.0, 2.8, 0]} receiveShadow>
+        <boxGeometry args={[0.35, 5.6, 14.0]} />
+        <primitive object={materials.wallTaupe} attach="material" />
+      </mesh>
 
-      {/* Safety Stanchions around chamber perimeter */}
-      {[0, 1, 2, 3, 4, 5].map((i) => {
-        const ang = (i / 6) * Math.PI * 2;
-        const sx = Math.sin(ang) * 4.8;
-        const sz = Math.cos(ang) * 4.8;
-        return (
-          <group key={i} position={[sx, 0, sz]}>
-            <mesh position={[0, 0.7, 0]} castShadow>
-              <cylinderGeometry args={[0.08, 0.1, 1.4, 12]} />
-              <meshStandardMaterial color="#1e293b" roughness={0.3} metalness={0.9} />
-            </mesh>
-            <mesh position={[0, 1.42, 0]}>
-              <sphereGeometry args={[0.08, 12, 12]} />
-              <meshBasicMaterial color="#f59e0b" />
-            </mesh>
-          </group>
-        );
-      })}
+      {/* North Exterior Wall (Z = -7.0, spanning X: -7.0 to +7.0) */}
+      <mesh position={[0, 2.8, -7.0]} receiveShadow>
+        <boxGeometry args={[14.0, 5.6, 0.35]} />
+        <primitive object={materials.wallPlaster} attach="material" />
+      </mesh>
 
-      {/* Elevated Apparatus Pedestal Table */}
+      {/* South Exterior Wall (Z = +7.0, spanning X: -7.0 to +7.0) */}
+      <mesh position={[0, 2.8, 7.0]} receiveShadow>
+        <boxGeometry args={[14.0, 5.6, 0.35]} />
+        <primitive object={materials.wallPlaster} attach="material" />
+      </mesh>
+
+      {/* West Entrance Wall (X = -7.0, facing East corridor at X = +13.0) */}
+      {/* North Segment: Z from -7.0 to -1.9 (center Z = -4.45, length = 5.1) */}
+      <mesh position={[-7.0, 2.8, -4.45]} receiveShadow>
+        <boxGeometry args={[0.35, 5.6, 5.1]} />
+        <primitive object={materials.wallPlaster} attach="material" />
+      </mesh>
+
+      {/* South Segment: Z from +1.9 to +7.0 (center Z = +4.45, length = 5.1) */}
+      <mesh position={[-7.0, 2.8, 4.45]} receiveShadow>
+        <boxGeometry args={[0.35, 5.6, 5.1]} />
+        <primitive object={materials.wallPlaster} attach="material" />
+      </mesh>
+
+      {/* Doorway Header Lintel (X = -7.0, Y = 4.6, spanning Z: -2.1 to +2.1, height = 2.0) */}
+      <mesh position={[-7.0, 4.6, 0]} receiveShadow>
+        <boxGeometry args={[0.38, 2.0, 4.2]} />
+        <primitive object={materials.woodDark} attach="material" />
+      </mesh>
+
+      {/* Doorway Frame Pillars */}
+      <mesh position={[-7.0, 1.8, -2.0]}>
+        <boxGeometry args={[0.42, 3.6, 0.42]} />
+        <primitive object={materials.woodDark} attach="material" />
+      </mesh>
+      <mesh position={[-7.0, 1.8, 2.0]}>
+        <boxGeometry args={[0.42, 3.6, 0.42]} />
+        <primitive object={materials.woodDark} attach="material" />
+      </mesh>
+
+      {/* Doorway Header Sign Plate (Facing West toward corridor) */}
+      <group position={[-7.15, 4.0, 0]} rotation={[0, -Math.PI / 2, 0]}>
+        <mesh position={[0, 0, 0]}>
+          <boxGeometry args={[3.2, 0.65, 0.1]} />
+          <primitive object={materials.metalBlack} attach="material" />
+        </mesh>
+        <mesh position={[0, 0, 0.06]}>
+          <planeGeometry args={[3.05, 0.55]} />
+          <primitive object={portalSignMat} attach="material" />
+        </mesh>
+      </group>
+
+      {/* Doorway Threshold Glow */}
+      <mesh position={[-7.0, 0.02, 0]} rotation={[-Math.PI / 2, 0, Math.PI / 2]}>
+        <planeGeometry args={[3.8, 0.25]} />
+        <primitive object={portalGlowMat} attach="material" />
+      </mesh>
+
+      {/* --- 3. BRANDED INTERIOR PLAQUES & SIGNAGE --- */}
+      {/* Main East Feature Plaque (Facing West into the room) */}
+      <group position={[6.8, 3.8, 0]} rotation={[0, -Math.PI / 2, 0]}>
+        <mesh position={[0, 0, -0.02]}>
+          <planeGeometry args={[6.2, 1.1]} />
+          <meshBasicMaterial color="#020617" transparent opacity={0.92} />
+        </mesh>
+        <mesh position={[0, 0, -0.025]}>
+          <planeGeometry args={[6.26, 1.16]} />
+          <meshBasicMaterial color="#f59e0b" transparent opacity={0.65} />
+        </mesh>
+        <Text
+          position={[0, 0.2, 0]}
+          fontSize={0.24}
+          color="#fbbf24"
+          anchorX="center"
+          anchorY="middle"
+          font="monospace"
+          fontWeight="bold"
+          letterSpacing={0.06}
+        >
+          LINKED LIST LAB // EAST WING
+        </Text>
+        <Text
+          position={[0, -0.16, 0]}
+          fontSize={0.14}
+          color="#94a3b8"
+          anchorX="center"
+          anchorY="middle"
+          font="monospace"
+        >
+          Non-Contiguous Heap Allocation // Pointer Chain [Data | Next]
+        </Text>
+      </group>
+
+      {/* --- 4. TECH BENCHES & WORKSTATIONS --- */}
+      {/* North Tech Bench (Z = -5.8, X = 0) */}
+      <group position={[0, 0, -5.8]}>
+        <mesh position={[0, 0.42, 0]} receiveShadow>
+          <boxGeometry args={[4.2, 0.84, 1.2]} />
+          <primitive object={materials.woodLight} attach="material" />
+        </mesh>
+        <mesh position={[0, 0.85, 0]}>
+          <boxGeometry args={[4.24, 0.04, 1.24]} />
+          <primitive object={materials.woodDark} attach="material" />
+        </mesh>
+        {/* Terminal Monitor 1 */}
+        <mesh position={[-1.0, 1.28, -0.2]}>
+          <boxGeometry args={[1.2, 0.75, 0.08]} />
+          <primitive object={materials.metalBlack} attach="material" />
+        </mesh>
+        <mesh position={[-1.0, 1.28, -0.155]}>
+          <planeGeometry args={[1.12, 0.68]} />
+          <primitive object={screenMat1} attach="material" />
+        </mesh>
+        {/* Terminal Monitor 2 */}
+        <mesh position={[1.0, 1.28, -0.2]}>
+          <boxGeometry args={[1.2, 0.75, 0.08]} />
+          <primitive object={materials.metalBlack} attach="material" />
+        </mesh>
+        <mesh position={[1.0, 1.28, -0.155]}>
+          <planeGeometry args={[1.12, 0.68]} />
+          <primitive object={screenMat2} attach="material" />
+        </mesh>
+        {/* Keyboards */}
+        <mesh position={[-1.0, 0.88, 0.2]}>
+          <boxGeometry args={[0.55, 0.02, 0.22]} />
+          <primitive object={materials.metalBlack} attach="material" />
+        </mesh>
+        <mesh position={[1.0, 0.88, 0.2]}>
+          <boxGeometry args={[0.55, 0.02, 0.22]} />
+          <primitive object={materials.metalBlack} attach="material" />
+        </mesh>
+      </group>
+
+      {/* South Tech Bench (Z = +5.8, X = 0) */}
+      <group position={[0, 0, 5.8]} rotation={[0, Math.PI, 0]}>
+        <mesh position={[0, 0.42, 0]} receiveShadow>
+          <boxGeometry args={[4.2, 0.84, 1.2]} />
+          <primitive object={materials.woodLight} attach="material" />
+        </mesh>
+        <mesh position={[0, 0.85, 0]}>
+          <boxGeometry args={[4.24, 0.04, 1.24]} />
+          <primitive object={materials.woodDark} attach="material" />
+        </mesh>
+        {/* Terminal Monitor */}
+        <mesh position={[0, 1.28, -0.2]}>
+          <boxGeometry args={[1.4, 0.85, 0.08]} />
+          <primitive object={materials.metalBlack} attach="material" />
+        </mesh>
+        <mesh position={[0, 1.28, -0.155]}>
+          <planeGeometry args={[1.32, 0.78]} />
+          <primitive object={screenMat1} attach="material" />
+        </mesh>
+        <mesh position={[0, 0.88, 0.2]}>
+          <boxGeometry args={[0.65, 0.02, 0.22]} />
+          <primitive object={materials.metalBlack} attach="material" />
+        </mesh>
+      </group>
+
+      {/* --- 5. THEMATIC ATMOSPHERIC LIGHTING --- */}
+      <pointLight position={[0, 4.6, 0]} color="#f59e0b" intensity={2.2} distance={14.0} />
+      <pointLight position={[-4.5, 3.2, 3.5]} color="#00d4ff" intensity={1.4} distance={8.0} />
+      <pointLight position={[4.5, 3.2, -3.5]} color="#fbbf24" intensity={1.4} distance={8.0} />
+
+      {/* --- 6. ELEVATED CENTRAL APPARATUS TABLE & APPARATUS --- */}
       <group position={[0, 0, 0]}>
         <mesh position={[0, 0.38, 0]} castShadow receiveShadow>
           <boxGeometry args={[4.8, 0.76, 2.2]} />
-          <meshStandardMaterial color="#0f172a" roughness={0.28} metalness={0.85} />
+          <primitive object={materials.woodDark} attach="material" />
         </mesh>
 
         {/* Brushed Brass Tabletop Edge Trim */}
@@ -202,26 +383,27 @@ export const LinkedListLab: React.FC = () => {
 
       {/* Floating 3D Interaction Prompt Badge */}
       {isNear && !activeStation && (
-        <Float speed={2.5} rotationIntensity={0.05} floatIntensity={0.35}>
-          <group position={[0, 2.4, 0.8]}>
+        <Float speed={2.5} rotationIntensity={0.03} floatIntensity={0.25}>
+          <group position={[0, 2.8, 0.8]}>
             <mesh position={[0, 0, -0.02]}>
-              <planeGeometry args={[3.2, 0.65]} />
-              <meshBasicMaterial color="#020617" transparent opacity={0.88} />
+              <planeGeometry args={[3.4, 0.7]} />
+              <meshBasicMaterial color="#020617" transparent opacity={0.9} />
             </mesh>
             <mesh position={[0, 0, -0.025]}>
-              <planeGeometry args={[3.24, 0.69]} />
-              <meshBasicMaterial color="#f59e0b" transparent opacity={0.6} />
+              <planeGeometry args={[3.44, 0.74]} />
+              <meshBasicMaterial color="#f59e0b" transparent opacity={0.65} />
             </mesh>
             <Text
-              position={[0, 0.08, 0]}
-              fontSize={0.16}
+              position={[0, 0.09, 0]}
+              fontSize={0.18}
               color="#fbbf24"
               anchorX="center"
               anchorY="middle"
               font="monospace"
               fontWeight="bold"
+              letterSpacing={0.04}
             >
-              [E] ENGAGE LINKED LIST APPARATUS
+              [E] Operate Station
             </Text>
             <Text
               position={[0, -0.12, 0]}
@@ -236,39 +418,6 @@ export const LinkedListLab: React.FC = () => {
           </group>
         </Float>
       )}
-
-      {/* Floating Title Plaque above the Apparatus */}
-      <group position={[0, 3.2, -1.2]}>
-        <mesh position={[0, 0, -0.02]}>
-          <planeGeometry args={[3.8, 0.7]} />
-          <meshBasicMaterial color="#020617" transparent opacity={0.9} />
-        </mesh>
-        <mesh position={[0, 0, -0.025]}>
-          <planeGeometry args={[3.84, 0.74]} />
-          <meshBasicMaterial color="#f59e0b" transparent opacity={0.5} />
-        </mesh>
-        <Text
-          position={[0, 0.1, 0]}
-          fontSize={0.18}
-          color="#fbbf24"
-          anchorX="center"
-          anchorY="middle"
-          font="monospace"
-          fontWeight="bold"
-        >
-          LINKED LIST LAB // EAST WING
-        </Text>
-        <Text
-          position={[0, -0.12, 0]}
-          fontSize={0.11}
-          color="#94a3b8"
-          anchorX="center"
-          anchorY="middle"
-          font="monospace"
-        >
-          Non-Contiguous Dynamic Nodes Linked By Pointers
-        </Text>
-      </group>
     </group>
   );
 };

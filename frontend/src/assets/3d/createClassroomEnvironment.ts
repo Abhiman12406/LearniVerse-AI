@@ -85,10 +85,9 @@ export function createClassroomEnvironment(): ClassroomEnvironment {
   // Staggered Corridors leading from classroom hub to lab wings
   // (Array at X=-20, Linked List at X=+20, Recursion at Z=-20, Stack at Z=+20)
   const corridorWidth = 3.8;
-  const corridorLength = 10.0; // extends from radius 6.0 to 16.0
 
-  function createCorridor(x: number, z: number, rotY: number) {
-    const corridorGeo = trackGeometry(new THREE.BoxGeometry(corridorWidth, 0.38, corridorLength));
+  function createCorridor(x: number, z: number, rotY: number, length: number = 10.0) {
+    const corridorGeo = trackGeometry(new THREE.BoxGeometry(corridorWidth, 0.38, length));
     const corridor = new THREE.Mesh(corridorGeo, materials.floorWood);
     corridor.position.set(x, -0.19, z);
     corridor.rotation.y = rotY;
@@ -96,11 +95,11 @@ export function createClassroomEnvironment(): ClassroomEnvironment {
     root.add(corridor);
   }
 
-  // 4 Corridors to Wings
-  createCorridor(-11.0, 0, Math.PI / 2); // West (Array Lab)
-  createCorridor(11.0, 0, Math.PI / 2);  // East (Linked List Lab)
-  createCorridor(0, -11.0, 0);           // North (Recursion Chamber)
-  createCorridor(0, 11.0, 0);            // South (Stack Lab)
+  // 4 Corridors to Wings (West/East span X: 6 to 13, North/South span Z: 6 to 16)
+  createCorridor(-9.5, 0, Math.PI / 2, 7.0); // West (Array Lab connects at X = -13)
+  createCorridor(9.5, 0, Math.PI / 2, 7.0);  // East (Linked List Lab connects at X = 13)
+  createCorridor(0, -11.0, 0, 10.0);         // North (Recursion Chamber)
+  createCorridor(0, 11.0, 0, 10.0);          // South (Stack Lab)
 
   // Doorway Portals on Classroom Perimeter
   // Structural pillars are key architecture and retain dynamic shadow casting
@@ -766,18 +765,43 @@ export function createClassroomEnvironment(): ClassroomEnvironment {
   pinMesh.position.z = 0.042;
   clockGroup.add(pinMesh);
 
-  // --- 10. CAMPUS CORRIDOR PERIMETER COLLIDERS ---
-  registerBoxCollider('Corridor West North Wall', -11.0, -corridorWidth / 2 - 0.1, corridorLength, 0.2);
-  registerBoxCollider('Corridor West South Wall', -11.0, corridorWidth / 2 + 0.1, corridorLength, 0.2);
+  // --- 10. CAMPUS CORRIDOR & LAB WING PERIMETER COLLIDERS ---
+  const cardinalCorridorLength = 10.0;
+  const lateralCorridorLength = 7.0;
 
-  registerBoxCollider('Corridor East North Wall', 11.0, -corridorWidth / 2 - 0.1, corridorLength, 0.2);
-  registerBoxCollider('Corridor East South Wall', 11.0, corridorWidth / 2 + 0.1, corridorLength, 0.2);
+  // West corridor side walls (X: -13 to -6)
+  registerBoxCollider('Corridor West North Wall', -9.5, -corridorWidth / 2 - 0.1, lateralCorridorLength, 0.2);
+  registerBoxCollider('Corridor West South Wall', -9.5, corridorWidth / 2 + 0.1, lateralCorridorLength, 0.2);
 
-  registerBoxCollider('Corridor North West Wall', -corridorWidth / 2 - 0.1, -11.0, 0.2, corridorLength);
-  registerBoxCollider('Corridor North East Wall', corridorWidth / 2 + 0.1, -11.0, 0.2, corridorLength);
+  // East corridor side walls (X: 6 to 13)
+  registerBoxCollider('Corridor East North Wall', 9.5, -corridorWidth / 2 - 0.1, lateralCorridorLength, 0.2);
+  registerBoxCollider('Corridor East South Wall', 9.5, corridorWidth / 2 + 0.1, lateralCorridorLength, 0.2);
 
-  registerBoxCollider('Corridor South West Wall', -corridorWidth / 2 - 0.1, 11.0, 0.2, corridorLength);
-  registerBoxCollider('Corridor South East Wall', corridorWidth / 2 + 0.1, 11.0, 0.2, corridorLength);
+  // North corridor side walls (Z: -16 to -6)
+  registerBoxCollider('Corridor North West Wall', -corridorWidth / 2 - 0.1, -11.0, 0.2, cardinalCorridorLength);
+  registerBoxCollider('Corridor North East Wall', corridorWidth / 2 + 0.1, -11.0, 0.2, cardinalCorridorLength);
+
+  // South corridor side walls (Z: 6 to 16)
+  registerBoxCollider('Corridor South West Wall', -corridorWidth / 2 - 0.1, 11.0, 0.2, cardinalCorridorLength);
+  registerBoxCollider('Corridor South East Wall', corridorWidth / 2 + 0.1, 11.0, 0.2, cardinalCorridorLength);
+
+  // Array Station Lab (West Wing, centered at X = -20, Z = 0, 14x14m: X in [-27, -13], Z in [-7, 7])
+  registerBoxCollider('Array Lab West Wall', -27.0, 0.0, 0.4, 14.0);
+  registerBoxCollider('Array Lab North Wall', -20.0, -7.0, 14.0, 0.4);
+  registerBoxCollider('Array Lab South Wall', -20.0, 7.0, 14.0, 0.4);
+  registerBoxCollider('Array Lab East Wall (North)', -13.0, -4.45, 0.4, 5.1);
+  registerBoxCollider('Array Lab East Wall (South)', -13.0, 4.45, 0.4, 5.1);
+  registerBoxCollider('Array Lab Research Desk (North)', -20.0, -5.8, 4.0, 1.2);
+  registerBoxCollider('Array Lab Research Desk (South)', -20.0, 5.8, 4.0, 1.2);
+
+  // Linked List Lab (East Wing, centered at X = 20, Z = 0, 14x14m: X in [13, 27], Z in [-7, 7])
+  registerBoxCollider('Linked List Lab East Wall', 27.0, 0.0, 0.4, 14.0);
+  registerBoxCollider('Linked List Lab North Wall', 20.0, -7.0, 14.0, 0.4);
+  registerBoxCollider('Linked List Lab South Wall', 20.0, 7.0, 14.0, 0.4);
+  registerBoxCollider('Linked List Lab West Wall (North)', 13.0, -4.45, 0.4, 5.1);
+  registerBoxCollider('Linked List Lab West Wall (South)', 13.0, 4.45, 0.4, 5.1);
+  registerBoxCollider('Linked List Lab Tech Bench (North)', 20.0, -5.8, 4.0, 1.2);
+  registerBoxCollider('Linked List Lab Tech Bench (South)', 20.0, 5.8, 4.0, 1.2);
 
   // --- 11. UPDATE & DISPOSAL ---
   let clockTime = 10 * 3600 + 15 * 60; // 10:15 am

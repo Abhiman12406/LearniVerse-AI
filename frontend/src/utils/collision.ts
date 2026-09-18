@@ -117,7 +117,7 @@ export function resolveAvatarCollision(
   x: number,
   z: number,
   worldState: WorldState | null,
-  maxCampusRadius: number = 27.5,
+  maxCampusRadius: number = 32.0,
   checkObstacles: boolean = true
 ): { x: number; z: number; isBlockedByBarrier: boolean; blockedWingId: string | null } {
   let resolvedX = x;

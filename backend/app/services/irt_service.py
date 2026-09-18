@@ -7,7 +7,7 @@ Conforms strictly to BACKEND_LOGIC.md §4:
 """
 
 import math
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 from scipy.optimize import minimize_scalar
 
