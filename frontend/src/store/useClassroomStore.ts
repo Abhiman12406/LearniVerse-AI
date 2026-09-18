@@ -22,6 +22,10 @@ interface ClassroomStore {
   isNearMentor: boolean;
   mentorGuidance: MentorGuidance | null;
 
+  // Station Console & Stack Apparatus State
+  activeStation: string | null;
+  stackDiscs: Array<{ id: string; value: number }>;
+
   // Actions
   fetchLearnerProfile: () => Promise<void>;
   fetchWorldState: () => Promise<void>;
@@ -33,6 +37,9 @@ interface ClassroomStore {
   closeMentor: () => void;
   setIsNearMentor: (isNear: boolean) => void;
   fetchMentorGuidance: (learnerId?: string) => Promise<void>;
+  setActiveStation: (stationId: string | null) => void;
+  pushStackDisc: (value?: number) => void;
+  popStackDisc: () => void;
 }
 
 // Fallback seed profile for initial rendering or offline mock
@@ -391,6 +398,43 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     set({ isNearMentor: isNear });
   },
 
+  activeStation: null,
+  stackDiscs: [
+    { id: 'disc-1', value: 10 },
+    { id: 'disc-2', value: 25 },
+    { id: 'disc-3', value: 42 },
+  ],
+
+  setActiveStation: (stationId: string | null) => {
+    if (stationId) {
+      soundSystem.playChirp();
+    }
+    set({ activeStation: stationId });
+  },
+
+  pushStackDisc: (val?: number) => {
+    const current = get().stackDiscs;
+    if (current.length >= 6) return; // Max capacity 6
+
+    const nextValues = [50, 64, 88, 99, 128];
+    const value = val !== undefined ? val : (nextValues[current.length % nextValues.length] || 15);
+    const newDisc = {
+      id: `disc-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      value,
+    };
+
+    soundSystem.playMagneticThud();
+    set({ stackDiscs: [...current, newDisc] });
+  },
+
+  popStackDisc: () => {
+    const current = get().stackDiscs;
+    if (current.length === 0) return; // Underflow protection
+
+    soundSystem.playPop();
+    set({ stackDiscs: current.slice(0, -1) });
+  },
+
   resetWorldSeed: async () => {
     try {
       await fetch('/api/learner/reset', { method: 'POST' });
@@ -400,6 +444,12 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       set({
         avatar: { position: [0, 0, 8], rotation: 0, isMoving: false },
         isMentorOpen: false,
+        activeStation: null,
+        stackDiscs: [
+          { id: 'disc-1', value: 10 },
+          { id: 'disc-2', value: 25 },
+          { id: 'disc-3', value: 42 },
+        ],
       });
     } catch {
       // reset locally
@@ -409,6 +459,12 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
         mentorGuidance: DEFAULT_MENTOR_GUIDANCE_B,
         avatar: { position: [0, 0, 8], rotation: 0, isMoving: false },
         isMentorOpen: false,
+        activeStation: null,
+        stackDiscs: [
+          { id: 'disc-1', value: 10 },
+          { id: 'disc-2', value: 25 },
+          { id: 'disc-3', value: 42 },
+        ],
       });
     }
   },
