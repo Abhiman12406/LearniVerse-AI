@@ -34,7 +34,7 @@ Conforming to `RENDER.md §5` and `FEYNMAN.md §7, §8`, LearniVerse-AI is deplo
 |---|---|---|---|---|---|
 | **`learniverse-frontend`** | Static Site | Free | Singapore (Global CDN) | `cd frontend && npm install && npm run build` | Route: `/* -> /index.html` |
 | **`learniverse-backend`** | Web Service (Python) | Free | Singapore | `pip install -r backend/requirements.txt` | `python -m uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`<br>`healthCheckPath: /api/feynman/health` |
-| **`learniverse-n8n`** | Web Service (Docker) | Free | Singapore | `n8n/Dockerfile` (context: `n8n`) | `healthCheckPath: /healthz`<br>Entrypoint: `/docker-entrypoint-feynman.sh` |
+| **`learniverse-n8n`** | Web Service (Docker) | Free | Singapore | `n8n/Dockerfile` (context: `n8n`) | TCP Socket Probe (Port 5678)<br>Entrypoint: `/docker-entrypoint-feynman.sh` |
 
 > [!TIP]
 > **Regional Placement (`region: singapore`):** Conforming to `RENDER2.md`, compute services are colocated in **Singapore** to provide low round-trip latency (~40ms–65ms) for India and APAC users, while keeping private inter-service communication fast on Render's regional mesh.

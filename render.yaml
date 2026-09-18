@@ -76,8 +76,21 @@ services:
     region: singapore
     dockerfilePath: n8n/Dockerfile
     dockerContext: n8n
-    healthCheckPath: /healthz
+    # Note: Using Render's default TCP socket health probe instead of an HTTP probe
+    # with a strict 5s timeout prevents false-positive alerts during Render Free Tier cold-boots.
     envVars:
+      - key: PORT
+        value: "5678"
+      - key: N8N_PORT
+        value: "5678"
+      - key: N8N_HOST
+        value: "0.0.0.0"
+      - key: N8N_LISTEN_ADDRESS
+        value: "0.0.0.0"
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=384"
+      - key: N8N_METRICS
+        value: "false"
       - key: FASTAPI_BACKEND_URL
         fromService:
           type: web

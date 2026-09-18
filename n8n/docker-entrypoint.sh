@@ -31,13 +31,16 @@ echo "==========================================================================
 # Ensure n8n data directory has proper permissions
 mkdir -p /home/node/.n8n
 
-# Pre-import and activate workflow sequentially before launching server
-# Running sequentially prevents launching concurrent Node.js processes, keeping memory well under 512 MB
-if [ -f "/workflows/feynman-assistant.json" ]; then
-  echo "[Feynman-n8n] Pre-importing workflow before server launch..."
+# One-time workflow pre-import: only runs on first container initialization
+# Using a sentinel file ensures subsequent reboots and wakeups start instantly in <2 seconds
+IMPORT_FLAG="/home/node/.n8n/.feynman_workflow_imported"
+if [ ! -f "$IMPORT_FLAG" ] && [ -f "/workflows/feynman-assistant.json" ]; then
+  echo "[Feynman-n8n] Initial setup: importing Feynman agent workflow..."
   n8n import:workflow --input=/workflows/feynman-assistant.json 2>/dev/null || true
-  n8n update:workflow --all --active=true 2>/dev/null || true
-  echo "[Feynman-n8n] Workflow imported successfully."
+  touch "$IMPORT_FLAG"
+  echo "[Feynman-n8n] Initial workflow import complete."
+else
+  echo "[Feynman-n8n] Workflow already configured; booting server immediately."
 fi
 
 echo "[Feynman-n8n] Launching n8n server on port ${N8N_PORT}..."
