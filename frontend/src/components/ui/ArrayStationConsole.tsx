@@ -11,12 +11,14 @@ import {
   Terminal,
   Activity,
   Brain,
+  Sparkles,
 } from 'lucide-react';
 import { useClassroomStore } from '../../store/useClassroomStore';
 
 export const ArrayStationConsole: React.FC = () => {
   const activeStation = useClassroomStore((s) => s.activeStation);
   const setActiveStation = useClassroomStore((s) => s.setActiveStation);
+  const demonstrateFeynmanAgent = useClassroomStore((s) => s.demonstrateFeynmanAgent);
 
   const arrayBays = useClassroomStore((s) => s.arrayBays);
   const arrayTargetIndex = useClassroomStore((s) => s.arrayTargetIndex);
@@ -172,6 +174,29 @@ export const ArrayStationConsole: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button
+              id="btn-array-demonstrate-feynman"
+              onClick={() => demonstrateFeynmanAgent('array')}
+              style={{
+                background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(16, 185, 129, 0.2))',
+                border: '1px solid rgba(168, 85, 247, 0.5)',
+                borderRadius: '8px',
+                padding: '0.5rem 0.75rem',
+                color: '#f5f3ff',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                boxShadow: '0 0 10px rgba(168, 85, 247, 0.25)',
+              }}
+              title="Demonstrate Feynman Multimodal Adaptive Explanation Agent for Array"
+            >
+              <Sparkles size={14} color="#c084fc" />
+              <span>Demonstrate Feynman Agent</span>
+            </button>
+
             <button
               id="btn-array-telemetry"
               onClick={() => openTelemetry('agents')}

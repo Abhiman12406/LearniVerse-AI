@@ -38,6 +38,8 @@ export const FeynmanModal: React.FC = () => {
     requestFeynmanExplanation,
     submitFeynmanVerification,
     transcribeAudioWithGroq,
+    dispatchFeynmanKineticApparatus,
+    feynmanKineticStatus,
     feynmanError,
     learner,
   } = useClassroomStore();
@@ -463,6 +465,8 @@ export const FeynmanModal: React.FC = () => {
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             {/* Microphone Voice Button */}
             <button
+              id="btn-voice-record"
+              data-testid="btn-voice-record"
               onClick={toggleListening}
               className="cyber-button"
               style={{
@@ -609,6 +613,7 @@ export const FeynmanModal: React.FC = () => {
           >
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
+                id="tab-feynman-text"
                 onClick={() => setFeynmanModality('TEXT')}
                 className="cyber-button"
                 style={{
@@ -628,6 +633,7 @@ export const FeynmanModal: React.FC = () => {
               </button>
 
               <button
+                id="tab-feynman-visual"
                 onClick={() => setFeynmanModality('VISUAL')}
                 className="cyber-button"
                 style={{
@@ -650,6 +656,7 @@ export const FeynmanModal: React.FC = () => {
               </button>
 
               <button
+                id="tab-feynman-voice"
                 onClick={() => setFeynmanModality('VOICE')}
                 className="cyber-button"
                 style={{
@@ -669,6 +676,7 @@ export const FeynmanModal: React.FC = () => {
               </button>
 
               <button
+                id="tab-feynman-video"
                 onClick={() => setFeynmanModality('VIDEO')}
                 className="cyber-button"
                 style={{
@@ -688,6 +696,7 @@ export const FeynmanModal: React.FC = () => {
               </button>
 
               <button
+                id="tab-feynman-3d"
                 onClick={() => setFeynmanModality('3D')}
                 className="cyber-button"
                 style={{
@@ -899,6 +908,7 @@ export const FeynmanModal: React.FC = () => {
 
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button
+                        id="btn-feynman-prev-step"
                         onClick={() => setActiveVisualStep((prev) => Math.max(0, prev - 1))}
                         disabled={activeVisualStep === 0}
                         className="cyber-button"
@@ -914,6 +924,7 @@ export const FeynmanModal: React.FC = () => {
                       </button>
 
                       <button
+                        id="btn-feynman-next-step"
                         onClick={() => setActiveVisualStep((prev) => Math.min(visualSteps.length - 1, prev + 1))}
                         disabled={activeVisualStep === visualSteps.length - 1}
                         className="cyber-button"
@@ -932,7 +943,7 @@ export const FeynmanModal: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Visual Diagram Canvas Presentation */}
+                  {/* Visual Diagram Canvas Presentation with SVG */}
                   <div
                     style={{
                       padding: '24px',
@@ -943,60 +954,184 @@ export const FeynmanModal: React.FC = () => {
                       flexDirection: 'column',
                       alignItems: 'center',
                       gap: '16px',
-                      minHeight: '180px',
+                      minHeight: '220px',
                       justifyContent: 'center',
                     }}
                   >
-                    {/* Simulated Call Stack or Memory Blocks */}
-                    {feynmanConcept === 'recursion' && (
-                      <div style={{ display: 'flex', flexDirection: 'column-reverse', gap: '8px', width: '320px' }}>
-                        {((currentStep.visual_state?.frames as string[]) || []).map((frame, idx) => (
-                          <div
-                            key={idx}
-                            style={{
-                              padding: '10px 14px',
-                              borderRadius: '6px',
-                              border: idx === ((currentStep.visual_state?.frames as string[])?.length || 1) - 1 ? '2px solid #a855f7' : '1px solid rgba(255, 255, 255, 0.1)',
-                              background: idx === ((currentStep.visual_state?.frames as string[])?.length || 1) - 1 ? 'rgba(168, 85, 247, 0.25)' : 'rgba(255, 255, 255, 0.04)',
-                              color: idx === ((currentStep.visual_state?.frames as string[])?.length || 1) - 1 ? '#e9d5ff' : '#94a3b8',
-                              fontFamily: 'var(--font-mono)',
-                              fontSize: '12px',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              boxShadow: idx === ((currentStep.visual_state?.frames as string[])?.length || 1) - 1 ? '0 0 14px rgba(168, 85, 247, 0.4)' : 'none',
-                            }}
+                    {/* High-Resolution Interactive Animated SVG Diagram Canvas */}
+                    <div
+                      style={{
+                        width: '100%',
+                        maxWidth: '620px',
+                        height: '210px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative',
+                      }}
+                    >
+                      <svg
+                        id="feynman-svg-diagram"
+                        viewBox="0 0 600 200"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          overflow: 'visible',
+                        }}
+                      >
+                        <defs>
+                          <linearGradient id="svgDiscGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#00f0ff" stopOpacity="0.8" />
+                            <stop offset="100%" stopColor="#a855f7" stopOpacity="0.8" />
+                          </linearGradient>
+                          <marker
+                            id="svgArrowhead"
+                            markerWidth="6"
+                            markerHeight="6"
+                            refX="5"
+                            refY="3"
+                            orient="auto"
                           >
-                            <span>{frame}</span>
-                            {idx === ((currentStep.visual_state?.frames as string[])?.length || 1) - 1 && (
-                              <span style={{ fontSize: '10px', color: '#a855f7', fontWeight: 700 }}>[TOP FRAME]</span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                            <polygon points="0 0, 6 3, 0 6" fill="#00f0ff" />
+                          </marker>
+                          <marker
+                            id="svgArrowheadAmber"
+                            markerWidth="6"
+                            markerHeight="6"
+                            refX="5"
+                            refY="3"
+                            orient="auto"
+                          >
+                            <polygon points="0 0, 6 3, 0 6" fill="#f59e0b" />
+                          </marker>
+                        </defs>
 
-                    {feynmanConcept === 'stack' && (
-                      <div style={{ display: 'flex', flexDirection: 'column-reverse', gap: '8px', width: '280px', borderLeft: '3px solid #00f0ff', borderRight: '3px solid #00f0ff', borderBottom: '4px solid #00f0ff', padding: '12px 10px 4px 10px', borderRadius: '0 0 10px 10px' }}>
-                        {((currentStep.visual_state?.items as string[]) || []).map((item, idx) => (
-                          <div
-                            key={idx}
-                            style={{
-                              padding: '8px',
-                              borderRadius: '4px',
-                              background: idx === ((currentStep.visual_state?.items as string[])?.length || 1) - 1 ? 'linear-gradient(135deg, rgba(0, 240, 255, 0.3), rgba(168, 85, 247, 0.3))' : 'rgba(255, 255, 255, 0.08)',
-                              border: '1px solid #00f0ff',
-                              textAlign: 'center',
-                              fontFamily: 'var(--font-mono)',
-                              fontSize: '13px',
-                              fontWeight: 700,
-                              color: '#ffffff',
-                            }}
-                          >
-                            DISC [{item}] {idx === ((currentStep.visual_state?.items as string[])?.length || 1) - 1 ? '← TOP' : ''}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                        {/* STACK SVG DIAGRAM */}
+                        {feynmanConcept === 'stack' && (
+                          <g>
+                            <path
+                              d="M 210 30 L 210 180 L 390 180 L 390 30"
+                              fill="none"
+                              stroke="#00f0ff"
+                              strokeWidth="3"
+                              strokeDasharray="6 3"
+                            />
+                            <line x1="190" y1="180" x2="410" y2="180" stroke="#00f0ff" strokeWidth="6" strokeLinecap="round" />
+                            <text x="300" y="195" fill="#64748b" textAnchor="middle" fontSize="10" fontFamily="monospace">
+                              CYLINDRICAL CANISTER BASE (CLOSED)
+                            </text>
+
+                            {(((currentStep.visual_state?.items as string[]) || ['A', 'B', 'C'])).map((item, idx, arr) => {
+                              const discY = 145 - idx * 34;
+                              const isTop = idx === arr.length - 1;
+                              return (
+                                <g key={idx}>
+                                  <rect
+                                    x="225"
+                                    y={discY}
+                                    width="150"
+                                    height="28"
+                                    rx="6"
+                                    fill={isTop ? 'url(#svgDiscGrad)' : 'rgba(15, 23, 42, 0.9)'}
+                                    stroke={isTop ? '#00f0ff' : 'rgba(255, 255, 255, 0.25)'}
+                                    strokeWidth={isTop ? 2.5 : 1}
+                                  />
+                                  <text
+                                    x="300"
+                                    y={discY + 18}
+                                    textAnchor="middle"
+                                    fill="#ffffff"
+                                    fontWeight="bold"
+                                    fontSize="12"
+                                    fontFamily="monospace"
+                                  >
+                                    DISC [{item}]
+                                  </text>
+                                  {isTop && (
+                                    <>
+                                      <line x1="440" y1={discY + 14} x2="385" y2={discY + 14} stroke="#f59e0b" strokeWidth="2.5" markerEnd="url(#svgArrowheadAmber)" />
+                                      <text x="450" y={discY + 18} fill="#f59e0b" fontWeight="bold" fontSize="11" fontFamily="monospace">
+                                        ← TOP (LIFO POP)
+                                      </text>
+                                    </>
+                                  )}
+                                </g>
+                              );
+                            })}
+
+                            <path d="M 300 5 L 300 24" stroke="#00ff88" strokeWidth="2" strokeDasharray="3 3" markerEnd="url(#svgArrowhead)" />
+                            <text x="310" y="16" fill="#00ff88" fontSize="10" fontFamily="monospace" fontWeight="bold">PUSH IN</text>
+                          </g>
+                        )}
+
+                        {/* RECURSION SVG DIAGRAM */}
+                        {feynmanConcept === 'recursion' && (
+                          <g>
+                            {(((currentStep.visual_state?.frames as string[]) || ['factorial(4)', 'factorial(3)', 'factorial(2)', 'factorial(1)'])).map((frame, idx, arr) => {
+                              const frameY = 145 - idx * 34;
+                              const isTop = idx === arr.length - 1;
+                              return (
+                                <g key={idx}>
+                                  <rect
+                                    x="140"
+                                    y={frameY}
+                                    width="280"
+                                    height="28"
+                                    rx="6"
+                                    fill={isTop ? 'rgba(168, 85, 247, 0.35)' : 'rgba(15, 23, 42, 0.85)'}
+                                    stroke={isTop ? '#c084fc' : 'rgba(255, 255, 255, 0.2)'}
+                                    strokeWidth={isTop ? 2.5 : 1}
+                                  />
+                                  <text
+                                    x="155"
+                                    y={frameY + 18}
+                                    fill={isTop ? '#f3e8ff' : '#94a3b8'}
+                                    fontWeight="bold"
+                                    fontSize="11"
+                                    fontFamily="monospace"
+                                  >
+                                    {frame}
+                                  </text>
+                                  {isTop && (
+                                    <>
+                                      <line x1="470" y1={frameY + 14} x2="430" y2={frameY + 14} stroke="#a855f7" strokeWidth="2" markerEnd="url(#svgArrowhead)" />
+                                      <text x="480" y={frameY + 18} fill="#c084fc" fontWeight="bold" fontSize="10" fontFamily="monospace">
+                                        ACTIVE FRAME
+                                      </text>
+                                    </>
+                                  )}
+                                </g>
+                              );
+                            })}
+
+                            <line x1="120" y1="38" x2="480" y2="38" stroke="#ff0055" strokeWidth="1.5" strokeDasharray="4 3" />
+                            <text x="500" y="42" fill="#ff0055" fontSize="10" fontWeight="bold" fontFamily="monospace">
+                              BASE CASE LIMIT
+                            </text>
+                          </g>
+                        )}
+
+                        {/* OTHER CONCEPTS (Linked List / Array / Tree) */}
+                        {feynmanConcept !== 'stack' && feynmanConcept !== 'recursion' && (
+                          <g>
+                            <rect x="80" y="75" width="90" height="42" rx="6" fill="#0f172a" stroke="#00f0ff" strokeWidth="2" />
+                            <text x="125" y="101" textAnchor="middle" fill="#ffffff" fontWeight="bold" fontSize="12" fontFamily="monospace">[0]: 12</text>
+                            <line x1="170" y1="96" x2="220" y2="96" stroke="#00f0ff" strokeWidth="2" markerEnd="url(#svgArrowhead)" />
+
+                            <rect x="220" y="75" width="90" height="42" rx="6" fill="#0f172a" stroke="#00f0ff" strokeWidth="2" />
+                            <text x="265" y="101" textAnchor="middle" fill="#ffffff" fontWeight="bold" fontSize="12" fontFamily="monospace">[1]: 45</text>
+                            <line x1="310" y1="96" x2="360" y2="96" stroke="#00f0ff" strokeWidth="2" markerEnd="url(#svgArrowhead)" />
+
+                            <rect x="360" y="75" width="90" height="42" rx="6" fill="#0f172a" stroke="#a855f7" strokeWidth="2" />
+                            <text x="405" y="101" textAnchor="middle" fill="#ffffff" fontWeight="bold" fontSize="12" fontFamily="monospace">[2]: 78</text>
+                            <line x1="450" y1="96" x2="500" y2="96" stroke="#a855f7" strokeWidth="2" markerEnd="url(#svgArrowhead)" />
+
+                            <rect x="500" y="75" width="70" height="42" rx="6" fill="#0f172a" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
+                            <text x="535" y="101" textAnchor="middle" fill="#94a3b8" fontSize="11" fontFamily="monospace">NULL</text>
+                          </g>
+                        )}
+                      </svg>
+                    </div>
 
                     {/* Step Description & Analogy Cue */}
                     <p style={{ margin: 0, fontSize: '13px', color: '#ffffff', textAlign: 'center', maxWidth: '580px', lineHeight: '1.5' }}>
@@ -1054,6 +1189,8 @@ export const FeynmanModal: React.FC = () => {
 
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <button
+                      id="btn-feynman-play-voice"
+                      data-testid="btn-feynman-play-voice"
                       onClick={toggleVoicePlayback}
                       className="cyber-button"
                       style={{
@@ -1189,6 +1326,8 @@ export const FeynmanModal: React.FC = () => {
                   {/* Video Play Controls */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <button
+                      id="btn-feynman-play-video"
+                      data-testid="btn-feynman-play-video"
                       onClick={() => setIsVideoPlaying(!isVideoPlaying)}
                       className="cyber-button"
                       style={{
@@ -1226,6 +1365,7 @@ export const FeynmanModal: React.FC = () => {
               {/* Mode 5: 3D Apparatus Focus Pane */}
               {feynmanActiveModality === '3D' && (
                 <div
+                  id="feynman-3d-pane"
                   className="glass-panel"
                   style={{
                     padding: '24px',
@@ -1233,36 +1373,116 @@ export const FeynmanModal: React.FC = () => {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '14px',
-                    background: 'rgba(0, 0, 0, 0.35)',
+                    gap: '16px',
+                    background: 'rgba(0, 0, 0, 0.4)',
                     textAlign: 'center',
                   }}
                 >
-                  <Box size={40} color="var(--cyan-core)" />
-                  <h4 style={{ margin: 0, fontSize: '15px', color: '#ffffff' }}>
-                    3D Virtual Classroom Apparatus Command
-                  </h4>
-                  <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', maxWidth: '520px', lineHeight: '1.5' }}>
-                    The Feynman Agent has dispatched camera framing coordinates to the 3D game engine,
-                    focusing directly on the <strong>{explanation?.three_d_instruction?.zone || feynmanConcept}</strong> apparatus.
-                  </p>
-                  <button
-                    onClick={() => {
-                      closeFeynman();
-                      soundSystem.playChime();
-                    }}
-                    className="cyber-button"
+                  <div
                     style={{
-                      padding: '10px 20px',
-                      borderRadius: '8px',
-                      borderColor: 'var(--cyan-core)',
-                      color: 'var(--cyan-core)',
-                      fontWeight: 700,
-                      fontSize: '12px',
+                      width: '64px',
+                      height: '64px',
+                      borderRadius: '50%',
+                      background: 'rgba(0, 240, 255, 0.15)',
+                      border: '2px solid var(--cyan-core)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 0 24px rgba(0, 240, 255, 0.4)',
                     }}
                   >
-                    View in 3D Classroom
-                  </button>
+                    <Box size={32} color="var(--cyan-core)" />
+                  </div>
+
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '16px', color: '#ffffff', fontWeight: 800 }}>
+                      3D Kinetic Apparatus Demonstration
+                    </h4>
+                    <p style={{ margin: '6px 0 0 0', fontSize: '13px', color: 'var(--text-secondary)', maxWidth: '540px', lineHeight: '1.5' }}>
+                      The Feynman Agent physically manipulates the <strong>{explanation?.three_d_instruction?.zone || `${feynmanConcept}_lab`}</strong> 3D apparatus,
+                      animating physical state transitions right inside the virtual classroom.
+                    </p>
+                  </div>
+
+                  {/* Kinetic Apparatus Dispatch Details Card */}
+                  <div
+                    style={{
+                      padding: '12px 20px',
+                      borderRadius: '10px',
+                      background: '#070c18',
+                      border: '1px solid rgba(0, 240, 255, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '24px',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '11px',
+                    }}
+                  >
+                    <div>
+                      <span style={{ color: 'var(--text-muted)' }}>Target Wing: </span>
+                      <strong style={{ color: '#00f0ff', textTransform: 'uppercase' }}>
+                        {explanation?.three_d_instruction?.zone || `${feynmanConcept}_lab`}
+                      </strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)' }}>Action: </span>
+                      <strong style={{ color: '#a855f7' }}>
+                        {explanation?.three_d_instruction?.action || 'KINETIC_DISPATCH'}
+                      </strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)' }}>Kinetic Status: </span>
+                      <strong style={{ color: feynmanKineticStatus?.dispatched ? '#00ff88' : '#f59e0b' }}>
+                        {feynmanKineticStatus?.dispatched ? 'DISPATCHED' : 'READY'}
+                      </strong>
+                    </div>
+                  </div>
+
+                  {/* Actions: Dispatch Kinetic Commands & View Live */}
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button
+                      id="btn-dispatch-kinetic-3d"
+                      onClick={() => {
+                        dispatchFeynmanKineticApparatus(feynmanConcept, explanation?.three_d_instruction);
+                      }}
+                      className="cyber-button"
+                      style={{
+                        padding: '10px 22px',
+                        borderRadius: '8px',
+                        background: 'linear-gradient(135deg, rgba(0, 240, 255, 0.3), rgba(168, 85, 247, 0.3))',
+                        borderColor: 'var(--cyan-core)',
+                        color: '#00f0ff',
+                        fontWeight: 800,
+                        fontSize: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        boxShadow: '0 0 16px rgba(0, 240, 255, 0.3)',
+                      }}
+                    >
+                      <Zap size={16} color="#00f0ff" />
+                      <span>Dispatch Kinetic Command to Apparatus</span>
+                    </button>
+
+                    <button
+                      id="btn-feynman-view-3d"
+                      onClick={() => {
+                        dispatchFeynmanKineticApparatus(feynmanConcept, explanation?.three_d_instruction);
+                        closeFeynman();
+                        soundSystem.playChime();
+                      }}
+                      className="cyber-button"
+                      style={{
+                        padding: '10px 18px',
+                        borderRadius: '8px',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        color: '#ffffff',
+                        fontSize: '12px',
+                      }}
+                    >
+                      View Live in 3D Campus [ESC]
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1299,6 +1519,8 @@ export const FeynmanModal: React.FC = () => {
                     {vq.options.map((opt, idx) => (
                       <button
                         key={idx}
+                        id={`feynman-option-${idx}`}
+                        data-testid={`feynman-option-${idx}`}
                         onClick={() => setSelectedOption(idx)}
                         disabled={feynmanVerificationResult !== null}
                         className="glass-panel"
@@ -1349,6 +1571,8 @@ export const FeynmanModal: React.FC = () => {
                   {/* Submit Verification Button */}
                   {!feynmanVerificationResult && (
                     <button
+                      id="btn-submit-feynman-verify"
+                      data-testid="btn-submit-feynman-verify"
                       onClick={handleVerify}
                       disabled={selectedOption === null || feynmanLoading}
                       className="cyber-button"
@@ -1376,6 +1600,8 @@ export const FeynmanModal: React.FC = () => {
                   {/* Verification Outcome & BKT Feedback Card */}
                   {feynmanVerificationResult && (
                     <div
+                      id="feynman-verification-result"
+                      data-testid="feynman-verification-result"
                       style={{
                         padding: '16px',
                         borderRadius: '10px',
@@ -1408,7 +1634,7 @@ export const FeynmanModal: React.FC = () => {
                         <span className="glass-pill" style={{ color: '#00f0ff' }}>
                           Evidence: {feynmanVerificationResult.evidence.evidence_type}
                         </span>
-                        <span className="glass-pill" style={{ color: '#00ff88' }}>
+                        <span id="feynman-mastery-delta" data-testid="feynman-mastery-delta" className="glass-pill" style={{ color: '#00ff88' }}>
                           Mastery: {Math.round(feynmanVerificationResult.prior_mastery * 100)}% → {Math.round(feynmanVerificationResult.posterior_mastery * 100)}% (+{Math.round(feynmanVerificationResult.delta * 100)}%)
                         </span>
                       </div>

@@ -12,12 +12,14 @@ import {
   Layers,
   ArrowRight,
   ShieldAlert,
+  Sparkles,
 } from 'lucide-react';
 import { useClassroomStore } from '../../store/useClassroomStore';
 
 export const LinkedListConsole: React.FC = () => {
   const activeStation = useClassroomStore((s) => s.activeStation);
   const setActiveStation = useClassroomStore((s) => s.setActiveStation);
+  const demonstrateFeynmanAgent = useClassroomStore((s) => s.demonstrateFeynmanAgent);
 
   const linkedListNodes = useClassroomStore((s) => s.linkedListNodes);
   const linkedListActiveNodeId = useClassroomStore((s) => s.linkedListActiveNodeId);
@@ -179,6 +181,29 @@ export const LinkedListConsole: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <button
+              id="btn-linked-list-demonstrate-feynman"
+              onClick={() => demonstrateFeynmanAgent('linked_list')}
+              style={{
+                background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(245, 158, 11, 0.2))',
+                border: '1px solid rgba(168, 85, 247, 0.5)',
+                borderRadius: '8px',
+                padding: '0.45rem 0.75rem',
+                color: '#f5f3ff',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                boxShadow: '0 0 10px rgba(168, 85, 247, 0.25)',
+              }}
+              title="Demonstrate Feynman Multimodal Adaptive Explanation Agent for Linked List"
+            >
+              <Sparkles size={13} color="#c084fc" />
+              <span>Demonstrate Feynman Agent</span>
+            </button>
+
             <div
               style={{
                 fontSize: '0.75rem',

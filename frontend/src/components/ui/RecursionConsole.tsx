@@ -19,6 +19,7 @@ export const RecursionConsole: React.FC = () => {
   const activeStation = useClassroomStore((s) => s.activeStation);
   const setActiveStation = useClassroomStore((s) => s.setActiveStation);
   const openFeynman = useClassroomStore((s) => s.openFeynman);
+  const demonstrateFeynmanAgent = useClassroomStore((s) => s.demonstrateFeynmanAgent);
 
   const recursionFrames = useClassroomStore((s) => s.recursionFrames);
   const recursionMaxDepth = useClassroomStore((s) => s.recursionMaxDepth);
@@ -112,12 +113,13 @@ export const RecursionConsole: React.FC = () => {
               <span>Telemetry</span>
             </button>
             <button
-              onClick={() => openFeynman('recursion', 'recursion_lab', "I don't understand why the recursive call pauses and pushes frames to the call stack.")}
-              title="Ask Feynman for Multimodal Explanation"
-              className="px-3 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-200 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              id="btn-recursion-demonstrate-feynman"
+              onClick={() => demonstrateFeynmanAgent('recursion')}
+              title="Demonstrate Feynman Multimodal Adaptive Explanation Agent for Recursion"
+              className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-500/30 to-cyan-500/20 hover:from-purple-500/40 hover:to-cyan-500/30 border border-purple-400/50 text-purple-100 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm shadow-purple-500/30"
             >
-              <Brain className="w-3.5 h-3.5 text-purple-400" />
-              <span>Ask Feynman</span>
+              <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
+              <span>Demonstrate Feynman Agent</span>
             </button>
             <button
               onClick={() => resetRecursionChamber()}
@@ -213,6 +215,39 @@ export const RecursionConsole: React.FC = () => {
                   <div className="text-red-200/90">
                     Recursion continued without reaching a valid Base Case. In production systems, runaway recursive invocations exhaust available memory stack space, terminating the program.
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Ambient Intervention Banner When Stack Overflow Occurs */}
+            {recursionStackOverflow && (
+              <div
+                id="feynman-ambient-intervention-banner-recursion"
+                className="p-3 rounded-xl bg-purple-950/40 border border-purple-500/50 flex flex-col gap-2 animate-in slide-in-from-top-2"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-bold text-purple-200">
+                    <Sparkles className="w-4 h-4 text-purple-400" />
+                    <span>⚡ AMBIENT INTERVENTION: FEYNMAN AGENT READY</span>
+                  </div>
+                  <span className="text-[10px] text-cyan-400 font-mono">5 MODALITIES</span>
+                </div>
+                <p className="text-xs text-slate-300">
+                  You triggered a StackOverflowException! The Feynman Agent can break down how base cases prevent endless call-stack frames using visual diagrams and physical analogies.
+                </p>
+                <div className="flex justify-end">
+                  <button
+                    id="btn-feynman-ambient-help-recursion"
+                    onClick={() => {
+                      const query = 'Why did my recursion cause a Stack Overflow? How does a base case stop it?';
+                      openFeynman('recursion', 'recursion_lab', query);
+                      useClassroomStore.getState().requestFeynmanExplanation(query, 'TEXT', 'VISUAL');
+                    }}
+                    className="cyber-button text-xs px-3 py-1.5 rounded-lg border-purple-500 text-purple-200 bg-purple-900/30 flex items-center gap-1.5"
+                  >
+                    <Brain className="w-3.5 h-3.5 text-purple-400" />
+                    <span>Ask Feynman For Help</span>
+                  </button>
                 </div>
               </div>
             )}

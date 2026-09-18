@@ -11,7 +11,7 @@ from typing import Any, Dict
 from backend.app.agents.state import AgentState
 from backend.app.models.agents import AgentTraceItem, FinalDecision, ValidationResult
 from backend.app.models.learner import MasteryMap
-from backend.app.services.prerequisite_service import prerequisite_service
+from backend.app.services.knowledge_graph_service import knowledge_graph_service
 
 
 def validator_agent_node(state: AgentState) -> AgentState:
@@ -32,8 +32,8 @@ def validator_agent_node(state: AgentState) -> AgentState:
     proposed_diff = proposal.get("difficulty", "medium").lower()
     proposed_reason = proposal.get("reason", "")
 
-    # Check deterministic prerequisite evaluation
-    eval_res = prerequisite_service.evaluate_concept(proposed_concept, mastery)
+    # Check deterministic prerequisite evaluation using Knowledge Graph
+    eval_res = knowledge_graph_service.evaluate_concept(proposed_concept, mastery)
 
     if not eval_res.is_ready:
         # VIOLATION DETECTED: Guardrail MUST overrule the proposal

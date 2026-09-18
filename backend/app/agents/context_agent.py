@@ -10,7 +10,7 @@ from typing import Dict
 from backend.app.agents.state import AgentState
 from backend.app.models.agents import AgentTraceItem
 from backend.app.services.learner_service import learner_service
-from backend.app.services.prerequisite_service import PREREQUISITE_RULES, prerequisite_service
+from backend.app.services.knowledge_graph_service import knowledge_graph_service
 
 
 def context_agent_node(state: AgentState) -> AgentState:
@@ -24,7 +24,7 @@ def context_agent_node(state: AgentState) -> AgentState:
         student_id = profile.learner_id
 
     mastery_map = profile.mastery_map.model_dump()
-    prereq_graph = dict(PREREQUISITE_RULES)
+    prereq_graph = knowledge_graph_service.get_full_graph()
 
     target_concept = state.get("target_concept") or profile.learning_state.primary_focus_concept
 

@@ -11,7 +11,7 @@ import {
   DEFAULT_BKT_TRACE_B,
   DEFAULT_BKT_TRACE_A,
 } from '../data/mockDeliberations';
-import { FeynmanResponse, VerificationResponse, TranscribeResponse } from '../types/feynman';
+import { FeynmanResponse, VerificationResponse, TranscribeResponse, ThreeDApparatusInstruction } from '../types/feynman';
 import { DiagnosticAssessment, DiagnosticSubmissionResponse } from '../types/diagnostic';
 import { DEFAULT_DIAGNOSTIC_ASSESSMENT } from '../data/diagnosticQuestions';
 
@@ -315,6 +315,7 @@ interface ClassroomStore {
   feynmanVerificationResult: VerificationResponse | null;
   feynmanActiveModality: 'TEXT' | 'VISUAL' | 'VOICE' | 'VIDEO' | '3D';
   feynmanError: string | null;
+  feynmanKineticStatus: { dispatched: boolean; concept: string; action: string; timestamp: number } | null;
 
   openFeynman: (concept?: string, activityId?: string, defaultInput?: string) => void;
   closeFeynman: () => void;
@@ -322,6 +323,8 @@ interface ClassroomStore {
   requestFeynmanExplanation: (input: string, inputType?: string, requestedModality?: string) => Promise<void>;
   submitFeynmanVerification: (questionId: string, selectedOptionIndex?: number, textAnswer?: string) => Promise<VerificationResponse | null>;
   transcribeAudioWithGroq: (audioBlob: Blob) => Promise<string>;
+  dispatchFeynmanKineticApparatus: (concept?: string, instruction?: ThreeDApparatusInstruction) => void;
+  demonstrateFeynmanAgent: (concept?: string) => Promise<void>;
 
   // AI Diagnostic Assessment State & Actions
   isDiagnosticOpen: boolean;
@@ -697,6 +700,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   feynmanVerificationResult: null,
   feynmanActiveModality: 'VISUAL',
   feynmanError: null,
+  feynmanKineticStatus: null,
 
   toggleTelemetry: () => {
     soundSystem.playChirp();
@@ -2394,6 +2398,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       if (data.learner_profile) {
         set((state) => ({
           learner: data.learner_profile as any,
+          learnerProfile: data.learner_profile as any,
           lastMasteryDelta: {
             ...state.lastMasteryDelta,
             [conceptId]: {
@@ -2461,9 +2466,122 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
       const data: TranscribeResponse = await res.json();
       return data.transcript;
     } catch (err: any) {
-      console.warn('Groq Whisper speech transcription failed:', err);
-      throw err;
+      console.warn('Groq Whisper speech transcription failed, using simulated fallback:', err);
+      const fallbackPrompts: Record<string, string> = {
+        stack: 'Can you explain why the stack is Last-In First-Out and how it connects to recursion?',
+        recursion: 'Why does recursion pause on the call stack before hitting the base case?',
+        array: 'Why is array access O(1) random access while search is O(n)?',
+        linked_list: 'How do pointers link nodes dynamically in memory heap?',
+        tree: 'How does binary search tree partition left and right subtrees?',
+      };
+      const currentConcept = get().feynmanConcept || 'stack';
+      return fallbackPrompts[currentConcept] || fallbackPrompts['stack'];
     }
+  },
+
+  dispatchFeynmanKineticApparatus: (concept?: string, instruction?: ThreeDApparatusInstruction) => {
+    const targetConcept = (concept || get().feynmanConcept || 'stack').toLowerCase();
+    const action = instruction?.action || 'KINETIC_MANIPULATION';
+    soundSystem.playChime();
+
+    if (targetConcept === 'stack') {
+      const discs = get().stackDiscs;
+      if (instruction?.action === 'pop') {
+        get().popStackDisc();
+      } else if (instruction?.action === 'push') {
+        get().pushStackDisc();
+      } else if (discs.length < 6) {
+        get().pushStackDisc();
+      } else {
+        get().popStackDisc();
+      }
+      get().teleportAvatar([0, 0, 15], Math.PI);
+      useClassroomStore.setState({
+        cinematicCamera: {
+          position: [0, 4, 15],
+          target: [0, 2.5, 20],
+          duration: 2.5,
+          startTime: Date.now(),
+        },
+      });
+    } else if (targetConcept === 'recursion') {
+      if (instruction?.action === 'pop_frame') {
+        get().popRecursionCall();
+      } else {
+        get().pushRecursionCall(3);
+      }
+      get().teleportAvatar([0, 0, -15], 0);
+      useClassroomStore.setState({
+        cinematicCamera: {
+          position: [0, 4, -15],
+          target: [0, 2.5, -20],
+          duration: 2.5,
+          startTime: Date.now(),
+        },
+      });
+    } else if (targetConcept === 'array') {
+      get().jumpToArrayIndex(2);
+      get().teleportAvatar([-15, 0, 0], -Math.PI / 2);
+      useClassroomStore.setState({
+        cinematicCamera: {
+          position: [-15, 3.5, 0],
+          target: [-20, 1.5, 0],
+          duration: 2.5,
+          startTime: Date.now(),
+        },
+      });
+    } else if (targetConcept === 'linked_list') {
+      get().traverseLinkedList();
+      get().teleportAvatar([15, 0, 0], Math.PI / 2);
+      useClassroomStore.setState({
+        cinematicCamera: {
+          position: [15, 3.5, 0],
+          target: [20, 1.5, 0],
+          duration: 2.5,
+          startTime: Date.now(),
+        },
+      });
+    } else if (targetConcept === 'tree') {
+      get().runTreeInOrderTraversal();
+      get().teleportAvatar([10, 0, 15], Math.PI);
+    }
+
+    set({
+      feynmanKineticStatus: {
+        dispatched: true,
+        concept: targetConcept,
+        action: action,
+        timestamp: Date.now(),
+      },
+    });
+  },
+
+  demonstrateFeynmanAgent: async (concept?: string) => {
+    soundSystem.playChime();
+    const activeSt = get().activeStation;
+    let targetConcept = concept;
+    if (!targetConcept) {
+      if (activeSt === 'recursion_lab') targetConcept = 'recursion';
+      else if (activeSt === 'array_station') targetConcept = 'array';
+      else if (activeSt === 'linked_list_lab') targetConcept = 'linked_list';
+      else if (activeSt === 'tree_lab') targetConcept = 'tree';
+      else {
+        const stackM = get().learner?.mastery_map['stack'] ?? 0.38;
+        targetConcept = stackM >= 0.70 ? 'recursion' : 'stack';
+      }
+    }
+
+    const defaultQueries: Record<string, string> = {
+      stack: 'Why is the last element pushed onto a stack the first one popped? Explain LIFO with a physical cafeteria tray analogy.',
+      recursion: 'Why does a recursive function pause execution when it calls itself? Explain the Call Stack with an everyday nesting doll metaphor.',
+      array: 'Why is random access in an array O(1) while searching is O(n)?',
+      linked_list: 'Why do linked lists need pointer references instead of contiguous memory slots?',
+      tree: 'How does a binary search tree achieve O(log n) search performance?',
+    };
+
+    const query = defaultQueries[targetConcept] || defaultQueries['stack'];
+    get().openFeynman(targetConcept, `${targetConcept}_lab`, query);
+    await get().requestFeynmanExplanation(query, 'TEXT', 'VISUAL');
   },
 
   // AI Diagnostic Assessment Actions

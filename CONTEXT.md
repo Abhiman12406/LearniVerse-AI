@@ -66,6 +66,10 @@ _Avoid_: Deficiency, blocker, failure, deficit
 The structured directed graph representing pedagogical concepts and their strict prerequisite relationships.
 _Avoid_: Skill tree, concept map, curriculum graph
 
+**Learner Evaluation Pipeline**:
+The authoritative mathematical and diagnostic engine that ingests challenge interactions, scales evidence against technical validity, updates Bayesian Knowledge Tracing and Item Response Theory models, dynamically verifies prerequisite barriers, and triggers multi-agent deliberation.
+_Avoid_: Scorer, grader, test checker, interaction processor
+
 ## Environmental Access Control
 
 **Prerequisite Barrier**:

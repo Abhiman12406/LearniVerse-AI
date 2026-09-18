@@ -42,6 +42,7 @@ export const HUD: React.FC = () => {
     isTelemetryOpen,
     toggleTelemetry,
     openFeynman,
+    demonstrateFeynmanAgent,
     isDiagnosticOpen,
     openDiagnostic,
     diagnosticSubmitted,
@@ -550,24 +551,26 @@ export const HUD: React.FC = () => {
               </button>
 
               <button
-                id="btn-ask-feynman"
+                id="btn-demonstrate-feynman"
+                data-testid="btn-ask-feynman"
                 className="cyber-button"
-                onClick={() => openFeynman()}
-                title="Open Feynman Multimodal Adaptive Explanation Agent [F]"
+                onClick={() => demonstrateFeynmanAgent()}
+                title="Demonstrate Feynman Multimodal Adaptive Explanation Agent [F]"
                 style={{
-                  padding: '4px 8px',
+                  padding: '4px 9px',
                   height: '26px',
                   boxSizing: 'border-box',
-                  background: 'rgba(168, 85, 247, 0.2)',
-                  borderColor: '#a855f7',
-                  color: '#e9d5ff',
+                  background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(0, 240, 255, 0.2))',
+                  borderColor: '#c084fc',
+                  color: '#f5f3ff',
                   fontSize: '10px',
                   fontWeight: 700,
-                  gap: '4px',
+                  gap: '5px',
+                  boxShadow: '0 0 10px rgba(168, 85, 247, 0.35)',
                 }}
               >
                 <Sparkles size={11} color="#c084fc" />
-                <span>Feynman [F]</span>
+                <span>Demonstrate Feynman Agent</span>
               </button>
 
               <button

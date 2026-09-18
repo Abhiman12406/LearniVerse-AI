@@ -30,9 +30,11 @@ router = APIRouter(prefix="/api/curriculum", tags=["Curriculum & Evidence Math"]
 @router.get("/dag")
 def get_curriculum_dag() -> Dict[str, Any]:
     """
-    Returns NetworkX Curriculum Directed Acyclic Graph (DAG) state (§5).
-    Includes topological sort, edge thresholds, and downstream dependency weights W_c.
+    Returns Curriculum Directed Acyclic Graph (DAG) state (§5 & §11).
+    Powered by Neo4j Knowledge Graph with resilient NetworkX fallback.
+    Includes topological sort, edge thresholds, downstream dependency weights W_c, and engine telemetry.
     """
+    engine_status = knowledge_graph_service.get_engine_status()
     topological_order = knowledge_graph_service.get_topological_sort()
     full_rules = knowledge_graph_service.get_full_graph()
     downstream_weights = {
@@ -41,11 +43,67 @@ def get_curriculum_dag() -> Dict[str, Any]:
     }
 
     return {
+        "engine": engine_status["active_engine"],
+        "neo4j_connected": engine_status["neo4j_connected"],
         "nodes": topological_order,
         "topological_order": topological_order,
         "prerequisite_rules": full_rules,
         "downstream_weights": downstream_weights,
         "is_acyclic": True,
+    }
+
+
+@router.get("/graph/status")
+def get_graph_engine_status() -> Dict[str, Any]:
+    """
+    Returns Knowledge Graph database engine status (Neo4j vs NetworkX fallback) and metrics.
+    """
+    return knowledge_graph_service.get_engine_status()
+
+
+@router.post("/graph/seed")
+def seed_graph_database() -> Dict[str, Any]:
+    """
+    Seeds Neo4j graph database with the curriculum DAG, questions, and missions.
+    """
+    status = knowledge_graph_service.get_engine_status()
+    if not status["neo4j_connected"]:
+        return {
+            "success": False,
+            "message": "Neo4j is not connected or reachable. Curriculum is currently running on resilient NetworkX fallback.",
+            "status": status,
+        }
+
+    seeded = knowledge_graph_service.seed_neo4j()
+    return {
+        "success": seeded,
+        "message": "Neo4j curriculum knowledge graph seeded successfully." if seeded else "Failed to seed Neo4j graph.",
+        "status": knowledge_graph_service.get_engine_status(),
+    }
+
+
+@router.get("/graph/visualization")
+def get_graph_visualization() -> Dict[str, Any]:
+    """
+    Returns graph nodes and relationships for visual rendering in telemetry or HUD.
+    """
+    return knowledge_graph_service.get_graph_visualization()
+
+
+@router.get("/prerequisites/{concept}")
+def get_concept_prerequisites(concept: str) -> Dict[str, Any]:
+    """
+    Returns direct and transitive prerequisites for a concept queried from the Knowledge Graph.
+    """
+    direct = knowledge_graph_service.get_prerequisites(concept)
+    transitive = knowledge_graph_service.get_transitive_prerequisites(concept)
+    weight = knowledge_graph_service.get_downstream_weight(concept)
+
+    return {
+        "concept": concept,
+        "direct_prerequisites": direct,
+        "transitive_prerequisites": transitive,
+        "downstream_dependency_weight": weight,
     }
 
 

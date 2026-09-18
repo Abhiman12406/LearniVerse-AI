@@ -13,6 +13,7 @@ import { useClassroomStore } from '../../store/useClassroomStore';
 export const TreeBSTConsole: React.FC = () => {
   const activeStation = useClassroomStore((s) => s.activeStation);
   const setActiveStation = useClassroomStore((s) => s.setActiveStation);
+  const demonstrateFeynmanAgent = useClassroomStore((s) => s.demonstrateFeynmanAgent);
 
   const treeActiveNodeValue = useClassroomStore((s) => s.treeActiveNodeValue);
   const treeTraversingValues = useClassroomStore((s) => s.treeTraversingValues);
@@ -158,6 +159,30 @@ export const TreeBSTConsole: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button
+              id="btn-tree-demonstrate-feynman"
+              onClick={() => demonstrateFeynmanAgent('tree')}
+              className="cyber-button"
+              style={{
+                background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(16, 185, 129, 0.2))',
+                border: '1px solid rgba(168, 85, 247, 0.5)',
+                borderRadius: '8px',
+                padding: '0.45rem 0.75rem',
+                color: '#f5f3ff',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                boxShadow: '0 0 10px rgba(168, 85, 247, 0.25)',
+              }}
+              title="Demonstrate Feynman Multimodal Adaptive Explanation Agent for Tree"
+            >
+              <Sparkles size={13} color="#c084fc" />
+              <span>Demonstrate Feynman Agent</span>
+            </button>
+
             <button
               onClick={() => setActiveStation(null)}
               className="glass-panel"

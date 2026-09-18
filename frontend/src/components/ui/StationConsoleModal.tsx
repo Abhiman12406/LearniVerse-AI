@@ -25,6 +25,8 @@ export const StationConsoleModal: React.FC = () => {
   const activeStation = useClassroomStore((s) => s.activeStation);
   const setActiveStation = useClassroomStore((s) => s.setActiveStation);
   const openFeynman = useClassroomStore((s) => s.openFeynman);
+  const demonstrateFeynmanAgent = useClassroomStore((s) => s.demonstrateFeynmanAgent);
+  const requestFeynmanExplanation = useClassroomStore((s) => s.requestFeynmanExplanation);
 
   // Stack apparatus state & actions
   const stackDiscs = useClassroomStore((s) => s.stackDiscs);
@@ -286,6 +288,28 @@ export const StationConsoleModal: React.FC = () => {
               <span>Simulate Jump (38% → 74%)</span>
             </button>
           )}
+
+          <button
+            id="btn-console-demonstrate-feynman"
+            onClick={() => demonstrateFeynmanAgent('stack')}
+            className="cyber-button"
+            style={{
+              padding: '5px 10px',
+              fontSize: '11px',
+              borderColor: '#c084fc',
+              background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(0, 240, 255, 0.15))',
+              color: '#f5f3ff',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              fontWeight: 700,
+              boxShadow: '0 0 10px rgba(168, 85, 247, 0.3)',
+            }}
+            title="Demonstrate Feynman Multimodal Adaptive Explanation Agent for Stack"
+          >
+            <Sparkles size={12} color="#c084fc" />
+            <span>Demonstrate Feynman Agent</span>
+          </button>
 
           <button
             id="btn-header-telemetry"
@@ -871,6 +895,92 @@ export const StationConsoleModal: React.FC = () => {
                   >
                     {currentChallenge.pedagogicalExplanation}
                   </div>
+
+                  {/* Ambient Intervention Banner When Challenge Question is Missed */}
+                  {!submission.isCorrect && (
+                    <div
+                      id="feynman-ambient-intervention-banner"
+                      style={{
+                        marginTop: '12px',
+                        padding: '12px 14px',
+                        borderRadius: '10px',
+                        background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.22), rgba(0, 240, 255, 0.14))',
+                        border: '1px solid rgba(168, 85, 247, 0.5)',
+                        boxShadow: '0 0 20px rgba(168, 85, 247, 0.25)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        animation: 'fadeIn 0.25s ease-out',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Brain size={16} color="#c084fc" />
+                          <span
+                            style={{
+                              fontFamily: 'var(--font-display)',
+                              fontSize: '12px',
+                              fontWeight: 800,
+                              color: '#e9d5ff',
+                              letterSpacing: '0.04em',
+                            }}
+                          >
+                            ⚡ AMBIENT INTERVENTION: FEYNMAN AGENT READY
+                          </span>
+                        </div>
+                        <span
+                          className="glass-pill"
+                          style={{
+                            fontSize: '10px',
+                            color: '#00f0ff',
+                            borderColor: 'rgba(0, 240, 255, 0.4)',
+                            fontWeight: 700,
+                          }}
+                        >
+                          5 EXPLANATION MODALITIES
+                        </span>
+                      </div>
+
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: '12px',
+                          color: '#e2e8f0',
+                          lineHeight: '1.45',
+                        }}
+                      >
+                        You missed this in-lab challenge on <strong>{currentChallenge.title}</strong>. The Feynman Agent detects this misconception and is ready to break it down using physical analogies, step-by-step interactive SVG diagrams, voice narration, or 3D kinetic apparatus demonstrations.
+                      </p>
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                        <button
+                          id="btn-feynman-ambient-help"
+                          onClick={() => {
+                            const struggleQuery = `I'm struggling with ${currentChallenge.title}: ${currentChallenge.scenario || currentChallenge.objective}. Can you explain with an easy analogy and diagram?`;
+                            openFeynman('stack', currentChallenge.id, struggleQuery);
+                            requestFeynmanExplanation(struggleQuery, 'TEXT', 'VISUAL');
+                          }}
+                          className="cyber-button"
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '8px',
+                            background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(0, 240, 255, 0.3))',
+                            borderColor: '#00f0ff',
+                            color: '#ffffff',
+                            fontWeight: 700,
+                            fontSize: '11px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 0 12px rgba(0, 240, 255, 0.3)',
+                          }}
+                        >
+                          <Sparkles size={13} color="#00f0ff" />
+                          <span>Get Instant Feynman Help →</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* 1-Click Telemetry Inspection Button */}
                   <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>

@@ -10,7 +10,7 @@ from typing import Any, Dict
 from backend.app.agents.state import AgentState
 from backend.app.models.agents import AgentTraceItem
 from backend.app.models.learner import MasteryMap
-from backend.app.services.prerequisite_service import prerequisite_service
+from backend.app.services.knowledge_graph_service import knowledge_graph_service
 
 
 def diagnostic_agent_node(state: AgentState) -> AgentState:
@@ -21,8 +21,8 @@ def diagnostic_agent_node(state: AgentState) -> AgentState:
     mastery = MasteryMap(**mastery_dict)
     target_concept = state.get("target_concept") or "stack"
 
-    # Evaluate readiness across all concepts in curriculum
-    all_evals = prerequisite_service.evaluate_all(mastery)
+    # Evaluate readiness across all concepts in curriculum using Knowledge Graph
+    all_evals = knowledge_graph_service.evaluate_all(mastery)
     eval_dict: Dict[str, Any] = {c: e.model_dump() for c, e in all_evals.items()}
 
     # Target concept evaluation
@@ -49,7 +49,6 @@ def diagnostic_agent_node(state: AgentState) -> AgentState:
         diagnostic_status = "progressing"
         primary_gap = None
 
-    from backend.app.services.knowledge_graph_service import knowledge_graph_service
     focus_c = blocking_prereq or target_concept
     focus_val = float(mastery_dict.get(focus_c, 0.5))
     gap_val = knowledge_graph_service.compute_gap(focus_c, focus_val)
