@@ -8,6 +8,7 @@ import { Archways } from './Archways';
 import { Avatar } from './Avatar';
 import { useClassroomStore } from '../../store/useClassroomStore';
 import { StackLabWing } from './StackLabWing';
+import { ArrayLabWing } from './ArrayLabWing';
 
 interface CameraFollowerProps {
   cameraAngleRef: React.MutableRefObject<number>;
@@ -40,6 +41,14 @@ const CameraFollower: React.FC<CameraFollowerProps> = ({ cameraAngleRef, cameraP
       idealY = 2.4;
       idealZ = 18.0;
       targetLookAt = new THREE.Vector3(12.0, 1.9, 21.0);
+      lerpFactor = 0.08;
+    } else if (activeStation === 'array_station') {
+      // Cinematic Fixed Framing: Close-up facing the Array Station apparatus
+      // Array Wing is at [12.0, 0, -20.8], apparatus table at [12.0, 0.8, -20.3]
+      idealX = 10.5;
+      idealY = 2.3;
+      idealZ = -18.2;
+      targetLookAt = new THREE.Vector3(12.0, 1.6, -20.8);
       lerpFactor = 0.08;
     } else {
       const [ax, ay, az] = avatar.position;
@@ -129,6 +138,7 @@ export const ClassroomCanvas: React.FC = () => {
           <CentralDais />
           <Archways />
           <StackLabWing />
+          <ArrayLabWing />
           <Avatar cameraAngleRef={cameraAngleRef} />
           <CameraFollower
             cameraAngleRef={cameraAngleRef}

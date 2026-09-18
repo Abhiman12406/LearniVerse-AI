@@ -5,6 +5,7 @@ import { useClassroomStore } from './store/useClassroomStore';
 import { soundSystem } from './audio/soundSystem';
 
 import { StationConsoleModal } from './components/ui/StationConsoleModal';
+import { ArrayStationConsole } from './components/ui/ArrayStationConsole';
 import { TelemetryDrawer } from './components/ui/TelemetryDrawer';
 
 export const App: React.FC = () => {
@@ -36,6 +37,7 @@ export const App: React.FC = () => {
       <ClassroomCanvas />
       <HUD />
       <StationConsoleModal />
+      <ArrayStationConsole />
       <TelemetryDrawer />
     </main>
   );

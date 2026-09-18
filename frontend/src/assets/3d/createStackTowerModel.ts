@@ -1098,7 +1098,8 @@ export function createStackTowerModel(options: StackTowerModelOptions = {}): Sta
     levelBarMesh.scale.y = THREE.MathUtils.lerp(levelBarMesh.scale.y, Math.max(0.05, stackRatio), 0.15);
 
     // Subtle breathing light
-    columnPointLight.intensity = 1.0 + Math.sin(Date.now() * 0.003) * 0.25;
+    columnPointLight.intensity =
+      (highlightTopState ? 1.8 : 1.0) + Math.sin(Date.now() * 0.003) * 0.25;
   }
 
   function triggerPush(_value = 50) {

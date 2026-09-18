@@ -12,6 +12,34 @@ import {
   DEFAULT_BKT_TRACE_A,
 } from '../data/mockDeliberations';
 
+export interface ArrayBayElement {
+  index: number;
+  value: number;
+  address: string;
+  color: string;
+}
+
+export interface ArrayOperationDetail {
+  type: 'random_access' | 'linear_search' | 'out_of_bounds' | 'write';
+  timeComplexity: 'O(1)' | 'O(n)';
+  description: string;
+  formula: string;
+  baseAddress: string;
+  index: number;
+  targetAddress: string;
+  stepsCount: number;
+  targetValue?: number;
+  foundIndex?: number;
+}
+
+export const DEFAULT_ARRAY_BAYS: ArrayBayElement[] = [
+  { index: 0, value: 12, address: '0x2000', color: '#6ee7b7' },
+  { index: 1, value: 45, address: '0x2004', color: '#fb7185' },
+  { index: 2, value: 78, address: '0x2008', color: '#c084fc' },
+  { index: 3, value: 23, address: '0x200C', color: '#10b981' },
+  { index: 4, value: 56, address: '0x2010', color: '#8b5cf6' },
+];
+
 interface ClassroomStore {
   // Authoritative State
   learner: LearnerProfile | null;
@@ -49,6 +77,17 @@ interface ClassroomStore {
   activeStation: string | null;
   stackDiscs: Array<{ id: string; value: number }>;
 
+  // Array Station State & Mechanics
+  arrayBays: ArrayBayElement[];
+  arrayTargetIndex: number;
+  arrayProbeIndex: number;
+  arrayIsScanning: boolean;
+  arrayScanCurrentStep: number | null;
+  arrayScanTargetValue: number | null;
+  arrayOutOfBounds: boolean;
+  arrayErrorMessage: string | null;
+  arrayOperation: ArrayOperationDetail | null;
+
   // Stack Challenge Console State
   stackMission: StackMission;
   activeChallengeIndex: number;
@@ -81,6 +120,13 @@ interface ClassroomStore {
   setActiveStation: (stationId: string | null) => void;
   pushStackDisc: (value?: number) => void;
   popStackDisc: () => void;
+
+  // Array Station Actions
+  jumpToArrayIndex: (index: number) => void;
+  runArrayLinearSearch: (targetValue: number) => Promise<{ found: boolean; index: number; steps: number }>;
+  updateArrayElement: (index: number, newValue: number) => void;
+  clearArrayError: () => void;
+  resetArrayStation: () => void;
 
   // Telemetry Drawer Actions
   toggleTelemetry: () => void;
@@ -381,6 +427,26 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     { id: 'disc-2', value: 25 },
     { id: 'disc-3', value: 42 },
   ],
+
+  // Array Station Initial State
+  arrayBays: DEFAULT_ARRAY_BAYS,
+  arrayTargetIndex: 2,
+  arrayProbeIndex: 2,
+  arrayIsScanning: false,
+  arrayScanCurrentStep: null,
+  arrayScanTargetValue: null,
+  arrayOutOfBounds: false,
+  arrayErrorMessage: null,
+  arrayOperation: {
+    type: 'random_access',
+    timeComplexity: 'O(1)',
+    description: 'Direct pointer arithmetic calculation targeting index 2.',
+    formula: 'Address = 0x2000 + (2 * 4) = 0x2008',
+    baseAddress: '0x2000',
+    index: 2,
+    targetAddress: '0x2008',
+    stepsCount: 1,
+  },
 
   toggleTelemetry: () => {
     soundSystem.playChirp();
@@ -1068,6 +1134,169 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     set({ stackDiscs: current.slice(0, -1) });
   },
 
+  jumpToArrayIndex: (index: number) => {
+    const bays = get().arrayBays;
+    const baseAddr = 0x2000;
+    const elementSize = 4;
+    const computedAddr = `0x${(baseAddr + index * elementSize).toString(16).toUpperCase()}`;
+
+    if (index < 0 || index >= bays.length) {
+      soundSystem.playAlert();
+      set({
+        arrayOutOfBounds: true,
+        arrayTargetIndex: index,
+        arrayProbeIndex: index,
+        arrayErrorMessage: `ArrayIndexOutOfBoundsException: Index ${index} out of bounds for length ${bays.length}`,
+        arrayOperation: {
+          type: 'out_of_bounds',
+          timeComplexity: 'O(1)',
+          description: `Index ${index} is outside valid buffer bounds [0..${bays.length - 1}]. Hardware boundary violation.`,
+          formula: `Offset (${index} × 4B) exceeds memory segment allocation!`,
+          baseAddress: '0x2000',
+          index,
+          targetAddress: computedAddr,
+          stepsCount: 1,
+        },
+      });
+      return;
+    }
+
+    soundSystem.playChime();
+    set({
+      arrayOutOfBounds: false,
+      arrayErrorMessage: null,
+      arrayTargetIndex: index,
+      arrayProbeIndex: index,
+      arrayIsScanning: false,
+      arrayOperation: {
+        type: 'random_access',
+        timeComplexity: 'O(1)',
+        description: `Instantaneous O(1) random access resolved via base pointer arithmetic.`,
+        formula: `Address = Base (0x2000) + (Index ${index} × 4B) = ${computedAddr}`,
+        baseAddress: '0x2000',
+        index,
+        targetAddress: computedAddr,
+        stepsCount: 1,
+      },
+    });
+  },
+
+  runArrayLinearSearch: async (targetValue: number) => {
+    const bays = get().arrayBays;
+    set({
+      arrayIsScanning: true,
+      arrayScanTargetValue: targetValue,
+      arrayOutOfBounds: false,
+      arrayErrorMessage: null,
+    });
+
+    let found = false;
+    let foundIndex = -1;
+    let steps = 0;
+
+    for (let i = 0; i < bays.length; i++) {
+      steps++;
+      set({
+        arrayScanCurrentStep: i,
+        arrayProbeIndex: i,
+        arrayTargetIndex: i,
+      });
+      soundSystem.playChirp();
+
+      // Delay between steps to allow visual scan animation
+      await new Promise((r) => setTimeout(r, 300));
+
+      if (bays[i].value === targetValue) {
+        found = true;
+        foundIndex = i;
+        soundSystem.playSuccess();
+        break;
+      }
+    }
+
+    if (!found) {
+      soundSystem.playAlert();
+    }
+
+    const resultDetail: ArrayOperationDetail = {
+      type: 'linear_search',
+      timeComplexity: 'O(n)',
+      description: found
+        ? `Linear sequential search located value ${targetValue} at index ${foundIndex} after ${steps} comparison step(s).`
+        : `Linear sequential search exhausted all ${steps} elements without finding value ${targetValue}.`,
+      formula: `T(n) = ${steps} comparisons ≤ O(n)`,
+      baseAddress: '0x2000',
+      index: foundIndex >= 0 ? foundIndex : bays.length - 1,
+      targetAddress: foundIndex >= 0 ? bays[foundIndex].address : 'N/A',
+      stepsCount: steps,
+      targetValue,
+      foundIndex: foundIndex >= 0 ? foundIndex : undefined,
+    };
+
+    set({
+      arrayIsScanning: false,
+      arrayOperation: resultDetail,
+    });
+
+    return { found, index: foundIndex, steps };
+  },
+
+  updateArrayElement: (index: number, newValue: number) => {
+    const bays = [...get().arrayBays];
+    if (index < 0 || index >= bays.length) return;
+
+    soundSystem.playMagneticThud();
+    bays[index] = { ...bays[index], value: newValue };
+
+    set({
+      arrayBays: bays,
+      arrayTargetIndex: index,
+      arrayProbeIndex: index,
+      arrayOperation: {
+        type: 'write',
+        timeComplexity: 'O(1)',
+        description: `Direct memory write at index ${index} with constant-time O(1) pointer mutation.`,
+        formula: `*(${bays[index].address}) = ${newValue}`,
+        baseAddress: '0x2000',
+        index,
+        targetAddress: bays[index].address,
+        stepsCount: 1,
+      },
+    });
+  },
+
+  clearArrayError: () => {
+    set({
+      arrayOutOfBounds: false,
+      arrayErrorMessage: null,
+      arrayTargetIndex: 2,
+      arrayProbeIndex: 2,
+    });
+  },
+
+  resetArrayStation: () => {
+    set({
+      arrayBays: DEFAULT_ARRAY_BAYS,
+      arrayTargetIndex: 2,
+      arrayProbeIndex: 2,
+      arrayIsScanning: false,
+      arrayScanCurrentStep: null,
+      arrayScanTargetValue: null,
+      arrayOutOfBounds: false,
+      arrayErrorMessage: null,
+      arrayOperation: {
+        type: 'random_access',
+        timeComplexity: 'O(1)',
+        description: 'Direct pointer arithmetic calculation targeting index 2.',
+        formula: 'Address = 0x2000 + (2 * 4) = 0x2008',
+        baseAddress: '0x2000',
+        index: 2,
+        targetAddress: '0x2008',
+        stepsCount: 1,
+      },
+    });
+  },
+
   resetWorldSeed: async () => {
     try {
       await fetch('/api/learner/reset', { method: 'POST' });
@@ -1087,6 +1316,14 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
           { id: 'disc-2', value: 25 },
           { id: 'disc-3', value: 42 },
         ],
+        arrayBays: DEFAULT_ARRAY_BAYS,
+        arrayTargetIndex: 2,
+        arrayProbeIndex: 2,
+        arrayIsScanning: false,
+        arrayScanCurrentStep: null,
+        arrayScanTargetValue: null,
+        arrayOutOfBounds: false,
+        arrayErrorMessage: null,
         activeChallengeIndex: 0,
         selectedAnswers: {},
         submittedAnswers: {},
@@ -1115,6 +1352,14 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
           { id: 'disc-2', value: 25 },
           { id: 'disc-3', value: 42 },
         ],
+        arrayBays: DEFAULT_ARRAY_BAYS,
+        arrayTargetIndex: 2,
+        arrayProbeIndex: 2,
+        arrayIsScanning: false,
+        arrayScanCurrentStep: null,
+        arrayScanTargetValue: null,
+        arrayOutOfBounds: false,
+        arrayErrorMessage: null,
         activeChallengeIndex: 0,
         selectedAnswers: {},
         submittedAnswers: {},

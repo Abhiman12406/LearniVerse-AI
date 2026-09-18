@@ -358,7 +358,7 @@ export function createPrerequisiteDoorModel(options: PrerequisiteDoorModelOption
   const pillarDepth = 0.8;
   const pillarHeight = 5.4;
 
-  [-pillarX, pillarX].forEach((x, idx) => {
+  [-pillarX, pillarX].forEach((x) => {
     // A. Stepped Base Plinth (Pedestal)
     const baseBottom = new THREE.Mesh(
       trackGeometry(new THREE.BoxGeometry(0.9, 0.35, 1.05)),
