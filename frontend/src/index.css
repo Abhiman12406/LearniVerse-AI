@@ -1,0 +1,170 @@
+:root {
+  --bg-obsidian-deep: #05070a;
+  --bg-obsidian-surface: #0a0d14;
+  --bg-obsidian-card: rgba(10, 13, 20, 0.82);
+  --bg-obsidian-card-hover: rgba(16, 22, 34, 0.9);
+  
+  --cyan-core: #00f0ff;
+  --cyan-glow: rgba(0, 240, 255, 0.4);
+  --cyan-subtle: rgba(0, 240, 255, 0.12);
+  
+  --violet-core: #7928ca;
+  --violet-glow: rgba(121, 40, 202, 0.45);
+  --purple-bright: #a855f7;
+  
+  --crimson-alert: #ff0055;
+  --crimson-glow: rgba(255, 0, 85, 0.4);
+  --emerald-mastery: #00ff88;
+  --emerald-glow: rgba(0, 255, 136, 0.4);
+  --amber-mastery: #ffb700;
+  
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  
+  --border-cyan: rgba(0, 240, 255, 0.22);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  
+  --font-display: 'Orbitron', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  --glass-blur: blur(16px);
+  --panel-radius: 10px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-obsidian-deep);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Glassmorphism utility classes */
+.glass-panel {
+  background: var(--bg-obsidian-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-cyan);
+  border-radius: var(--panel-radius);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6), inset 0 0 16px 0 var(--cyan-subtle);
+}
+
+.glass-pill {
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9999px;
+  padding: 4px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+
+/* Glow effects */
+.glow-cyan {
+  text-shadow: 0 0 10px var(--cyan-glow);
+}
+
+.glow-violet {
+  text-shadow: 0 0 10px var(--violet-glow);
+}
+
+.glow-crimson {
+  text-shadow: 0 0 10px var(--crimson-glow);
+}
+
+/* Animations */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+
+@keyframes conduitFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.pulse-element {
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}
+
+/* Micro-interaction buttons */
+.cyber-button {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.12), rgba(121, 40, 202, 0.18));
+  border: 1px solid var(--border-cyan);
+  color: var(--cyan-core);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cyber-button:hover {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(121, 40, 202, 0.35));
+  border-color: var(--cyan-core);
+  box-shadow: 0 0 16px var(--cyan-glow);
+  transform: translateY(-1px);
+}
+
+.cyber-button:active {
+  transform: translateY(1px);
+}
+
+/* Canvas container */
+.canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* UI Overlay container */
+.ui-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 20px;
+}
+
+.ui-interactive {
+  pointer-events: auto;
+}

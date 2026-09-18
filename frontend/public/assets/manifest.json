@@ -1,0 +1,57 @@
+{
+  "version": "1.0.0",
+  "project": "LearniVerse-AI - Adaptive Virtual Classroom MVP",
+  "asset_pipeline_strategy": "Zero-Asset Fragility: All architectural, avatar, and educational 3D geometries (Hexagonal Atrium, Radial Archways, Elevated Dais, Holographic Knowledge Graph Constellation, Cybernetic Robot Avatar, Energy Conduits) and audio synthesizers are generated procedurally via Three.js / React Three Fiber and Web Audio API.",
+  "compliance": {
+    "license_priority": "CC0 / Procedurally Generated",
+    "external_asset_dependencies": 0,
+    "conformity_file": "ASSETS.md"
+  },
+  "assets": [
+    {
+      "asset_id": "procedural_hexagonal_atrium",
+      "name": "Hexagonal Cybernetic Atrium",
+      "type": "procedural_mesh",
+      "license": "CC0",
+      "creator": "Learniverse AI Core",
+      "generated": true,
+      "format": "Three.js BufferGeometry"
+    },
+    {
+      "asset_id": "procedural_central_dais",
+      "name": "Elevated Central Dais & Holographic Emitter",
+      "type": "procedural_mesh",
+      "license": "CC0",
+      "creator": "Learniverse AI Core",
+      "generated": true,
+      "format": "Three.js BufferGeometry"
+    },
+    {
+      "asset_id": "procedural_knowledge_graph",
+      "name": "3D Holographic Knowledge Graph Constellation",
+      "type": "procedural_mesh",
+      "license": "CC0",
+      "creator": "Learniverse AI Core",
+      "generated": true,
+      "format": "Three.js Polyhedral Mesh + Drei HTML"
+    },
+    {
+      "asset_id": "procedural_cyber_avatar",
+      "name": "Cybernetic Third-Person Robot Avatar Rig",
+      "type": "procedural_mesh",
+      "license": "CC0",
+      "creator": "Learniverse AI Core",
+      "generated": true,
+      "format": "Three.js Articulated Hierarchical Group"
+    },
+    {
+      "asset_id": "procedural_radial_archways",
+      "name": "Radial Wing Archways & Concept Gates",
+      "type": "procedural_mesh",
+      "license": "CC0",
+      "creator": "Learniverse AI Core",
+      "generated": true,
+      "format": "Three.js BufferGeometry"
+    }
+  ]
+}

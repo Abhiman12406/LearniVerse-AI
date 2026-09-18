@@ -1,0 +1,1 @@
+Forget the architecture diagram. Take one student who answers one question incorrectly. Starting from that click, tell me exactly what happens in your system, component by component, until something changes in the 3D classroom.  
