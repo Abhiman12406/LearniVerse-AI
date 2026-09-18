@@ -95,4 +95,27 @@ describe('AI Mentor & Feynman Guidance Subsystem', () => {
     expect(feynman?.analogy.toLowerCase()).toContain('matryoshka');
     expect(feynman?.prerequisite_gap).toBeNull();
   });
+
+  it('calculates spatial proximity to Teacher Desk companion bot at (-2.0, 0.98, -3.2)', () => {
+    const teacherDeskBotPos: [number, number, number] = [-2.0, 0.98, -3.2];
+    const threshold = 3.2;
+
+    const isNearBot = (avatarPos: [number, number, number]): boolean => {
+      const dist = Math.hypot(avatarPos[0] - teacherDeskBotPos[0], avatarPos[2] - teacherDeskBotPos[2]);
+      return dist <= threshold;
+    };
+
+    // Avatar at spawn (0, 0, 8) -> dist = hypot(2, 11.2) ≈ 11.37 -> false
+    expect(isNearBot([0, 0, 8])).toBe(false);
+
+    // Avatar standing directly in front of teacher desk (-1.5, 0, -2.5) -> dist = hypot(0.5, 0.7) ≈ 0.86 -> true
+    expect(isNearBot([-1.5, 0, -2.5])).toBe(true);
+
+    // Avatar beside teacher podium (-2.0, 0, -1.0) -> dist = 2.2 -> true
+    expect(isNearBot([-2.0, 0, -1.0])).toBe(true);
+
+    // Avatar over at Stack Lab wing (0, 0, 20) -> dist > 20 -> false
+    expect(isNearBot([0, 0, 20])).toBe(false);
+  });
 });
+

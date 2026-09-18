@@ -695,7 +695,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   },
 
   openMentor: () => {
-    soundSystem.playChime();
+    soundSystem.playMentorGreeting();
     set({ isMentorOpen: true });
     // Refresh guidance for current learner
     get().fetchMentorGuidance();

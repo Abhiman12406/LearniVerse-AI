@@ -459,6 +459,40 @@ class SoundSystem {
       // Ignore
     }
   }
+
+  /**
+   * Warm, friendly synth chime triggered when the player approaches or consults
+   * the AI Mentor Companion Bot. Arpeggiates a cheerful major chord progression (E5 -> G#5 -> B5 -> E6).
+   */
+  public playMentorGreeting(): void {
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    try {
+      const now = this.ctx.currentTime;
+      const notes = [659.25, 830.61, 987.77, 1318.51]; // E5, G#5, B5, E6
+      notes.forEach((freq, idx) => {
+        if (!this.ctx || !this.masterGain) return;
+        const noteStart = now + idx * 0.07;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, noteStart);
+        // Subtle upward vibrato/shimmer
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.015, noteStart + 0.28);
+
+        gain.gain.setValueAtTime(0.16, noteStart);
+        gain.gain.exponentialRampToValueAtTime(0.001, noteStart + 0.35);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+
+        osc.start(noteStart);
+        osc.stop(noteStart + 0.35);
+      });
+    } catch {
+      // Ignore audio synthesis errors
+    }
+  }
 }
 
 export const soundSystem = new SoundSystem();

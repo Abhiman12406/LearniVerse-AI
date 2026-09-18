@@ -52,8 +52,8 @@ export const CentralDais: React.FC = () => {
       {/* 3D Holographic Knowledge Graph Constellation */}
       <KnowledgeGraphConstellation />
 
-      {/* In-World Holographic AI Mentor Beacon */}
-      <AIMentorBeacon position={[1.4, 0.05, 1.4]} />
+      {/* In-World Friendly Mentor Companion Bot Perched on Central Teacher Desk */}
+      <AIMentorBeacon position={[-2.0, 0.98, -3.2]} />
     </group>
   );
 };

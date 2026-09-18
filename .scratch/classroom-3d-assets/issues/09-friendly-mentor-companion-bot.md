@@ -4,10 +4,10 @@
 
 **Blocked by:** 01: Reference Blueprints Generation (Nanabanana), 02: Procedural Classroom Campus Diorama & Lighting
 
-**Status:** ready-for-agent
+**Status:** closed
 
-- [ ] Create procedural Three.js factory in `frontend/src/assets/3d/createMentorCompanionModel.ts` based on `asstesimages/mentor_bot.png`.
-- [ ] Mount the companion bot into `frontend/src/components/canvas/AIMentorBeacon.tsx`, positioned on the central classroom teacher desk.
-- [ ] Add idle animation bob, eye blink/screen face shifts, and head tilt toward the player avatar when nearby.
-- [ ] Bind proximity trigger to `useClassroomStore.setIsNearMentor` and open the interactive Socratic mentor dialog on click/E key press.
-- [ ] Trigger friendly synth chimes when interaction begins.
+- [x] Create procedural Three.js factory in `frontend/src/assets/3d/createMentorCompanionModel.ts` based on `asstesimages/mentor_bot.png`.
+- [x] Mount the companion bot into `frontend/src/components/canvas/AIMentorBeacon.tsx`, positioned on the central classroom teacher desk.
+- [x] Add idle animation bob, eye blink/screen face shifts, and head tilt toward the player avatar when nearby.
+- [x] Bind proximity trigger to `useClassroomStore.setIsNearMentor` and open the interactive Socratic mentor dialog on click/E key press.
+- [x] Trigger friendly synth chimes when interaction begins.
