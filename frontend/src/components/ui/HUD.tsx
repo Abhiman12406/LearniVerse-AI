@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Volume2, VolumeX, ShieldAlert, CheckCircle2, RotateCcw, Compass, UserCheck, Sparkles, Zap, Brain, HelpCircle, Activity } from 'lucide-react';
 import { useClassroomStore } from '../../store/useClassroomStore';
 import { AIMentorDialogue } from './AIMentorDialogue';
+import { FeynmanModal } from './FeynmanModal';
 
 export const HUD: React.FC = () => {
   const [showPitchGuide, setShowPitchGuide] = useState(false);
@@ -20,7 +21,21 @@ export const HUD: React.FC = () => {
     lastMasteryDelta,
     isTelemetryOpen,
     toggleTelemetry,
+    openFeynman,
   } = useClassroomStore();
+
+  // Keyboard shortcut [F] to open Feynman Agent
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+      if (e.key.toLowerCase() === 'f' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        openFeynman();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [openFeynman]);
 
   const isLearnerB = learner?.learner_id === 'learner_b';
   const isRemedial = learner?.learning_state.status === 'remediation_required';
@@ -69,6 +84,9 @@ export const HUD: React.FC = () => {
 
       {/* AI Mentor Glassmorphic Dialogue Overlay */}
       <AIMentorDialogue />
+
+      {/* Feynman Multimodal Adaptive Explanation Modal */}
+      <FeynmanModal />
       {/* Top Header Bar */}
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
         {/* Left: Project Branding & Zone Indicator */}
@@ -210,6 +228,28 @@ export const HUD: React.FC = () => {
             >
               <HelpCircle size={12} />
               <span>90s Pitch</span>
+            </button>
+
+            <button
+              id="btn-ask-feynman"
+              className="cyber-button"
+              onClick={() => openFeynman()}
+              title="Open Feynman Multimodal Adaptive Explanation Agent [F]"
+              style={{
+                padding: '6px 12px',
+                background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.28), rgba(0, 240, 255, 0.2))',
+                borderColor: '#a855f7',
+                color: '#e9d5ff',
+                fontSize: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontWeight: 700,
+                boxShadow: '0 0 14px rgba(168, 85, 247, 0.35)',
+              }}
+            >
+              <Brain size={13} color="#c084fc" />
+              <span>Ask Feynman [F]</span>
             </button>
           </div>
 

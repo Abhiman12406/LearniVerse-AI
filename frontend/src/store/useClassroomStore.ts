@@ -11,6 +11,7 @@ import {
   DEFAULT_BKT_TRACE_B,
   DEFAULT_BKT_TRACE_A,
 } from '../data/mockDeliberations';
+import { FeynmanResponse, VerificationResponse, TranscribeResponse } from '../types/feynman';
 
 export interface ArrayBayElement {
   index: number;
@@ -240,6 +241,23 @@ interface ClassroomStore {
     concept?: string,
     target?: number
   ) => Promise<void>;
+
+  // Feynman Multimodal Agent State & Actions
+  isFeynmanOpen: boolean;
+  feynmanConcept: string;
+  feynmanActivityId: string | null;
+  feynmanLoading: boolean;
+  feynmanResponse: FeynmanResponse | null;
+  feynmanVerificationResult: VerificationResponse | null;
+  feynmanActiveModality: 'TEXT' | 'VISUAL' | 'VOICE' | 'VIDEO' | '3D';
+  feynmanError: string | null;
+
+  openFeynman: (concept?: string, activityId?: string, defaultInput?: string) => void;
+  closeFeynman: () => void;
+  setFeynmanModality: (modality: 'TEXT' | 'VISUAL' | 'VOICE' | 'VIDEO' | '3D') => void;
+  requestFeynmanExplanation: (input: string, inputType?: string, requestedModality?: string) => Promise<void>;
+  submitFeynmanVerification: (questionId: string, selectedOptionIndex?: number, textAnswer?: string) => Promise<VerificationResponse | null>;
+  transcribeAudioWithGroq: (audioBlob: Blob) => Promise<string>;
 }
 
 // Fallback seed profile for initial rendering or offline mock
@@ -562,6 +580,16 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     depth: 3,
     timestamp: Date.now(),
   },
+
+  // Feynman Multimodal Agent Initial State
+  isFeynmanOpen: false,
+  feynmanConcept: 'recursion',
+  feynmanActivityId: null,
+  feynmanLoading: false,
+  feynmanResponse: null,
+  feynmanVerificationResult: null,
+  feynmanActiveModality: 'VISUAL',
+  feynmanError: null,
 
   toggleTelemetry: () => {
     soundSystem.playChirp();
@@ -1945,7 +1973,186 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
         unlockedWingId: null,
         latestDeliberation: DEFAULT_DELIBERATION_B,
         latestBktTrace: DEFAULT_BKT_TRACE_B,
+        isFeynmanOpen: false,
+        feynmanResponse: null,
+        feynmanVerificationResult: null,
       });
+    }
+  },
+
+  // Feynman Multimodal Agent Actions
+  openFeynman: (concept?: string, activityId?: string, defaultInput?: string) => {
+    soundSystem.playChime();
+    const targetConcept = concept || (get().learner?.learning_state?.primary_focus_concept || 'recursion');
+    set({
+      isFeynmanOpen: true,
+      feynmanConcept: targetConcept,
+      feynmanActivityId: activityId || null,
+      feynmanVerificationResult: null,
+      feynmanError: null,
+    });
+    if (defaultInput) {
+      get().requestFeynmanExplanation(defaultInput, 'TEXT');
+    }
+  },
+
+  closeFeynman: () => {
+    soundSystem.playChirp();
+    set({ isFeynmanOpen: false });
+  },
+
+  setFeynmanModality: (modality: 'TEXT' | 'VISUAL' | 'VOICE' | 'VIDEO' | '3D') => {
+    soundSystem.playChirp();
+    set({ feynmanActiveModality: modality });
+  },
+
+  requestFeynmanExplanation: async (input: string, inputType: string = 'TEXT', requestedModality?: string) => {
+    const studentId = get().learner?.learner_id || 'learner_b';
+    const conceptId = get().feynmanConcept || 'recursion';
+    const activityId = get().feynmanActivityId;
+
+    set({ feynmanLoading: true, feynmanError: null, feynmanVerificationResult: null });
+    soundSystem.playChime();
+
+    try {
+      const res = await fetch('/api/feynman/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          student_id: studentId,
+          concept_id: conceptId,
+          input_type: inputType,
+          input: input,
+          requested_modality: requestedModality || null,
+          activity_id: activityId || null,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Feynman API returned status ${res.status}`);
+      }
+
+      const data: FeynmanResponse = await res.json();
+      set({
+        feynmanResponse: data,
+        feynmanLoading: false,
+        feynmanActiveModality: (data.decision.modality as 'TEXT' | 'VISUAL' | 'VOICE' | 'VIDEO' | '3D') || 'VISUAL',
+      });
+      soundSystem.playCorrect();
+    } catch (err: any) {
+      set({
+        feynmanLoading: false,
+        feynmanError: err.message || 'Failed to connect to Feynman Agent',
+      });
+    }
+  },
+
+  submitFeynmanVerification: async (questionId: string, selectedOptionIndex?: number, textAnswer?: string) => {
+    const session = get().feynmanResponse;
+    if (!session) return null;
+
+    const studentId = get().learner?.learner_id || 'learner_b';
+    const conceptId = session.concept_id;
+
+    set({ feynmanLoading: true, feynmanError: null });
+
+    try {
+      const res = await fetch('/api/feynman/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: session.session_id,
+          student_id: studentId,
+          concept_id: conceptId,
+          question_id: questionId,
+          selected_option_index: selectedOptionIndex,
+          text_answer: textAnswer,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Verification failed with status ${res.status}`);
+      }
+
+      const data: VerificationResponse = await res.json();
+      set({
+        feynmanVerificationResult: data,
+        feynmanLoading: false,
+      });
+
+      // Synchronize updated authoritative learner profile and delta
+      if (data.learner_profile) {
+        set((state) => ({
+          learner: data.learner_profile as any,
+          lastMasteryDelta: {
+            ...state.lastMasteryDelta,
+            [conceptId]: {
+              delta: data.delta,
+              oldMastery: data.prior_mastery,
+              newMastery: data.posterior_mastery,
+              timestamp: Date.now(),
+            },
+          },
+        }));
+      }
+
+      // Check if threshold crossed
+      if (data.threshold_crossed) {
+        set({ isThresholdCrossed: true, unlockedWingId: data.unlocked_wing || 'recursion_lab' });
+        soundSystem.playUnlockArpeggio();
+        get().triggerBarrierDissolve(data.unlocked_wing || 'recursion_lab');
+      } else if (data.correct) {
+        soundSystem.playCorrect();
+      } else {
+        soundSystem.playError();
+      }
+
+      // Fetch fresh world state and deliberation traces
+      await get().fetchWorldState();
+      await get().fetchDeliberation(studentId);
+
+      return data;
+    } catch (err: any) {
+      set({
+        feynmanLoading: false,
+        feynmanError: err.message || 'Verification failed',
+      });
+      return null;
+    }
+  },
+
+  transcribeAudioWithGroq: async (audioBlob: Blob): Promise<string> => {
+    try {
+      const base64Audio = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const res = (reader.result as string) || '';
+          const base64 = res.includes(',') ? res.split(',')[1] : res;
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(audioBlob);
+      });
+
+      const res = await fetch('/api/feynman/transcribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          audio_base64: base64Audio,
+          audio_format: audioBlob.type.includes('wav') ? 'wav' : 'webm',
+          language: 'en',
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Groq Whisper endpoint returned status ${res.status}`);
+      }
+
+      const data: TranscribeResponse = await res.json();
+      return data.transcript;
+    } catch (err: any) {
+      console.warn('Groq Whisper speech transcription failed:', err);
+      throw err;
     }
   },
 }));

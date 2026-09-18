@@ -16,12 +16,14 @@ import {
   TrendingUp,
   TrendingDown,
   Play,
+  Brain,
 } from 'lucide-react';
 import { useClassroomStore } from '../../store/useClassroomStore';
 
 export const StationConsoleModal: React.FC = () => {
   const activeStation = useClassroomStore((s) => s.activeStation);
   const setActiveStation = useClassroomStore((s) => s.setActiveStation);
+  const openFeynman = useClassroomStore((s) => s.openFeynman);
 
   // Stack apparatus state & actions
   const stackDiscs = useClassroomStore((s) => s.stackDiscs);
@@ -581,25 +583,54 @@ export const StationConsoleModal: React.FC = () => {
                   )}
                 </div>
 
-                <button
-                  id="btn-submit-answer"
-                  onClick={() => submitChallengeAnswer(currentChallenge.id)}
-                  disabled={!selectedOptionId}
-                  className="cyber-button"
-                  style={{
-                    padding: '10px 20px',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    opacity: selectedOptionId ? 1 : 0.4,
-                    cursor: selectedOptionId ? 'pointer' : 'not-allowed',
-                    background: selectedOptionId
-                      ? 'linear-gradient(135deg, rgba(0, 240, 255, 0.3), rgba(121, 40, 202, 0.4))'
-                      : 'rgba(255, 255, 255, 0.05)',
-                  }}
-                >
-                  <Sparkles size={14} />
-                  <span>Validate Solution</span>
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    id="btn-ask-feynman-stack"
+                    onClick={() =>
+                      openFeynman(
+                        'stack',
+                        currentChallenge?.id,
+                        `I'm working on "${currentChallenge?.title}": ${currentChallenge?.scenario || currentChallenge?.objective}. Can you explain this concept?`
+                      )
+                    }
+                    className="cyber-button"
+                    style={{
+                      padding: '10px 14px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      borderColor: '#a855f7',
+                      background: 'rgba(168, 85, 247, 0.2)',
+                      color: '#e9d5ff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                    title="Open Feynman Multimodal Explanation for this Stack Challenge"
+                  >
+                    <Brain size={14} color="#c084fc" />
+                    <span>Ask Feynman</span>
+                  </button>
+
+                  <button
+                    id="btn-submit-answer"
+                    onClick={() => submitChallengeAnswer(currentChallenge.id)}
+                    disabled={!selectedOptionId}
+                    className="cyber-button"
+                    style={{
+                      padding: '10px 20px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      opacity: selectedOptionId ? 1 : 0.4,
+                      cursor: selectedOptionId ? 'pointer' : 'not-allowed',
+                      background: selectedOptionId
+                        ? 'linear-gradient(135deg, rgba(0, 240, 255, 0.3), rgba(121, 40, 202, 0.4))'
+                        : 'rgba(255, 255, 255, 0.05)',
+                    }}
+                  >
+                    <Sparkles size={14} />
+                    <span>Validate Solution</span>
+                  </button>
+                </div>
               </div>
             ) : (
               /* Post-submission Result & Pedagogical Feedback Card */

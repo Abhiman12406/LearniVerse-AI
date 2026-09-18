@@ -79,5 +79,23 @@ class PrerequisiteService:
         """Evaluate all concepts in the prerequisite graph."""
         return {concept: self.evaluate_concept(concept, mastery) for concept in self._rules}
 
+    def get_prerequisites(self, concept: str) -> Dict[str, float]:
+        """Return dict of direct prerequisite concept thresholds for a given concept."""
+        return self._rules.get(concept, {})
+
+    def get_full_graph(self) -> Dict[str, Dict[str, float]]:
+        """Return the complete curriculum prerequisite graph."""
+        return self._rules
+
+    def compute_gap(self, concept: str, current_mastery: float) -> float:
+        """Calculate prerequisite gap Gap_c = max(0, tau_c - M_c) (§8)."""
+        from backend.app.services.knowledge_graph_service import knowledge_graph_service
+        return knowledge_graph_service.compute_gap(concept, current_mastery)
+
+    def compute_priority(self, concept: str, current_mastery: float) -> float:
+        """Calculate downstream weighted priority Priority_c = Gap_c * W_c (§8)."""
+        from backend.app.services.knowledge_graph_service import knowledge_graph_service
+        return knowledge_graph_service.compute_priority(concept, current_mastery)
+
 
 prerequisite_service = PrerequisiteService()

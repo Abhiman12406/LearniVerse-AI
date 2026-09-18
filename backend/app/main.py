@@ -8,10 +8,12 @@ from backend.app.routers.mentor import router as mentor_router
 from backend.app.routers.missions import router as missions_router
 from backend.app.routers.interactions import router as interactions_router
 from backend.app.routers.agents import router as agents_router
+from backend.app.routers.feynman import router as feynman_router
+from backend.app.routers.curriculum import router as curriculum_router
 
 app = FastAPI(
     title="Adaptive Virtual Classroom API",
-    description="Agentic AI-powered 3D Virtual Classroom Backend conforming to CONTEXT.md",
+    description="Agentic AI-powered 3D Virtual Classroom Backend conforming to CONTEXT.md and FEYNMAN.md",
     version="1.0.0",
 )
 
@@ -30,6 +32,8 @@ app.include_router(mentor_router)
 app.include_router(missions_router)
 app.include_router(interactions_router)
 app.include_router(agents_router)
+app.include_router(feynman_router)
+app.include_router(curriculum_router)
 
 
 @app.get("/")
