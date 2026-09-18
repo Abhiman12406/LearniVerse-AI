@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Procedural 3D Student Character — Three.js Demo</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 30%, #1e2430 0%, #0c0e14 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      color: #f1f5f9;
+    }
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .hud-header {
+      position: absolute;
+      top: 20px;
+      left: 24px;
+      z-index: 10;
+      pointer-events: none;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      background: rgba(14, 165, 233, 0.15);
+      border: 1px solid rgba(14, 165, 233, 0.4);
+      color: #38bdf8;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 4px;
+    }
+    p.subtitle {
+      font-size: 13px;
+      color: #94a3b8;
+    }
+    .controls-panel {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      gap: 12px;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 8px 16px;
+      border-radius: 999px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+    .btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #f1f5f9;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn:hover {
+      background: rgba(14, 165, 233, 0.2);
+      border-color: rgba(14, 165, 233, 0.4);
+      color: #38bdf8;
+      transform: translateY(-1px);
+    }
+    .btn.active {
+      background: #0ea5e9;
+      border-color: #38bdf8;
+      color: #ffffff;
+      box-shadow: 0 0 16px rgba(14, 165, 233, 0.4);
+    }
+    .ref-preview {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      z-index: 10;
+      width: 140px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
+      text-align: center;
+    }
+    .ref-preview img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .ref-preview span {
+      font-size: 10px;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .feature-card {
+      position: absolute;
+      top: 100px;
+      left: 24px;
+      z-index: 10;
+      width: 260px;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 11px;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+    .feature-card h3 {
+      font-size: 12px;
+      color: #38bdf8;
+      margin-bottom: 6px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .feature-card ul {
+      list-style-type: none;
+    }
+    .feature-card li {
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .feature-card li::before {
+      content: "•";
+      color: #0ea5e9;
+      font-weight: bold;
+    }
+  </style>
+  <!-- Import Three.js via ES Modules -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <div class="hud-header">
+    <div class="badge">img2threejs procedural reconstruction</div>
+    <h1>3D Stylized Student Character</h1>
+    <p class="subtitle">Zero external 3D files • 100% Procedural Three.js Geometries & Textures</p>
+  </div>
+
+  <div class="feature-card">
+    <h3>Reconstruction Details</h3>
+    <ul>
+      <li>Layered 3D spiky brown hair sculpt</li>
+      <li>Procedural anime/Roblox smile decal</li>
+      <li>Striped sailor sweater (Navy & White)</li>
+      <li>Sky-blue backpack & shoulder straps</li>
+      <li>Yellow pencil with eraser collar</li>
+      <li>White textbook with green spine</li>
+      <li>Skate sneakers with white laces</li>
+      <li>Procedural idle breathing animation</li>
+    </ul>
+  </div>
+
+  <div class="ref-preview">
+    <img src="../../asstesimages/character.webp" alt="Target Reference">
+    <span>Reference Image</span>
+  </div>
+
+  <div class="controls-panel">
+    <button class="btn active" id="btn-turntable">
+      <span>🔄 Turntable</span>
+    </button>
+    <button class="btn active" id="btn-animate">
+      <span>✨ Idle Breathing</span>
+    </button>
+    <button class="btn" id="btn-wireframe">
+      <span>📐 Wireframe</span>
+    </button>
+    <button class="btn" id="btn-reset">
+      <span>🎯 Reset View</span>
+    </button>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { createStudentCharacter } from './character.js';
+
+    // 1. Scene Setup
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0c0e14, 0.12);
+
+    // 2. Camera Setup
+    const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 50);
+    camera.position.set(0, 1.4, 3.8);
+
+    // 3. Renderer Setup
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    container.appendChild(renderer.domElement);
+
+    // 4. Orbit Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.set(0, 1.1, 0);
+    controls.maxPolarAngle = Math.PI / 2 + 0.05;
+    controls.minDistance = 1.5;
+    controls.maxDistance = 7.0;
+
+    // 5. Studio Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+    scene.add(ambientLight);
+
+    // Key Light (Front-Right Warm)
+    const keyLight = new THREE.DirectionalLight(0xfff5ea, 1.8);
+    keyLight.position.set(2.5, 4.0, 3.5);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.bias = -0.0001;
+    scene.add(keyLight);
+
+    // Fill Light (Front-Left Cool Cyan)
+    const fillLight = new THREE.DirectionalLight(0xcfe9ff, 0.9);
+    fillLight.position.set(-3.0, 2.5, 2.5);
+    scene.add(fillLight);
+
+    // Rim / Backlight (Dramatic edge highlights)
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 2.0);
+    rimLight.position.set(0, 3.5, -3.0);
+    scene.add(rimLight);
+
+    // Subtle Ground Glow / Uplight
+    const floorLight = new THREE.DirectionalLight(0x1e293b, 0.5);
+    floorLight.position.set(0, -2, 0);
+    scene.add(floorLight);
+
+    // 6. Ground Studio Pedestal & Contact Shadow
+    const groundGeo = new THREE.CylinderGeometry(1.6, 1.7, 0.08, 48);
+    const groundMat = new THREE.MeshStandardMaterial({
+      color: 0x111622,
+      roughness: 0.8,
+      metalness: 0.2,
+    });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.position.y = -0.04;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // Ground Ring Light
+    const ringGeo = new THREE.RingGeometry(1.58, 1.62, 48);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x0ea5e9,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.4,
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.002;
+    scene.add(ring);
+
+    // 7. Add Procedural Student Character
+    const character = createStudentCharacter();
+    scene.add(character.mesh);
+
+    // State Variables
+    let isTurntable = true;
+    let isAnimate = true;
+    let isWireframe = false;
+    const clock = new THREE.Clock();
+
+    // 8. Animation Loop
+    function renderLoop() {
+      requestAnimationFrame(renderLoop);
+      const elapsedTime = clock.getElapsedTime();
+
+      // Turntable Auto-Rotation
+      if (isTurntable) {
+        character.mesh.rotation.y = elapsedTime * 0.45;
+      }
+
+      // Procedural Idle Breathing
+      if (isAnimate && character.animate) {
+        character.animate(elapsedTime);
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    renderLoop();
+
+    // 9. Resize Handling
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // 10. UI Buttons Interaction
+    const btnTurntable = document.getElementById('btn-turntable');
+    btnTurntable.addEventListener('click', () => {
+      isTurntable = !isTurntable;
+      btnTurntable.classList.toggle('active', isTurntable);
+      if (!isTurntable) character.mesh.rotation.y = 0;
+    });
+
+    const btnAnimate = document.getElementById('btn-animate');
+    btnAnimate.addEventListener('click', () => {
+      isAnimate = !isAnimate;
+      btnAnimate.classList.toggle('active', isAnimate);
+    });
+
+    const btnWireframe = document.getElementById('btn-wireframe');
+    btnWireframe.addEventListener('click', () => {
+      isWireframe = !isWireframe;
+      btnWireframe.classList.toggle('active', isWireframe);
+      character.mesh.traverse((child) => {
+        if (child.isMesh && child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach((m) => (m.wireframe = isWireframe));
+          } else {
+            child.material.wireframe = isWireframe;
+          }
+        }
+      });
+    });
+
+    const btnReset = document.getElementById('btn-reset');
+    btnReset.addEventListener('click', () => {
+      controls.reset();
+      camera.position.set(0, 1.4, 3.8);
+      controls.target.set(0, 1.1, 0);
+      character.mesh.rotation.y = 0;
+    });
+  </script>
+</body>
+</html>

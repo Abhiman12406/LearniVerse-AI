@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Adaptive Virtual Classroom Campus — 5 Large Connected DSA Laboratories</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 40%, #381b24 0%, #17070b 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      color: #f1f5f9;
+      cursor: default;
+    }
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .hud-header {
+      position: absolute;
+      top: 20px;
+      left: 24px;
+      z-index: 10;
+      pointer-events: none;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: rgba(240, 116, 91, 0.25);
+      border: 1px solid rgba(240, 116, 91, 0.5);
+      color: #fb923c;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .zone-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: rgba(14, 165, 233, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-left: 8px;
+    }
+    .zone-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #38bdf8;
+      box-shadow: 0 0 8px #38bdf8;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 4px;
+    }
+    p.subtitle {
+      font-size: 13px;
+      color: #cbd5e1;
+    }
+
+    /* Campus Wings Navigator */
+    .wings-bar {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      gap: 8px;
+      background: rgba(25, 12, 18, 0.88);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 6px 12px;
+      border-radius: 999px;
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5);
+    }
+    .wing-pill {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #e2e8f0;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .wing-pill:hover {
+      background: rgba(240, 116, 91, 0.25);
+      border-color: rgba(240, 116, 91, 0.6);
+      color: #fdba74;
+      transform: translateY(-1px);
+    }
+    .wing-pill.active {
+      background: #ea580c;
+      border-color: #fb923c;
+      color: #ffffff;
+      box-shadow: 0 0 16px rgba(234, 88, 12, 0.5);
+    }
+
+    /* In-World Proximity Interaction Prompt */
+    .interact-prompt {
+      position: absolute;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 2px solid #f97316;
+      box-shadow: 0 0 24px rgba(249, 115, 22, 0.6);
+      padding: 10px 20px;
+      border-radius: 999px;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s ease;
+    }
+    .interact-prompt.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-6px);
+    }
+    .interact-key {
+      background: #ea580c;
+      padding: 3px 8px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Bottom Interactive HUD */
+    .controls-panel {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .apparatus-action-bar {
+      display: flex;
+      gap: 8px;
+      background: rgba(20, 10, 15, 0.92);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 8px 16px;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    }
+    .act-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #f8fafc;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .act-btn:hover {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #ffffff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+    }
+    .act-btn.green:hover {
+      background: #059669;
+      border-color: #34d399;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+    }
+    .act-btn.purple:hover {
+      background: #7c3aed;
+      border-color: #a78bfa;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+    }
+    .act-btn.emerald:hover {
+      background: #16a34a;
+      border-color: #4ade80;
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4);
+    }
+
+    .view-toggles {
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      background: rgba(25, 12, 18, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #f1f5f9;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn:hover {
+      background: rgba(240, 116, 91, 0.25);
+      border-color: rgba(240, 116, 91, 0.5);
+      color: #fdba74;
+    }
+    .btn.active {
+      background: #ea580c;
+      border-color: #fb923c;
+      color: #ffffff;
+    }
+
+    .wasd-card {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      z-index: 10;
+      background: rgba(25, 12, 18, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+    .wasd-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: #fb923c;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 2px;
+    }
+    .wasd-row {
+      display: flex;
+      gap: 5px;
+    }
+    .key-btn {
+      width: 32px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: #f1f5f9;
+    }
+    .key-btn.active {
+      background: #ea580c;
+      border-color: #fb923c;
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(234, 88, 12, 0.6);
+      transform: scale(0.95);
+    }
+
+    /* Toast Log Notification */
+    .toast-box {
+      position: absolute;
+      top: 85px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid #38bdf8;
+      color: #e0f2fe;
+      padding: 8px 20px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+    .toast-box.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(5px);
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <div class="hud-header">
+    <div class="badge">Adaptive Virtual Campus</div>
+    <div class="zone-indicator" id="zone-badge">
+      <div class="zone-dot"></div>
+      <span id="zone-name">Main Classroom</span>
+    </div>
+    <h1>3D Adaptive Classroom Campus</h1>
+    <p class="subtitle">WASD to walk through doors • Auto-follow perspective camera • Press [E] near apparatuses</p>
+  </div>
+
+  <div class="toast-box" id="toast-box">Apparatus Telemetry Output</div>
+
+  <!-- In-World Proximity Interaction Prompt -->
+  <div class="interact-prompt" id="interact-prompt">
+    <span class="interact-key">E</span>
+    <span id="interact-text">PRESS E TO OPERATE APPARATUS</span>
+  </div>
+
+  <!-- Campus Wings Navigator -->
+  <div class="wings-bar">
+    <div class="wing-pill active" id="pill-main">🏛️ Main Class</div>
+    <div class="wing-pill" id="pill-array">🟦 Array Station (West)</div>
+    <div class="wing-pill" id="pill-list">🟩 Linked List Lab (East)</div>
+    <div class="wing-pill" id="pill-recursion">🟪 Recursion Chamber (North)</div>
+    <div class="wing-pill" id="pill-tree">🌲 Tree & BST Lab (South)</div>
+  </div>
+
+  <!-- WASD Helper -->
+  <div class="wasd-card">
+    <div class="wasd-title">Movement</div>
+    <div class="wasd-row">
+      <div class="key-btn" id="key-w">W</div>
+    </div>
+    <div class="wasd-row">
+      <div class="key-btn" id="key-a">A</div>
+      <div class="key-btn" id="key-s">S</div>
+      <div class="key-btn" id="key-d">D</div>
+    </div>
+  </div>
+
+  <!-- Dynamic Apparatus Controls -->
+  <div class="controls-panel">
+    <div class="apparatus-action-bar">
+      <!-- Array Actions -->
+      <button class="act-btn" id="btn-arr-scan"><span>🔍 Array O(1) Access</span></button>
+      <button class="act-btn" id="btn-arr-linear"><span>⚡ Linear Search O(N)</span></button>
+
+      <!-- Linked List Actions -->
+      <button class="act-btn green" id="btn-list-traverse"><span>✨ Traverse Links</span></button>
+      <button class="act-btn green" id="btn-list-add"><span>➕ Insert Node</span></button>
+
+      <!-- Recursion Actions -->
+      <button class="act-btn purple" id="btn-rec-unwind"><span>🔄 Unwind Call Stack</span></button>
+      <button class="act-btn purple" id="btn-rec-push"><span>⬇️ Push Frame</span></button>
+
+      <!-- Tree Actions -->
+      <button class="act-btn emerald" id="btn-tree-inorder"><span>🌿 In-Order Traversal</span></button>
+      <button class="act-btn emerald" id="btn-tree-search"><span>🎯 BST Search (60)</span></button>
+    </div>
+
+    <div class="view-toggles">
+      <button class="btn active" id="btn-3rd-person"><span>👤 3rd-Person Chase Cam</span></button>
+      <button class="btn" id="btn-isometric"><span>📐 Isometric Campus Overview</span></button>
+      <button class="btn" id="btn-lighting"><span>☀️ Golden Hour</span></button>
+      <button class="btn" id="btn-reset-pos"><span>🎯 Reset to Center</span></button>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { createClassroomDiorama } from './classroom.js';
+    import { createStudentCharacter } from './character.js';
+
+    // 1. Scene Setup
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+
+    // 2. Camera Setup
+    const aspect = window.innerWidth / window.innerHeight;
+    const camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 250);
+    const ISO_POS = new THREE.Vector3(32, 34, 32);
+
+    // 3. Renderer Setup
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    container.appendChild(renderer.domElement);
+
+    // 4. Orbit Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.maxPolarAngle = Math.PI / 2 - 0.05;
+    controls.minDistance = 2.0;
+    controls.maxDistance = 120.0;
+
+    // 5. Campus Lighting
+    const ambientLight = new THREE.AmbientLight(0xffedd5, 0.85);
+    scene.add(ambientLight);
+
+    const sunLight = new THREE.DirectionalLight(0xfff7ed, 2.8);
+    sunLight.position.set(12.0, 30.0, -20.0);
+    sunLight.target.position.set(0, 1.0, 0);
+    scene.add(sunLight.target);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 4096;
+    sunLight.shadow.mapSize.height = 4096;
+    sunLight.shadow.camera.near = 1.0;
+    sunLight.shadow.camera.far = 100.0;
+    sunLight.shadow.camera.left = -40;
+    sunLight.shadow.camera.right = 40;
+    sunLight.shadow.camera.top = 40;
+    sunLight.shadow.camera.bottom = -40;
+    scene.add(sunLight);
+
+    const fillLight = new THREE.DirectionalLight(0xdbeafe, 0.7);
+    fillLight.position.set(-25.0, 20.0, 25.0);
+    scene.add(fillLight);
+
+    // 6. Build Connected Campus Diorama
+    const diorama = createClassroomDiorama();
+    scene.add(diorama.mesh);
+
+    // 7. Add Playable Student Character
+    const student = createStudentCharacter();
+    student.mesh.scale.set(0.68, 0.68, 0.68);
+    student.setPosition(0, 0, 0);
+    student.mesh.rotation.y = 0;
+    scene.add(student.mesh);
+
+    camera.position.set(0, 2.6, 4.2);
+    controls.target.set(0, 1.1, 0);
+
+    // 8. Toast Helper
+    const toastBox = document.getElementById('toast-box');
+    let toastTimeout = null;
+    function showToast(msg) {
+      toastBox.textContent = msg;
+      toastBox.classList.add('show');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toastBox.classList.remove('show');
+      }, 3200);
+    }
+
+    // 9. Zone Detection & Proximity HUD
+    const zoneNameEl = document.getElementById('zone-name');
+    const interactPrompt = document.getElementById('interact-prompt');
+    const interactText = document.getElementById('interact-text');
+
+    const pills = {
+      main: document.getElementById('pill-main'),
+      array: document.getElementById('pill-array'),
+      list: document.getElementById('pill-list'),
+      recursion: document.getElementById('pill-recursion'),
+      tree: document.getElementById('pill-tree'),
+    };
+
+    let nearbyInteractiveLab = null;
+
+    function updateZoneAndProximityHUD(pos) {
+      let currentKey = 'main';
+      let title = '🏛️ Main Classroom';
+      nearbyInteractiveLab = null;
+
+      const dArray = pos.distanceTo(new THREE.Vector3(-20, 0, 0));
+      const dList = pos.distanceTo(new THREE.Vector3(20, 0, 0));
+      const dRec = pos.distanceTo(new THREE.Vector3(0, 0, -20));
+      const dTree = pos.distanceTo(new THREE.Vector3(0, 0, 20));
+
+      if (pos.x < -10.0) {
+        currentKey = 'array';
+        title = '🟦 Array Station Lab (West Wing)';
+        if (dArray < 6.0) nearbyInteractiveLab = { name: 'ARRAY MEMORY APPARATUS', lab: diorama.labs.array };
+      } else if (pos.x > 10.0) {
+        currentKey = 'list';
+        title = '🟩 Linked List Lab (East Wing)';
+        if (dList < 6.0) nearbyInteractiveLab = { name: 'LINKED LIST NODE CHAIN', lab: diorama.labs.linkedList };
+      } else if (pos.z < -10.0) {
+        currentKey = 'recursion';
+        title = '🟪 Recursion Chamber (North Wing)';
+        if (dRec < 6.0) nearbyInteractiveLab = { name: 'RECURSION CALL TOWER', lab: diorama.labs.recursion };
+      } else if (pos.z > 10.0) {
+        currentKey = 'tree';
+        title = '🌲 Tree & BST Lab (South Wing)';
+        if (dTree < 6.0) nearbyInteractiveLab = { name: 'BINARY SEARCH TREE CANOPY', lab: diorama.labs.tree };
+      }
+
+      zoneNameEl.textContent = title;
+      Object.entries(pills).forEach(([k, el]) => {
+        el.classList.toggle('active', k === currentKey);
+      });
+
+      if (nearbyInteractiveLab) {
+        interactText.textContent = `PRESS [E] TO OPERATE ${nearbyInteractiveLab.name}`;
+        interactPrompt.classList.add('show');
+      } else {
+        interactPrompt.classList.remove('show');
+      }
+    }
+
+    // 10. Wing Quick-Teleport Buttons
+    pills.main.addEventListener('click', () => {
+      student.setPosition(0, 0, 0);
+      showToast('Navigated to: Main Classroom Central Hub');
+    });
+    pills.array.addEventListener('click', () => {
+      student.setPosition(-20, 0, 0);
+      showToast('Navigated to: Array Station Lab (West)');
+    });
+    pills.list.addEventListener('click', () => {
+      student.setPosition(20, 0, 0);
+      showToast('Navigated to: Linked List Lab (East)');
+    });
+    pills.recursion.addEventListener('click', () => {
+      student.setPosition(0, 0, -20);
+      showToast('Navigated to: Recursion Chamber (North)');
+    });
+    pills.tree.addEventListener('click', () => {
+      student.setPosition(0, 0, 20);
+      showToast('Navigated to: Tree & BST Lab (South)');
+    });
+
+    // 11. Trigger In-World Interaction
+    function triggerCurrentProximityInteraction() {
+      if (nearbyInteractiveLab && nearbyInteractiveLab.lab?.interact) {
+        const res = nearbyInteractiveLab.lab.interact();
+        showToast(res);
+      } else {
+        showToast('Walk into any of the 4 labs and press [E] near the apparatus!');
+      }
+    }
+
+    // 12. Wire Apparatus Buttons
+    document.getElementById('btn-arr-scan').addEventListener('click', () => {
+      const targetIdx = Math.floor(Math.random() * 5);
+      diorama.labs.array.setTargetIndex(targetIdx);
+      const vals = diorama.labs.array.getValues();
+      showToast(`Array Access [Index ${targetIdx}]: Value = ${vals[targetIdx]} (Direct O(1) Pointer)`);
+    });
+
+    document.getElementById('btn-arr-linear').addEventListener('click', () => {
+      showToast('Scanning Array Memory: O(N) Sequential Search...');
+      diorama.labs.array.triggerLinearScan((foundVal) => {
+        showToast(`Linear Scan Complete: Traversed 5 indices. Last Element = ${foundVal}`);
+      });
+    });
+
+    document.getElementById('btn-list-traverse').addEventListener('click', () => {
+      showToast('Traversing Node Pointers: HEAD -> Next -> Next -> NULL...');
+      diorama.labs.linkedList.traverseList((chain) => {
+        showToast(`Chain Traverse Output: HEAD -> ${chain.join(' -> ')} -> NULL`);
+      });
+    });
+
+    document.getElementById('btn-list-add').addEventListener('click', () => {
+      const rndVal = (Math.floor(Math.random() * 8) + 1) * 10;
+      diorama.labs.linkedList.insertNode(rndVal);
+      showToast(`Inserted Dynamic Heap Node: Node(${rndVal}) at tail`);
+    });
+
+    document.getElementById('btn-rec-unwind').addEventListener('click', () => {
+      showToast('Base Case Reached! Unwinding Call Stack & Returning Results...');
+      diorama.labs.recursion.unwindCallStack((res) => {
+        showToast(`Call Stack Resolved: factorial(4) = ${res}`);
+      });
+    });
+
+    document.getElementById('btn-rec-push').addEventListener('click', () => {
+      diorama.labs.recursion.pushFrame();
+      showToast(`Pushed Activation Frame to Call Stack (Depth: ${diorama.labs.recursion.getDepth()})`);
+    });
+
+    document.getElementById('btn-tree-inorder').addEventListener('click', () => {
+      showToast('Running In-Order Traversal (Left -> Root -> Right)...');
+      diorama.labs.tree.runInOrderTraversal((sortedSeq) => {
+        showToast(`In-Order Sequence (Sorted BST): ${sortedSeq.join(' -> ')}`);
+      });
+    });
+
+    document.getElementById('btn-tree-search').addEventListener('click', () => {
+      showToast('Searching BST for Key = 60: Path (50 -> 70 -> 60)...');
+      diorama.labs.tree.searchBST(60, (target) => {
+        showToast(`Key ${target} Found in O(log N) Time!`);
+      });
+    });
+
+    // 13. Keyboard Controls (Correct Left/Right Mapping)
+    const activeKeys = {};
+    const keyMap = {
+      KeyW: document.getElementById('key-w'),
+      KeyA: document.getElementById('key-a'),
+      KeyS: document.getElementById('key-s'),
+      KeyD: document.getElementById('key-d'),
+      ArrowUp: document.getElementById('key-w'),
+      ArrowLeft: document.getElementById('key-a'),
+      ArrowDown: document.getElementById('key-s'),
+      ArrowRight: document.getElementById('key-d'),
+    };
+
+    window.addEventListener('keydown', (e) => {
+      activeKeys[e.code] = true;
+      if (keyMap[e.code]) keyMap[e.code].classList.add('active');
+      if (e.code === 'KeyE') {
+        triggerCurrentProximityInteraction();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      activeKeys[e.code] = false;
+      if (keyMap[e.code]) keyMap[e.code].classList.remove('active');
+    });
+
+    let cameraMode = '3rd_person';
+    const btn3rdPerson = document.getElementById('btn-3rd-person');
+    const btnIsometric = document.getElementById('btn-isometric');
+
+    btn3rdPerson.addEventListener('click', () => {
+      cameraMode = '3rd_person';
+      btn3rdPerson.classList.add('active');
+      btnIsometric.classList.remove('active');
+    });
+
+    btnIsometric.addEventListener('click', () => {
+      cameraMode = 'isometric';
+      btnIsometric.classList.add('active');
+      btn3rdPerson.classList.remove('active');
+      controls.target.set(0, 1.6, 0);
+      camera.position.copy(ISO_POS);
+    });
+
+    document.getElementById('btn-reset-pos').addEventListener('click', () => {
+      student.setPosition(0, 0, 0);
+      student.mesh.rotation.y = 0;
+    });
+
+    let isGoldenHour = false;
+    const btnLighting = document.getElementById('btn-lighting');
+    btnLighting.addEventListener('click', () => {
+      isGoldenHour = !isGoldenHour;
+      btnLighting.classList.toggle('active', isGoldenHour);
+      if (isGoldenHour) {
+        sunLight.color.setHex(0xf97316);
+        sunLight.intensity = 3.6;
+        ambientLight.color.setHex(0xfde047);
+      } else {
+        sunLight.color.setHex(0xfff7ed);
+        sunLight.intensity = 2.8;
+        ambientLight.color.setHex(0xffedd5);
+      }
+    });
+
+    // 14. Main Animation & Locomotion Loop with Correct Movement & Auto-Follow Chase Camera
+    const clock = new THREE.Clock();
+    const moveDir = new THREE.Vector3();
+    const forwardCam = new THREE.Vector3();
+    const rightCam = new THREE.Vector3();
+
+    let cameraHeading = 0;
+
+    function renderLoop() {
+      requestAnimationFrame(renderLoop);
+      const delta = Math.min(0.1, clock.getDelta());
+
+      diorama.update(delta);
+
+      // Camera-relative direction vectors
+      camera.getWorldDirection(forwardCam);
+      forwardCam.y = 0;
+      forwardCam.normalize();
+
+      rightCam.crossVectors(forwardCam, new THREE.Vector3(0, 1, 0)).normalize();
+
+      moveDir.set(0, 0, 0);
+      if (activeKeys.KeyW || activeKeys.ArrowUp) moveDir.add(forwardCam);
+      if (activeKeys.KeyS || activeKeys.ArrowDown) moveDir.sub(forwardCam);
+      if (activeKeys.KeyA || activeKeys.ArrowLeft) moveDir.sub(rightCam); // Left is -Right
+      if (activeKeys.KeyD || activeKeys.ArrowRight) moveDir.add(rightCam); // Right is +Right
+
+      if (moveDir.lengthSq() > 0.001) moveDir.normalize();
+
+      const colliders = diorama.getActiveColliders();
+      student.update(delta, moveDir, colliders);
+
+      const charPos = student.getPosition();
+      updateZoneAndProximityHUD(charPos);
+
+      // Auto-Follow Chase Camera
+      if (cameraMode === '3rd_person') {
+        const charHeading = student.getHeading();
+        const isMoving = moveDir.lengthSq() > 0.001;
+
+        if (isMoving) {
+          let hDiff = (charHeading - cameraHeading) % (Math.PI * 2);
+          if (hDiff > Math.PI) hDiff -= Math.PI * 2;
+          if (hDiff < -Math.PI) hDiff += Math.PI * 2;
+          cameraHeading += hDiff * delta * 3.5;
+        }
+
+        const camDist = 4.4;
+        const camHeight = 2.2;
+        const targetCamX = charPos.x - Math.sin(cameraHeading) * camDist;
+        const targetCamZ = charPos.z - Math.cos(cameraHeading) * camDist;
+        const targetCamY = charPos.y + camHeight;
+
+        camera.position.lerp(new THREE.Vector3(targetCamX, targetCamY, targetCamZ), delta * 6.0);
+        controls.target.lerp(new THREE.Vector3(charPos.x, charPos.y + 1.2, charPos.z), delta * 8.0);
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    renderLoop();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
