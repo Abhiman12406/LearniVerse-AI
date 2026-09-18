@@ -986,12 +986,28 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     const isCorrect = selected === challenge.correctOptionId;
     if (isCorrect) {
       soundSystem.playSuccess();
-      // Animate corresponding operation on 3D apparatus to demonstrate LIFO mechanics
-      if (challenge.id === 'stack_lifo_order' && get().stackDiscs.length > 0) {
-        get().popStackDisc();
+      // Animate corresponding operation on 3D apparatus to demonstrate physical mechanics
+      if (challenge.id === 'stack_lifo_order') {
+        if (get().stackDiscs.length > 0) {
+          get().popStackDisc();
+        } else {
+          get().loadChallengeOntoApparatus('stack_lifo_order');
+          setTimeout(() => get().popStackDisc(), 200);
+        }
+        get().showToast('🦾 3D Apparatus: Popped top disc to demonstrate Last-In, First-Out (LIFO) extraction');
+      } else if (challenge.id === 'stack_push_pop_trace') {
+        get().animateChallengeTrace('stack_push_pop_trace');
+        get().showToast('🦾 3D Apparatus: Executing interleaved PUSH & POP trace across cylinder buffer');
+      } else if (challenge.id === 'stack_overflow_underflow') {
+        get().animateChallengeTrace('stack_overflow_underflow');
+        get().showToast('🦾 3D Apparatus: Saturated buffer capacity (6 discs) — overflow guard verified');
+      } else if (challenge.id === 'stack_bracket_balance') {
+        get().loadChallengeOntoApparatus('stack_bracket_balance');
+        get().showToast('🦾 3D Apparatus: Staging matching call-stack activation frames in 3D cylinder');
       }
     } else {
       soundSystem.playAlert();
+      get().showToast('⚠️ Apparatus Invariant Violation: Review LIFO rules and trace again');
     }
 
     const chosenOption = challenge.options.find((o) => o.id === selected);
@@ -1096,10 +1112,10 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
 
         if (threshold_crossed) {
           soundSystem.playSuccess();
-          if (unlocked_wing) {
-            get().triggerBarrierDissolve(unlocked_wing);
-          } else if (concept === 'stack') {
-            get().triggerBarrierDissolve('recursion_lab');
+          const targetWing = unlocked_wing || (concept === 'stack' ? 'recursion_lab' : null);
+          if (targetWing) {
+            get().triggerBarrierDissolve(targetWing);
+            get().showToast(`🔓 PREREQUISITE UNLOCKED: ${targetWing.replace('_', ' ').toUpperCase()} barrier dissolved! Mastery crossed 70% threshold!`);
           }
         }
 
@@ -1173,10 +1189,10 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
 
     if (thresholdCrossed) {
       soundSystem.playSuccess();
-      if (unlockedWing) {
-        get().triggerBarrierDissolve(unlockedWing);
-      } else if (concept === 'stack') {
-        get().triggerBarrierDissolve('recursion_lab');
+      const targetWing = unlockedWing || (concept === 'stack' ? 'recursion_lab' : null);
+      if (targetWing) {
+        get().triggerBarrierDissolve(targetWing);
+        get().showToast(`🔓 PREREQUISITE UNLOCKED: ${targetWing.replace('_', ' ').toUpperCase()} barrier dissolved! Mastery reached ${Math.round(posterior * 100)}%!`);
       }
     }
 

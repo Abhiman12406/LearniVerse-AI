@@ -24,24 +24,103 @@ STATION_MAP = {
 }
 
 MISSION_CATALOG = {
+    "array": {
+        "easy": {
+            "mission_id": "array_indexing_01",
+            "name": "Array Indexing & Random Access",
+            "title": "Operation Hardware-Probe: O(1) Memory Offsets",
+            "objective": "Identify 0-indexed contiguous memory slots and direct address calculations.",
+            "learning_objectives": [
+                "Understand contiguous memory allocation and zero-based indexing",
+                "Verify O(1) direct memory pointer dereferencing",
+                "Detect hardware boundary bounds violations",
+            ],
+        },
+        "medium": {
+            "mission_id": "array_scan_02",
+            "name": "Linear Search & Traversal",
+            "title": "Operation Bus-Scan: O(n) Traversal Limits",
+            "objective": "Scan memory slots sequentially and measure traversal complexity.",
+            "learning_objectives": [
+                "Execute sequential probe traversal across memory bays",
+                "Compare worst-case O(n) scan against O(1) random access",
+            ],
+        },
+        "hard": {
+            "mission_id": "array_bounds_03",
+            "name": "Buffer Boundary Security",
+            "title": "ArrayIndexOutOfBounds Hardening",
+            "objective": "Guard contiguous memory against buffer over-read segmentation faults.",
+            "learning_objectives": [
+                "Prevent memory leaks and invalid index traps",
+                "Simulate dynamic resize amortized bounds",
+            ],
+        },
+    },
+    "linked_list": {
+        "easy": {
+            "mission_id": "linked_list_traversal_01",
+            "name": "Pointer Chain Traversal",
+            "title": "Operation Node-Link: Traversal & Next References",
+            "objective": "Traverse heap-allocated nodes by following explicit next pointer references.",
+            "learning_objectives": [
+                "Follow HEAD pointer references through node chains terminating at NULL",
+                "Differentiate contiguous array indices from dynamic heap pointers",
+            ],
+        },
+        "medium": {
+            "mission_id": "linked_list_mutation_02",
+            "name": "Dynamic Node Insertion & Relinking",
+            "title": "Operation Pointer-Splice: O(1) Head Insertion",
+            "objective": "Insert nodes and re-wire successor references without shifting memory.",
+            "learning_objectives": [
+                "Splice incoming pointers without data duplication",
+                "Maintain integrity of the terminating NULL pointer",
+            ],
+        },
+        "hard": {
+            "mission_id": "linked_list_cycle_03",
+            "name": "Cycle Detection & Fast-Slow Pointers",
+            "title": "Operation Floyd-Probe: Cycle Invariants",
+            "objective": "Identify cyclic reference loops using two-pointer algorithms.",
+            "learning_objectives": [
+                "Detect infinite pointer loops",
+                "Guard dynamic heap chains against dangling references",
+            ],
+        },
+    },
     "stack": {
         "easy": {
             "mission_id": "stack_diagnostic_mission",
             "name": "Stack LIFO Fundamentals",
             "title": "Operation Spring-Tray: Master LIFO Invariant",
             "objective": "Understand push/pop operations and Last-In First-Out mechanics.",
+            "learning_objectives": [
+                "Master Last-In, First-Out (LIFO) extraction order",
+                "Trace interleaved PUSH and POP memory transitions",
+                "Understand Capacity Overflow and Underflow boundary conditions",
+                "Bridge stack manipulation directly to Call Stack activation records",
+            ],
         },
         "medium": {
             "mission_id": "stack_diagnostic_mission",
             "name": "Interleaved Push & Pop Trace",
             "title": "Buffer Traversal & Pointer Maintenance",
             "objective": "Trace internal stack buffer across interleaved mutations.",
+            "learning_objectives": [
+                "Trace interleaved PUSH and POP memory transitions",
+                "Understand Capacity Overflow and Underflow boundary conditions",
+            ],
         },
         "hard": {
             "mission_id": "stack_diagnostic_mission",
             "name": "Stack Boundary Defense",
             "title": "Underflow & Overflow Hardening",
             "objective": "Guard against buffer exceptions and simulate recursive call frames.",
+            "learning_objectives": [
+                "Understand structural boundary constraints and safety guards",
+                "Bridge stack manipulation directly to Call Stack activation records",
+            ],
         },
     },
     "recursion": {
@@ -50,18 +129,62 @@ MISSION_CATALOG = {
             "name": "Base Case Foundation",
             "title": "The Call Stack Anchor",
             "objective": "Identify base case termination preventing stack overflow.",
+            "learning_objectives": [
+                "Identify base case condition preventing infinite call accumulation",
+                "Observe physical call stack frame allocation in real time",
+            ],
         },
         "medium": {
             "mission_id": "recursion_call_stack_02",
             "name": "Call Frame Accumulation",
             "title": "Tracing Activation Records",
             "objective": "Track activation records accumulating on the physical call stack.",
+            "learning_objectives": [
+                "Observe stack frame expansion during recursive descent",
+                "Calculate return values across ascending activation frames",
+            ],
         },
         "hard": {
             "mission_id": "recursion_call_stack_03",
             "name": "Call Stack Unwinding",
             "title": "Return Cascade & Frame Dissolution",
             "objective": "Execute cumulative frame pop transitions across nested recursive returns.",
+            "learning_objectives": [
+                "Execute frame dissolution cascading upward to the root call",
+                "Synthesize composite factorial results from base return",
+            ],
+        },
+    },
+    "tree": {
+        "easy": {
+            "mission_id": "tree_bst_search_01",
+            "name": "Binary Search Tree Invariant",
+            "title": "Operation Bifurcation: Left < Root < Right",
+            "objective": "Navigate binary search paths eliminating half the search space at each step.",
+            "learning_objectives": [
+                "Enforce Left < Root < Right ordering invariant",
+                "Execute O(log n) binary search traversal",
+            ],
+        },
+        "medium": {
+            "mission_id": "tree_inorder_02",
+            "name": "In-Order Traversal & Monotonic Sorting",
+            "title": "Operation Monotonic-Stream: In-Order Walk",
+            "objective": "Traverse BST nodes in left-root-right order producing a sorted sequence.",
+            "learning_objectives": [
+                "Execute recursive left-root-right in-order traversal",
+                "Produce monotonic sorted streams from hierarchical nodes",
+            ],
+        },
+        "hard": {
+            "mission_id": "tree_balance_03",
+            "name": "Tree Balance & Degeneracy Prevention",
+            "title": "Operation Height-Defense: AVL Balancing",
+            "objective": "Detect tree skew and restore logarithmic depth invariants.",
+            "learning_objectives": [
+                "Prevent O(n) degenerate linked list degradation",
+                "Balance subtree heights dynamically",
+            ],
         },
     },
 }

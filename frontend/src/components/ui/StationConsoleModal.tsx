@@ -17,6 +17,7 @@ import {
   TrendingDown,
   Play,
   Brain,
+  Activity,
 } from 'lucide-react';
 import { useClassroomStore } from '../../store/useClassroomStore';
 
@@ -49,6 +50,13 @@ export const StationConsoleModal: React.FC = () => {
   const isThresholdCrossed = useClassroomStore((s) => s.isThresholdCrossed);
   const unlockedWingId = useClassroomStore((s) => s.unlockedWingId);
   const simulateMasteryJump = useClassroomStore((s) => s.simulateMasteryJump);
+  const latestDeliberation = useClassroomStore((s) => s.latestDeliberation);
+  const openTelemetry = useClassroomStore((s) => s.openTelemetry);
+  const diagnosticResult = useClassroomStore((s) => s.diagnosticResult);
+
+  const delib = diagnosticResult?.deliberation || latestDeliberation;
+  const assignedMission = delib?.world_instructions?.active_mission;
+  const decision = delib?.final_decision;
 
   const currentChallenge = stackMission.challenges[activeChallengeIndex];
   const selectedOptionId = currentChallenge ? selectedAnswers[currentChallenge.id] : undefined;
@@ -279,6 +287,27 @@ export const StationConsoleModal: React.FC = () => {
             </button>
           )}
 
+          <button
+            id="btn-header-telemetry"
+            onClick={() => openTelemetry('agents')}
+            className="cyber-button"
+            style={{
+              padding: '5px 10px',
+              fontSize: '11px',
+              borderColor: 'rgba(168, 85, 247, 0.4)',
+              background: 'rgba(168, 85, 247, 0.15)',
+              color: '#e9d5ff',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              fontWeight: 600,
+            }}
+            title="Open Telemetry Drawer to inspect 5-Agent Deliberation and BKT math"
+          >
+            <Activity size={12} color="#c084fc" />
+            <span>Telemetry</span>
+          </button>
+
           <span className="glass-pill" style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
             [ESC] to return
           </span>
@@ -333,6 +362,123 @@ export const StationConsoleModal: React.FC = () => {
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.7), inset 0 0 16px rgba(0, 240, 255, 0.08)',
           }}
         >
+          {/* ============================================================ */}
+          {/* LangGraph Agent Assigned Mission & Pedagogical Objectives    */}
+          {/* ============================================================ */}
+          <div
+            id="langgraph-assigned-mission-card"
+            style={{
+              padding: '12px 14px',
+              borderRadius: '10px',
+              marginBottom: '16px',
+              background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.14), rgba(0, 240, 255, 0.08))',
+              border: '1px solid rgba(168, 85, 247, 0.35)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    backgroundColor: 'rgba(168, 85, 247, 0.25)',
+                    border: '1px solid rgba(168, 85, 247, 0.5)',
+                    fontSize: '10px',
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 700,
+                    color: '#e9d5ff',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  <Brain size={12} color="#c084fc" />
+                  LangGraph Assigned Mission
+                </span>
+
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 700,
+                    color: '#00f0ff',
+                    backgroundColor: 'rgba(0, 240, 255, 0.12)',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    border: '1px solid rgba(0, 240, 255, 0.3)',
+                  }}
+                >
+                  {decision?.action || 'REMEDIATE'} ({decision?.difficulty || currentChallenge.difficulty})
+                </span>
+              </div>
+
+              <button
+                id="btn-inspect-deliberation-header"
+                onClick={() => openTelemetry('agents')}
+                className="cyber-button"
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '10px',
+                  borderColor: 'rgba(168, 85, 247, 0.4)',
+                  background: 'rgba(168, 85, 247, 0.15)',
+                  color: '#e9d5ff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+                title="Inspect LangGraph 5-Agent Deliberation in Telemetry Drawer"
+              >
+                <Activity size={12} color="#c084fc" />
+                <span>Agent Traces</span>
+              </button>
+            </div>
+
+            <div style={{ fontSize: '14px', fontWeight: 700, color: '#f8fafc', marginBottom: '4px' }}>
+              {assignedMission?.title || stackMission.title}
+            </div>
+
+            <p style={{ margin: '0 0 8px 0', fontSize: '11px', color: 'rgba(226, 232, 240, 0.85)', lineHeight: 1.4 }}>
+              <strong>Planner Rationale: </strong>
+              {decision?.reason || 'Stack mastery is 0.38 and Stack is a prerequisite for Recursion.'}
+            </p>
+
+            {/* Mission Learning Objectives Checklist */}
+            <div
+              id="mission-learning-objectives"
+              style={{
+                marginTop: '6px',
+                padding: '8px 10px',
+                borderRadius: '6px',
+                background: 'rgba(5, 8, 14, 0.65)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+              }}
+            >
+              <div style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--cyan-core)', textTransform: 'uppercase', marginBottom: '4px' }}>
+                Mission Learning Objectives:
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+                {(stackMission.learningObjectives || []).map((obj, oidx) => (
+                  <div
+                    key={oidx}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '5px',
+                      fontSize: '10px',
+                      color: 'var(--text-secondary)',
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    <span style={{ color: 'var(--cyan-core)', flexShrink: 0 }}>✓</span>
+                    <span>{obj}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {/* Challenge Header & Difficulty Badge */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
             <div>
@@ -724,6 +870,29 @@ export const StationConsoleModal: React.FC = () => {
                     }}
                   >
                     {currentChallenge.pedagogicalExplanation}
+                  </div>
+
+                  {/* 1-Click Telemetry Inspection Button */}
+                  <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      id="btn-inspect-deliberation-feedback"
+                      onClick={() => openTelemetry('agents')}
+                      className="cyber-button"
+                      style={{
+                        padding: '5px 10px',
+                        fontSize: '10px',
+                        borderColor: 'rgba(168, 85, 247, 0.4)',
+                        background: 'rgba(168, 85, 247, 0.15)',
+                        color: '#e9d5ff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                      }}
+                      title="View updated 5-agent deliberation traces and BKT posterior in Telemetry Drawer"
+                    >
+                      <Activity size={12} color="#c084fc" />
+                      <span>Inspect Agent Traces & BKT in Telemetry →</span>
+                    </button>
                   </div>
                 </div>
 

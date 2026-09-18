@@ -11,6 +11,7 @@ import {
   BookOpen,
   Sparkles,
   Brain,
+  Activity,
 } from 'lucide-react';
 import { useClassroomStore } from '../../store/useClassroomStore';
 
@@ -33,6 +34,17 @@ export const RecursionConsole: React.FC = () => {
   const triggerStackOverflowError = useClassroomStore((s) => s.triggerStackOverflowError);
   const resetRecursionChamber = useClassroomStore((s) => s.resetRecursionChamber);
   const runRecursiveFactorialDemo = useClassroomStore((s) => s.runRecursiveFactorialDemo);
+
+  const latestDeliberation = useClassroomStore((s) => s.latestDeliberation);
+  const openTelemetry = useClassroomStore((s) => s.openTelemetry);
+  const diagnosticResult = useClassroomStore((s) => s.diagnosticResult);
+
+  const delib = diagnosticResult?.deliberation || latestDeliberation;
+  const assignedMission = delib?.world_instructions?.active_mission;
+  const decision = delib?.final_decision;
+  const isRecursionAssigned =
+    delib?.world_instructions?.recommended_station === 'recursion_lab' ||
+    delib?.final_decision?.concept === 'recursion';
 
   // Keyboard shortcut listener: [ESC] to exit
   useEffect(() => {
@@ -91,6 +103,15 @@ export const RecursionConsole: React.FC = () => {
 
           <div className="flex items-center gap-3">
             <button
+              id="btn-recursion-telemetry"
+              onClick={() => openTelemetry('agents')}
+              className="px-3 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-200 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              title="Inspect 5-Agent Deliberation in Telemetry Drawer"
+            >
+              <Activity className="w-3.5 h-3.5 text-purple-400" />
+              <span>Telemetry</span>
+            </button>
+            <button
               onClick={() => openFeynman('recursion', 'recursion_lab', "I don't understand why the recursive call pauses and pushes frames to the call stack.")}
               title="Ask Feynman for Multimodal Explanation"
               className="px-3 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-200 text-xs font-semibold flex items-center gap-1.5 transition-colors"
@@ -115,7 +136,42 @@ export const RecursionConsole: React.FC = () => {
         </div>
 
         {/* Content Body Grid */}
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+          {/* LangGraph Mission Banner if Assigned */}
+          {isRecursionAssigned && (
+            <div
+              id="recursion-langgraph-mission-card"
+              className="p-4 rounded-xl bg-gradient-to-r from-purple-950/50 via-slate-900/80 to-purple-900/40 border border-purple-500/30 shadow-lg"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-purple-500/20 text-purple-200 border border-purple-400/30">
+                    <Brain className="w-3 h-3 text-purple-400" />
+                    LangGraph Assigned Mission
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                    {decision?.action || 'ADVANCE'} ({decision?.difficulty || 'medium'})
+                  </span>
+                </div>
+                <button
+                  onClick={() => openTelemetry('agents')}
+                  className="px-2.5 py-1 text-xs rounded bg-purple-500/20 border border-purple-400/30 text-purple-200 hover:bg-purple-500/30 transition-all flex items-center gap-1"
+                >
+                  <Activity className="w-3 h-3 text-purple-400" />
+                  <span>Inspect Traces</span>
+                </button>
+              </div>
+              <div className="text-sm font-bold text-slate-100 mb-1">
+                {assignedMission?.title || 'Operation Call-Frame: Dynamic Activation Records'}
+              </div>
+              <p className="text-xs text-slate-300">
+                <strong>Objective: </strong>
+                {assignedMission?.objective || 'Track nested activation records and observe stack frame allocation.'}
+              </p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Column: Call Stack Elevator Visualizer & Code (7 cols) */}
           <div className="lg:col-span-7 flex flex-col gap-5">
             {/* Stack Depth Meter */}

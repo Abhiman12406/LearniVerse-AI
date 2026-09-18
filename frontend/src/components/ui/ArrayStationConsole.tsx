@@ -9,6 +9,8 @@ import {
   Binary,
   Cpu,
   Terminal,
+  Activity,
+  Brain,
 } from 'lucide-react';
 import { useClassroomStore } from '../../store/useClassroomStore';
 
@@ -32,6 +34,17 @@ export const ArrayStationConsole: React.FC = () => {
 
   const [searchTarget, setSearchTarget] = useState<number>(78);
   const [editValue, setEditValue] = useState<string>('');
+
+  const latestDeliberation = useClassroomStore((s) => s.latestDeliberation);
+  const openTelemetry = useClassroomStore((s) => s.openTelemetry);
+  const diagnosticResult = useClassroomStore((s) => s.diagnosticResult);
+
+  const delib = diagnosticResult?.deliberation || latestDeliberation;
+  const assignedMission = delib?.world_instructions?.active_mission;
+  const decision = delib?.final_decision;
+  const isArrayAssigned =
+    delib?.world_instructions?.recommended_station === 'array_station' ||
+    delib?.final_decision?.concept === 'array';
 
   // Keyboard navigation: [ESC] to exit, [0-4] to select index, [S] for linear search
   useEffect(() => {
@@ -160,6 +173,27 @@ export const ArrayStationConsole: React.FC = () => {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <button
+              id="btn-array-telemetry"
+              onClick={() => openTelemetry('agents')}
+              style={{
+                background: 'rgba(168, 85, 247, 0.15)',
+                border: '1px solid rgba(168, 85, 247, 0.4)',
+                borderRadius: '8px',
+                padding: '0.5rem 0.75rem',
+                color: '#e9d5ff',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+              }}
+              title="Inspect 5-Agent Deliberation in Telemetry Drawer"
+            >
+              <Activity size={15} color="#c084fc" />
+              Telemetry
+            </button>
+            <button
               onClick={() => resetArrayStation()}
               title="Reset array elements and probe"
               style={{
@@ -204,6 +238,83 @@ export const ArrayStationConsole: React.FC = () => {
             gap: '1.25rem',
           }}
         >
+          {/* LangGraph Mission Banner if Assigned */}
+          {isArrayAssigned && (
+            <div
+              id="array-langgraph-mission-card"
+              style={{
+                padding: '12px 14px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.14), rgba(16, 185, 129, 0.1))',
+                border: '1px solid rgba(168, 85, 247, 0.35)',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      backgroundColor: 'rgba(168, 85, 247, 0.25)',
+                      border: '1px solid rgba(168, 85, 247, 0.5)',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      color: '#e9d5ff',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    <Brain size={12} color="#c084fc" />
+                    LangGraph Assigned Mission
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      color: '#34d399',
+                      backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                    }}
+                  >
+                    {decision?.action || 'PRACTICE'} ({decision?.difficulty || 'easy'})
+                  </span>
+                </div>
+                <button
+                  onClick={() => openTelemetry('agents')}
+                  style={{
+                    padding: '3px 8px',
+                    fontSize: '10px',
+                    borderRadius: '4px',
+                    border: '1px solid rgba(168, 85, 247, 0.4)',
+                    background: 'rgba(168, 85, 247, 0.15)',
+                    color: '#e9d5ff',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <Activity size={12} color="#c084fc" />
+                  <span>Inspect Traces</span>
+                </button>
+              </div>
+
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#f8fafc', marginBottom: '4px' }}>
+                {assignedMission?.title || 'Operation Hardware-Probe: O(1) Memory Offsets'}
+              </div>
+
+              <p style={{ margin: '0 0 6px 0', fontSize: '11px', color: 'rgba(226, 232, 240, 0.85)', lineHeight: 1.4 }}>
+                <strong>Objective: </strong>
+                {assignedMission?.objective || 'Understand contiguous memory allocation and zero-based indexing.'}
+              </p>
+            </div>
+          )}
+
           {/* Out of bounds alert banner */}
           {arrayOutOfBounds && (
             <div
