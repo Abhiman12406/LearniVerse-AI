@@ -1,6 +1,6 @@
 import React, { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Text, Float } from '@react-three/drei';
+import { Float } from '@react-three/drei';
 import * as THREE from 'three';
 import { useClassroomStore } from '../../store/useClassroomStore';
 import {
@@ -8,6 +8,7 @@ import {
   MentorCompanionModelRig,
 } from '../../assets/3d/createMentorCompanionModel';
 import { soundSystem } from '../../audio/soundSystem';
+import { getFloatingBadgeMaterial } from '../../assets/3d/classroomSingletons';
 
 interface AIMentorBeaconProps {
   position?: [number, number, number];
@@ -83,9 +84,18 @@ export const AIMentorBeacon: React.FC<AIMentorBeaconProps> = ({
     }
   });
 
+  const nameTagMat = useMemo(
+    () => getFloatingBadgeMaterial('AI MENTOR BOT', 'SOCRATIC COMPANION', beaconColor),
+    [beaconColor]
+  );
+  const promptMat = useMemo(
+    () => getFloatingBadgeMaterial('[E] CONSULT AI MENTOR', 'Press E to ask Socratic Guide', beaconColor),
+    [beaconColor]
+  );
+
   return (
     <group position={position}>
-      {/* Procedural 3D Mentor Companion Model */}
+      {/* Mentor Holographic Floating Beacon Core Rig */}
       <primitive
         object={botRig.group}
         onClick={(e: { stopPropagation: () => void }) => {
@@ -103,25 +113,10 @@ export const AIMentorBeacon: React.FC<AIMentorBeaconProps> = ({
 
       {/* Floating Holographic Name Tag */}
       <group position={[0, 1.35, 0]}>
-        <Text
-          fontSize={0.13}
-          color="#ffffff"
-          anchorX="center"
-          anchorY="middle"
-          letterSpacing={0.08}
-        >
-          AI MENTOR BOT
-        </Text>
-        <Text
-          position={[0, -0.13, 0]}
-          fontSize={0.085}
-          color={beaconColor}
-          anchorX="center"
-          anchorY="middle"
-          letterSpacing={0.05}
-        >
-          SOCRATIC COMPANION
-        </Text>
+        <mesh position={[0, 0, 0]}>
+          <planeGeometry args={[1.5, 0.46]} />
+          <primitive object={nameTagMat} attach="material" />
+        </mesh>
       </group>
 
       {/* Interactive In-World Prompt Billboard when in proximity */}
@@ -141,26 +136,10 @@ export const AIMentorBeacon: React.FC<AIMentorBeaconProps> = ({
                 document.body.style.cursor = 'default';
               }}
             >
-              {/* Pill Backplate */}
-              <mesh position={[0, 0, -0.01]}>
-                <planeGeometry args={[2.0, 0.42]} />
-                <meshBasicMaterial color="#0c1020" transparent opacity={0.88} />
-              </mesh>
-              {/* Glowing Outline */}
               <mesh position={[0, 0, 0]}>
-                <planeGeometry args={[2.04, 0.46]} />
-                <meshBasicMaterial color={beaconColor} wireframe transparent opacity={0.8} />
+                <planeGeometry args={[2.0, 0.55]} />
+                <primitive object={promptMat} attach="material" />
               </mesh>
-              <Text
-                fontSize={0.13}
-                color={beaconColor}
-                anchorX="center"
-                anchorY="middle"
-                fontWeight={700}
-                letterSpacing={0.04}
-              >
-                [E] CONSULT AI MENTOR
-              </Text>
             </group>
           </Float>
         </group>

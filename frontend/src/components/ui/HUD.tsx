@@ -244,7 +244,7 @@ export const HUD: React.FC = () => {
           className={`wing-pill ${currentWingKey === 'main' ? 'active' : ''}`}
           id="pill-main"
           onClick={() => {
-            teleportAvatar([0, 0, 0]);
+            teleportAvatar([0, 0, 0], 0);
             setIsIsometric(false);
             useClassroomStore.setState({ cinematicCamera: null });
             showToast('Navigated to: Main Classroom Central Hub');
@@ -256,7 +256,7 @@ export const HUD: React.FC = () => {
           className={`wing-pill ${currentWingKey === 'array' ? 'active' : ''}`}
           id="pill-array"
           onClick={() => {
-            teleportAvatar([-20, 0, 0]);
+            teleportAvatar([-17.5, 0, 0], -Math.PI / 2);
             setIsIsometric(false);
             useClassroomStore.setState({ cinematicCamera: null });
             showToast('Navigated to: Array Station Lab (West)');
@@ -268,7 +268,7 @@ export const HUD: React.FC = () => {
           className={`wing-pill ${currentWingKey === 'list' ? 'active' : ''}`}
           id="pill-list"
           onClick={() => {
-            teleportAvatar([20, 0, 0]);
+            teleportAvatar([17.5, 0, 0], Math.PI / 2);
             setIsIsometric(false);
             useClassroomStore.setState({ cinematicCamera: null });
             showToast('Navigated to: Linked List Lab (East)');
@@ -280,7 +280,7 @@ export const HUD: React.FC = () => {
           className={`wing-pill ${currentWingKey === 'recursion' ? 'active' : ''}`}
           id="pill-recursion"
           onClick={() => {
-            teleportAvatar([0, 0, -20]);
+            teleportAvatar([0, 0, -17.5], 0);
             setIsIsometric(false);
             useClassroomStore.setState({ cinematicCamera: null });
             showToast('Navigated to: Recursion Chamber (North)');
@@ -292,7 +292,7 @@ export const HUD: React.FC = () => {
           className={`wing-pill ${currentWingKey === 'tree' ? 'active' : ''}`}
           id="pill-tree"
           onClick={() => {
-            teleportAvatar([12, 0, 20.8]);
+            teleportAvatar([12, 0, 17.5], Math.PI);
             setIsIsometric(false);
             useClassroomStore.setState({ cinematicCamera: null });
             showToast('Navigated to: Tree & BST Lab (South-East)');
@@ -304,7 +304,7 @@ export const HUD: React.FC = () => {
           className={`wing-pill ${currentWingKey === 'stack' ? 'active' : ''}`}
           id="pill-stack"
           onClick={() => {
-            teleportAvatar([0, 0, 20]);
+            teleportAvatar([0, 0, 17.5], Math.PI);
             setIsIsometric(false);
             useClassroomStore.setState({ cinematicCamera: null });
             showToast('Navigated to: Stack Lab (South)');

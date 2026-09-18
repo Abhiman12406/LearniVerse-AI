@@ -38,6 +38,10 @@ let cachedChalkboardTexture: THREE.CanvasTexture | null = null;
 let cachedWhiteboardTexture: THREE.CanvasTexture | null = null;
 const cachedScreenTextures = new Map<string, THREE.CanvasTexture>();
 const cachedPortalSignTextures = new Map<string, THREE.CanvasTexture>();
+const cachedDiagnosticPlaqueTextures = new Map<string, THREE.CanvasTexture>();
+const cachedDiagnosticPlaqueMaterials = new Map<string, THREE.MeshBasicMaterial>();
+const cachedFloatingBadgeTextures = new Map<string, THREE.CanvasTexture>();
+const cachedFloatingBadgeMaterials = new Map<string, THREE.MeshBasicMaterial>();
 
 /**
  * Creates or retrieves the cached Staggered Wood Plank Floor Texture (1024x1024).
@@ -471,6 +475,164 @@ export function getDoorPortalSignTexture(title: string, glowColor: string): THRE
   return tex;
 }
 
+/**
+ * Creates or retrieves a cached Diagnostic Holographic Plaque Texture (1024x512).
+ * Singletons keyed by composite cache key.
+ */
+export function getDiagnosticPlaqueTexture(
+  wingName: string,
+  isSealed: boolean,
+  reqText: string,
+  currentText: string,
+  directiveText: string
+): THREE.CanvasTexture {
+  const key = `${wingName}_${isSealed}_${reqText}_${currentText}_${directiveText}`;
+  if (cachedDiagnosticPlaqueTextures.has(key)) {
+    return cachedDiagnosticPlaqueTextures.get(key)!;
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    const themeColor = isSealed ? '#ff0055' : '#00ff88';
+    const subColor = isSealed ? '#ff99aa' : '#a7f3d0';
+
+    // Dark cybernetic backing
+    ctx.fillStyle = '#070913';
+    ctx.fillRect(0, 0, 1024, 512);
+
+    // Glowing outer border
+    ctx.strokeStyle = themeColor;
+    ctx.lineWidth = 6;
+    ctx.strokeRect(12, 12, 1000, 488);
+
+    // Header banner bar
+    ctx.fillStyle = isSealed ? 'rgba(255, 0, 85, 0.25)' : 'rgba(0, 255, 136, 0.25)';
+    ctx.fillRect(20, 20, 984, 54);
+
+    // Header text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 22px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(
+      isSealed ? '/// PREREQUISITE GATE SEALED ///' : '>>> ACCESS GRANTED: PREREQUISITES VERIFIED <<<',
+      512,
+      54
+    );
+
+    // Wing Title
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 44px sans-serif';
+    ctx.fillText(wingName.toUpperCase(), 512, 140);
+
+    // Divider
+    ctx.strokeStyle = themeColor;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(120, 175);
+    ctx.lineTo(904, 175);
+    ctx.stroke();
+
+    // Requirement line
+    ctx.fillStyle = subColor;
+    ctx.font = 'bold 26px monospace';
+    ctx.fillText(reqText, 512, 230);
+
+    // Current mastery line
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '24px monospace';
+    ctx.fillText(currentText, 512, 295);
+
+    // Directive / Action line
+    ctx.fillStyle = isSealed ? '#fb7185' : '#6ee7b7';
+    ctx.font = 'bold 28px sans-serif';
+    ctx.fillText(directiveText, 512, 385);
+
+    // Bottom decorative ticker
+    ctx.fillStyle = themeColor;
+    ctx.font = '16px monospace';
+    ctx.fillText('BKT ADAPTIVE AGENTIC SYSTEM // REAL-TIME KG POLICIES ENFORCED', 512, 465);
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  cachedDiagnosticPlaqueTextures.set(key, tex);
+  return tex;
+}
+
+export function getDiagnosticPlaqueMaterial(
+  wingName: string,
+  isSealed: boolean,
+  reqText: string,
+  currentText: string,
+  directiveText: string
+): THREE.MeshBasicMaterial {
+  const key = `${wingName}_${isSealed}_${reqText}_${currentText}_${directiveText}`;
+  if (cachedDiagnosticPlaqueMaterials.has(key)) {
+    return cachedDiagnosticPlaqueMaterials.get(key)!;
+  }
+  const tex = getDiagnosticPlaqueTexture(wingName, isSealed, reqText, currentText, directiveText);
+  const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.96 });
+  cachedDiagnosticPlaqueMaterials.set(key, mat);
+  return mat;
+}
+
+/**
+ * Creates or retrieves a cached floating badge / prompt texture (512x160).
+ */
+export function getFloatingBadgeTexture(
+  line1: string,
+  line2: string,
+  accentColor: string
+): THREE.CanvasTexture {
+  const key = `${line1}_${line2}_${accentColor}`;
+  if (cachedFloatingBadgeTextures.has(key)) {
+    return cachedFloatingBadgeTextures.get(key)!;
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 160;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.fillStyle = '#0b0f19';
+    ctx.fillRect(0, 0, 512, 160);
+
+    ctx.strokeStyle = accentColor;
+    ctx.lineWidth = 5;
+    ctx.strokeRect(8, 8, 496, 144);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = accentColor;
+    ctx.font = 'bold 30px sans-serif';
+    ctx.fillText(line1, 256, 68);
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '19px monospace';
+    ctx.fillText(line2, 256, 118);
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  cachedFloatingBadgeTextures.set(key, tex);
+  return tex;
+}
+
+export function getFloatingBadgeMaterial(
+  line1: string,
+  line2: string,
+  accentColor: string
+): THREE.MeshBasicMaterial {
+  const key = `${line1}_${line2}_${accentColor}`;
+  if (cachedFloatingBadgeMaterials.has(key)) {
+    return cachedFloatingBadgeMaterials.get(key)!;
+  }
+  const tex = getFloatingBadgeTexture(line1, line2, accentColor);
+  const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.92 });
+  cachedFloatingBadgeMaterials.set(key, mat);
+  return mat;
+}
+
 // ==========================================
 // 2. SHARED PBR MATERIAL SINGLETONS
 // ==========================================
@@ -696,6 +858,18 @@ export function clearClassroomSingletons(): void {
 
   cachedPortalSignTextures.forEach((t) => t.dispose());
   cachedPortalSignTextures.clear();
+
+  cachedDiagnosticPlaqueTextures.forEach((t) => t.dispose());
+  cachedDiagnosticPlaqueTextures.clear();
+
+  cachedDiagnosticPlaqueMaterials.forEach((m) => m.dispose());
+  cachedDiagnosticPlaqueMaterials.clear();
+
+  cachedFloatingBadgeTextures.forEach((t) => t.dispose());
+  cachedFloatingBadgeTextures.clear();
+
+  cachedFloatingBadgeMaterials.forEach((m) => m.dispose());
+  cachedFloatingBadgeMaterials.clear();
 
   if (cachedMaterials) {
     Object.values(cachedMaterials).forEach((m) => m.dispose());

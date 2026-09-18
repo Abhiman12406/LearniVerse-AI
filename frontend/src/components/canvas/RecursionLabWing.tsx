@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Text, Float } from '@react-three/drei';
+import { Float } from '@react-three/drei';
 import * as THREE from 'three';
 import { RecursionChamber } from './RecursionChamber';
 import { useClassroomStore } from '../../store/useClassroomStore';
@@ -9,6 +9,7 @@ import {
   getDoorPortalSignMaterial,
   getDoorPortalGlowMaterial,
   getScreenDisplayMaterial,
+  getFloatingBadgeMaterial,
 } from '../../assets/3d/classroomSingletons';
 
 export const RecursionLabWing: React.FC = () => {
@@ -82,6 +83,15 @@ export const RecursionLabWing: React.FC = () => {
     []
   );
   const portalGlowMat = useMemo(() => getDoorPortalGlowMaterial('#8b5cf6'), []);
+  const promptMat = useMemo(
+    () =>
+      getFloatingBadgeMaterial(
+        '[E] ACCESS CONSOLE',
+        'Recursion Call Stack Elevator',
+        '#c084fc'
+      ),
+    []
+  );
 
   return (
     <group position={wingPos}>
@@ -231,25 +241,10 @@ export const RecursionLabWing: React.FC = () => {
         {isNear && !activeStation && (
           <Float speed={2.5} rotationIntensity={0.02} floatIntensity={0.15}>
             <group position={[0, 4.4, 0.8]}>
-              <mesh position={[0, 0, -0.01]}>
-                <planeGeometry args={[3.2, 0.65]} />
-                <meshStandardMaterial color="#0b081c" transparent opacity={0.9} />
-              </mesh>
               <mesh position={[0, 0, 0]}>
-                <planeGeometry args={[3.24, 0.69]} />
-                <meshBasicMaterial color="#a855f7" wireframe />
+                <planeGeometry args={[3.2, 0.72]} />
+                <primitive object={promptMat} attach="material" />
               </mesh>
-              <Text
-                position={[0, 0.02, 0.02]}
-                fontSize={0.21}
-                color="#c084fc"
-                anchorX="center"
-                anchorY="middle"
-                fontWeight={700}
-                letterSpacing={0.05}
-              >
-                [E] ACCESS CONSOLE
-              </Text>
             </group>
           </Float>
         )}

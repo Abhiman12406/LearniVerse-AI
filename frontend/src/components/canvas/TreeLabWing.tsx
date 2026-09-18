@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Text, Float } from '@react-three/drei';
+import { Float } from '@react-three/drei';
 import * as THREE from 'three';
 import { createTreeBSTModel } from '../../assets/3d/createTreeBSTModel';
 import { useClassroomStore } from '../../store/useClassroomStore';
@@ -9,6 +9,7 @@ import {
   getDoorPortalSignMaterial,
   getDoorPortalGlowMaterial,
   getScreenDisplayMaterial,
+  getFloatingBadgeMaterial,
 } from '../../assets/3d/classroomSingletons';
 
 export const TreeLabWing: React.FC = () => {
@@ -136,6 +137,15 @@ export const TreeLabWing: React.FC = () => {
     []
   );
   const portalGlowMat = useMemo(() => getDoorPortalGlowMaterial('#10b981'), []);
+  const promptMat = useMemo(
+    () =>
+      getFloatingBadgeMaterial(
+        '[E] OPERATE TREE LAB',
+        'Binary Search Tree & Traversal',
+        '#34d399'
+      ),
+    []
+  );
 
   return (
     <group position={wingPos}>
@@ -156,10 +166,14 @@ export const TreeLabWing: React.FC = () => {
       </mesh>
 
       {/* --- 2. 14x14m ENCLOSED PERIMETER WALLS (Height: 5.6m, Thickness: 0.35m) --- */}
-      {/* South Exterior Wall (Z = +7.0, spanning X: -7.0 to +7.0) */}
-      <mesh position={[0, 2.8, 7.0]} receiveShadow>
-        <boxGeometry args={[14.0, 5.6, 0.35]} />
+      {/* South Diorama Knee-Wall (Z = +7.0, height: 0.85m for third-person camera clearance) */}
+      <mesh position={[0, 0.425, 7.0]} receiveShadow>
+        <boxGeometry args={[14.0, 0.85, 0.35]} />
         <primitive object={materials.wallTaupe} attach="material" />
+      </mesh>
+      <mesh position={[0, 0.89, 7.0]}>
+        <boxGeometry args={[14.1, 0.08, 0.42]} />
+        <primitive object={materials.woodDark} attach="material" />
       </mesh>
 
       {/* East Exterior Wall (X = +7.0, spanning Z: -7.0 to +7.0) */}
@@ -286,25 +300,10 @@ export const TreeLabWing: React.FC = () => {
       {isNear && !activeStation && (
         <Float speed={2.5} rotationIntensity={0.02} floatIntensity={0.15}>
           <group position={[0, 3.8, 1.4]}>
-            <mesh position={[0, 0, -0.01]}>
-              <planeGeometry args={[3.4, 0.68]} />
-              <meshStandardMaterial color="#06121a" transparent opacity={0.92} />
-            </mesh>
             <mesh position={[0, 0, 0]}>
-              <planeGeometry args={[3.44, 0.72]} />
-              <meshBasicMaterial color="#10b981" wireframe />
+              <planeGeometry args={[3.2, 0.72]} />
+              <primitive object={promptMat} attach="material" />
             </mesh>
-            <Text
-              position={[0, 0.02, 0.02]}
-              fontSize={0.2}
-              color="#34d399"
-              anchorX="center"
-              anchorY="middle"
-              fontWeight={700}
-              letterSpacing={0.05}
-            >
-              [E] OPERATE TREE LAB
-            </Text>
           </group>
         </Float>
       )}

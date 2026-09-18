@@ -153,6 +153,7 @@ interface ClassroomStore {
 
   // Navigation & Teleport State
   teleportRequest: [number, number, number] | null;
+  cameraAngleRequest: number | null;
 
   // Golden Hour Lighting State
   isGoldenHour: boolean;
@@ -232,8 +233,10 @@ interface ClassroomStore {
   triggerBarrierDissolve: (wingId?: string) => void;
   togglePerspectiveMode: () => void;
   setPerspectiveMode: (mode: '3rd_person' | '1st_person') => void;
-  teleportAvatar: (pos: [number, number, number]) => void;
+  teleportAvatar: (pos: [number, number, number], cameraAngle?: number) => void;
   clearTeleportRequest: () => void;
+  requestCameraAngle: (angle: number) => void;
+  clearCameraAngleRequest: () => void;
   toggleGoldenHour: () => void;
   showToast: (msg: string) => void;
   clearToast: () => void;
@@ -583,6 +586,7 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
   cinematicCamera: null,
   perspectiveMode: '3rd_person',
   teleportRequest: null,
+  cameraAngleRequest: null,
   isGoldenHour: false,
   toastMessage: null,
 
@@ -805,10 +809,11 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
     set({ perspectiveMode: mode });
   },
 
-  teleportAvatar: (pos: [number, number, number]) => {
+  teleportAvatar: (pos: [number, number, number], cameraAngle?: number) => {
     soundSystem.playChirp();
     set({
       teleportRequest: pos,
+      cameraAngleRequest: cameraAngle !== undefined ? cameraAngle : null,
       avatar: {
         ...get().avatar,
         position: pos,
@@ -819,6 +824,14 @@ export const useClassroomStore = create<ClassroomStore>((set, get) => ({
 
   clearTeleportRequest: () => {
     set({ teleportRequest: null });
+  },
+
+  requestCameraAngle: (angle: number) => {
+    set({ cameraAngleRequest: angle });
+  },
+
+  clearCameraAngleRequest: () => {
+    set({ cameraAngleRequest: null });
   },
 
   toggleGoldenHour: () => {

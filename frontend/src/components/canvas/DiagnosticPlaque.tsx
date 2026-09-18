@@ -1,8 +1,9 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Text, Float } from '@react-three/drei';
+import { Float } from '@react-three/drei';
 import * as THREE from 'three';
 import { WingInfo } from '../../types/world';
+import { getDiagnosticPlaqueMaterial } from '../../assets/3d/classroomSingletons';
 
 interface DiagnosticPlaqueProps {
   wingInfo?: WingInfo;
@@ -35,8 +36,13 @@ export const DiagnosticPlaque: React.FC<DiagnosticPlaqueProps> = ({
   const themeColor = isSealed ? '#ff0055' : '#00ff88';
   const accentGlow = isSealed ? '#ff1744' : '#00e676';
 
+  const plaqueMat = useMemo(
+    () => getDiagnosticPlaqueMaterial(wingName, isSealed, reqText, currentText, directiveText),
+    [wingName, isSealed, reqText, currentText, directiveText]
+  );
+
   useFrame((_, delta) => {
-    // When sealed, plaque is fully visible (1.0). When accessible, gently fade to 0.15 so entrance is clear
+    // When sealed, plaque is fully visible (1.0). When accessible, gently fade to 0.2
     const targetOpacity = isSealed ? 1.0 : 0.2;
     opacityRef.current = THREE.MathUtils.lerp(opacityRef.current, targetOpacity, delta * 3.5);
 
@@ -71,84 +77,11 @@ export const DiagnosticPlaque: React.FC<DiagnosticPlaqueProps> = ({
           />
         </mesh>
 
-        {/* Top Header Alert Bar */}
-        <mesh position={[0, 0.85, 0.025]}>
-          <planeGeometry args={[3.4, 0.18]} />
-          <meshBasicMaterial color={themeColor} transparent opacity={0.3} />
+        {/* Front Diagnostic Plaque Canvas Surface */}
+        <mesh position={[0, 0, 0.026]}>
+          <planeGeometry args={[3.55, 1.95]} />
+          <primitive object={plaqueMat} attach="material" />
         </mesh>
-
-        {/* Alert Category Label */}
-        <Text
-          position={[0, 0.85, 0.03]}
-          fontSize={0.11}
-          color="#ffffff"
-          anchorX="center"
-          anchorY="middle"
-          letterSpacing={0.08}
-        >
-          {isSealed ? '/// PREREQUISITE GATE SEALED ///' : '>>> ACCESS GRANTED: PREREQUISITES VERIFIED <<<'}
-        </Text>
-
-        {/* Wing Title */}
-        <Text
-          position={[0, 0.52, 0.03]}
-          fontSize={0.24}
-          color="#ffffff"
-          anchorX="center"
-          anchorY="middle"
-          fontWeight={700}
-        >
-          {wingName.toUpperCase()}
-        </Text>
-
-        {/* Divider line */}
-        <mesh position={[0, 0.34, 0.025]}>
-          <planeGeometry args={[3.1, 0.015]} />
-          <meshBasicMaterial color={themeColor} transparent opacity={0.6} />
-        </mesh>
-
-        {/* Requirement line */}
-        <Text
-          position={[0, 0.14, 0.03]}
-          fontSize={0.14}
-          color={isSealed ? '#ff99aa' : '#a7f3d0'}
-          anchorX="center"
-          anchorY="middle"
-        >
-          {reqText}
-        </Text>
-
-        {/* Current status line */}
-        <Text
-          position={[0, -0.14, 0.03]}
-          fontSize={0.13}
-          color={isSealed ? '#ff0055' : '#00ff88'}
-          anchorX="center"
-          anchorY="middle"
-          fontWeight={600}
-        >
-          {currentText}
-        </Text>
-
-        {/* Action Directive Banner */}
-        <mesh position={[0, -0.56, 0.025]}>
-          <planeGeometry args={[3.2, 0.32]} />
-          <meshStandardMaterial
-            color={isSealed ? '#2a0a14' : '#072418'}
-            roughness={0.4}
-            metalness={0.8}
-          />
-        </mesh>
-        <Text
-          position={[0, -0.56, 0.035]}
-          fontSize={0.12}
-          color={isSealed ? '#00f0ff' : '#6ee7b7'}
-          anchorX="center"
-          anchorY="middle"
-          fontWeight={500}
-        >
-          {directiveText}
-        </Text>
 
         {/* Corner Neon Bracket Accents */}
         {/* Top-Left */}
@@ -183,3 +116,4 @@ export const DiagnosticPlaque: React.FC<DiagnosticPlaqueProps> = ({
     </group>
   );
 };
+

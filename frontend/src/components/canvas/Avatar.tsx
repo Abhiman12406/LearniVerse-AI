@@ -97,7 +97,7 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
   useFrame((_, delta) => {
     if (!avatarGroupRef.current) return;
 
-    const { isMentorOpen, teleportRequest, clearTeleportRequest } = useClassroomStore.getState();
+    const { isMentorOpen, teleportRequest, cameraAngleRequest, clearTeleportRequest } = useClassroomStore.getState();
 
     if (teleportRequest) {
       position.current.set(teleportRequest[0], teleportRequest[1], teleportRequest[2]);
@@ -105,6 +105,9 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
       verticalVelocity.current = 0;
       isJumping.current = false;
       avatarGroupRef.current.position.copy(position.current);
+      if (cameraAngleRequest !== null && cameraAngleRequest !== undefined) {
+        avatarGroupRef.current.rotation.y = cameraAngleRequest + Math.PI;
+      }
       clearTeleportRequest();
     }
 

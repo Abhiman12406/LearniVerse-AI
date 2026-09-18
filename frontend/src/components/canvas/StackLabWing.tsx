@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Text, Float } from '@react-three/drei';
+import { Float } from '@react-three/drei';
 import * as THREE from 'three';
 import { StackApparatus } from './StackApparatus';
 import { useClassroomStore } from '../../store/useClassroomStore';
@@ -9,6 +9,7 @@ import {
   getScreenDisplayMaterial,
   getDoorPortalSignMaterial,
   getDoorPortalGlowMaterial,
+  getFloatingBadgeMaterial,
 } from '../../assets/3d/classroomSingletons';
 
 export const StackLabWing: React.FC = () => {
@@ -81,6 +82,15 @@ export const StackLabWing: React.FC = () => {
     []
   );
   const portalGlowMat = useMemo(() => getDoorPortalGlowMaterial('#f59e0b'), []);
+  const promptMat = useMemo(
+    () =>
+      getFloatingBadgeMaterial(
+        '[E] OPERATE STACK TOWER',
+        'LIFO Push / Pop Elevator',
+        '#f59e0b'
+      ),
+    []
+  );
 
   return (
     <group position={wingPos}>
@@ -102,10 +112,14 @@ export const StackLabWing: React.FC = () => {
       </mesh>
 
       {/* --- 2. ENCLOSED PERIMETER WALLS (Height: 5.6m, Thickness: 0.35m) --- */}
-      {/* South Exterior Wall (local Z = 6.5, spanning X: -4.8 to +4.8) */}
-      <mesh position={[0, 2.8, 6.5]} receiveShadow>
-        <boxGeometry args={[9.6, 5.6, 0.35]} />
+      {/* South Diorama Knee-Wall (local Z = 6.5, height: 0.85m for third-person camera clearance) */}
+      <mesh position={[0, 0.425, 6.5]} receiveShadow>
+        <boxGeometry args={[9.6, 0.85, 0.35]} />
         <primitive object={materials.wallTaupe} attach="material" />
+      </mesh>
+      <mesh position={[0, 0.89, 6.5]}>
+        <boxGeometry args={[9.7, 0.08, 0.42]} />
+        <primitive object={materials.woodDark} attach="material" />
       </mesh>
 
       {/* West Exterior Wall (local X = -4.8, spanning Z: -7.0 to +6.5) */}
@@ -303,25 +317,10 @@ export const StackLabWing: React.FC = () => {
         {isNear && !activeStation && (
           <Float speed={2.5} rotationIntensity={0.02} floatIntensity={0.15}>
             <group position={[0, 4.2, 0.6]}>
-              <mesh position={[0, 0, -0.01]}>
-                <planeGeometry args={[3.2, 0.65]} />
-                <meshStandardMaterial color="#0f172a" transparent opacity={0.88} />
-              </mesh>
               <mesh position={[0, 0, 0]}>
-                <planeGeometry args={[3.24, 0.69]} />
-                <meshBasicMaterial color="#f59e0b" wireframe />
+                <planeGeometry args={[3.2, 0.72]} />
+                <primitive object={promptMat} attach="material" />
               </mesh>
-              <Text
-                position={[0, 0.02, 0.02]}
-                fontSize={0.2}
-                color="#f59e0b"
-                anchorX="center"
-                anchorY="middle"
-                fontWeight={700}
-                letterSpacing={0.05}
-              >
-                [E] OPERATE STACK TOWER
-              </Text>
             </group>
           </Float>
         )}

@@ -35,8 +35,20 @@ const CameraFollower: React.FC<CameraFollowerProps> = ({
   const targetLookAtRef = useRef(new THREE.Vector3(0, 1.2, 8));
 
   useFrame((_, delta) => {
-    const { avatar, cinematicCamera, activeStation, perspectiveMode } =
-      useClassroomStore.getState();
+    const {
+      avatar,
+      cinematicCamera,
+      activeStation,
+      perspectiveMode,
+      cameraAngleRequest,
+      clearCameraAngleRequest,
+    } = useClassroomStore.getState();
+
+    if (cameraAngleRequest !== null && cameraAngleRequest !== undefined) {
+      cameraAngleRef.current = cameraAngleRequest;
+      clearCameraAngleRequest();
+    }
+
     let idealX: number;
     let idealY: number;
     let idealZ: number;
@@ -264,15 +276,13 @@ export const ClassroomCanvas: React.FC = () => {
         <ClassroomCampus />
         <Avatar cameraAngleRef={cameraAngleRef} />
 
-        <React.Suspense fallback={null}>
-          <CentralDais />
-          <Archways />
-          <StackLabWing />
-          <ArrayLabWing />
-          <LinkedListLab />
-          <RecursionLabWing />
-          <TreeLabWing />
-        </React.Suspense>
+        <CentralDais />
+        <Archways />
+        <StackLabWing />
+        <ArrayLabWing />
+        <LinkedListLab />
+        <RecursionLabWing />
+        <TreeLabWing />
       </Canvas>
     </div>
   );

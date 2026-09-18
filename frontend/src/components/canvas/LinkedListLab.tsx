@@ -1,6 +1,6 @@
 import React, { useRef, useMemo, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Text, Float } from '@react-three/drei';
+import { Float } from '@react-three/drei';
 import * as THREE from 'three';
 import { useClassroomStore } from '../../store/useClassroomStore';
 import {
@@ -12,6 +12,7 @@ import {
   getDoorPortalSignMaterial,
   getDoorPortalGlowMaterial,
   getScreenDisplayMaterial,
+  getFloatingBadgeMaterial,
 } from '../../assets/3d/classroomSingletons';
 
 export const LinkedListLab: React.FC = () => {
@@ -149,6 +150,24 @@ export const LinkedListLab: React.FC = () => {
     []
   );
   const portalGlowMat = useMemo(() => getDoorPortalGlowMaterial('#f59e0b'), []);
+  const featureSignMat = useMemo(
+    () =>
+      getFloatingBadgeMaterial(
+        'LINKED LIST LAB // EAST WING',
+        'Non-Contiguous Heap Allocation // [Data | Next]',
+        '#fbbf24'
+      ),
+    []
+  );
+  const promptMat = useMemo(
+    () =>
+      getFloatingBadgeMaterial(
+        '[E] Operate Station',
+        'Pointer Node Chain // Dynamic Allocation',
+        '#fbbf24'
+      ),
+    []
+  );
 
   return (
     <group position={wingPos}>
@@ -181,10 +200,14 @@ export const LinkedListLab: React.FC = () => {
         <primitive object={materials.wallPlaster} attach="material" />
       </mesh>
 
-      {/* South Exterior Wall (Z = +7.0, spanning X: -7.0 to +7.0) */}
-      <mesh position={[0, 2.8, 7.0]} receiveShadow>
-        <boxGeometry args={[14.0, 5.6, 0.35]} />
+      {/* South Diorama Knee-Wall (Z = +7.0, height: 0.85m for third-person camera clearance) */}
+      <mesh position={[0, 0.425, 7.0]} receiveShadow>
+        <boxGeometry args={[14.0, 0.85, 0.35]} />
         <primitive object={materials.wallPlaster} attach="material" />
+      </mesh>
+      <mesh position={[0, 0.89, 7.0]}>
+        <boxGeometry args={[14.1, 0.08, 0.42]} />
+        <primitive object={materials.woodDark} attach="material" />
       </mesh>
 
       {/* West Entrance Wall (X = -7.0, facing East corridor at X = +13.0) */}
@@ -237,36 +260,10 @@ export const LinkedListLab: React.FC = () => {
       {/* --- 3. BRANDED INTERIOR PLAQUES & SIGNAGE --- */}
       {/* Main East Feature Plaque (Facing West into the room) */}
       <group position={[6.8, 3.8, 0]} rotation={[0, -Math.PI / 2, 0]}>
-        <mesh position={[0, 0, -0.02]}>
-          <planeGeometry args={[6.2, 1.1]} />
-          <meshBasicMaterial color="#020617" transparent opacity={0.92} />
+        <mesh position={[0, 0, 0]}>
+          <planeGeometry args={[6.2, 1.2]} />
+          <primitive object={featureSignMat} attach="material" />
         </mesh>
-        <mesh position={[0, 0, -0.025]}>
-          <planeGeometry args={[6.26, 1.16]} />
-          <meshBasicMaterial color="#f59e0b" transparent opacity={0.65} />
-        </mesh>
-        <Text
-          position={[0, 0.2, 0]}
-          fontSize={0.24}
-          color="#fbbf24"
-          anchorX="center"
-          anchorY="middle"
-          font="monospace"
-          fontWeight="bold"
-          letterSpacing={0.06}
-        >
-          LINKED LIST LAB // EAST WING
-        </Text>
-        <Text
-          position={[0, -0.16, 0]}
-          fontSize={0.14}
-          color="#94a3b8"
-          anchorX="center"
-          anchorY="middle"
-          font="monospace"
-        >
-          Non-Contiguous Heap Allocation // Pointer Chain [Data | Next]
-        </Text>
       </group>
 
       {/* --- 4. TECH BENCHES & WORKSTATIONS --- */}
@@ -385,36 +382,10 @@ export const LinkedListLab: React.FC = () => {
       {isNear && !activeStation && (
         <Float speed={2.5} rotationIntensity={0.03} floatIntensity={0.25}>
           <group position={[0, 2.8, 0.8]}>
-            <mesh position={[0, 0, -0.02]}>
-              <planeGeometry args={[3.4, 0.7]} />
-              <meshBasicMaterial color="#020617" transparent opacity={0.9} />
+            <mesh position={[0, 0, 0]}>
+              <planeGeometry args={[3.2, 0.72]} />
+              <primitive object={promptMat} attach="material" />
             </mesh>
-            <mesh position={[0, 0, -0.025]}>
-              <planeGeometry args={[3.44, 0.74]} />
-              <meshBasicMaterial color="#f59e0b" transparent opacity={0.65} />
-            </mesh>
-            <Text
-              position={[0, 0.09, 0]}
-              fontSize={0.18}
-              color="#fbbf24"
-              anchorX="center"
-              anchorY="middle"
-              font="monospace"
-              fontWeight="bold"
-              letterSpacing={0.04}
-            >
-              [E] Operate Station
-            </Text>
-            <Text
-              position={[0, -0.12, 0]}
-              fontSize={0.11}
-              color="#94a3b8"
-              anchorX="center"
-              anchorY="middle"
-              font="monospace"
-            >
-              Pointer Node Chain // Dynamic Allocation
-            </Text>
           </group>
         </Float>
       )}
