@@ -166,7 +166,19 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
 
       // Rotate avatar mesh toward movement direction (avatar face is on local +Z)
       const currentRot = avatarGroupRef.current.rotation.y;
-      const targetRot = Math.atan2(velocity.current.x, velocity.current.z);
+      let targetRot: number;
+
+      if (perspectiveMode === '1st_person') {
+        // In 1P, avatar always faces forward along camera line-of-sight
+        targetRot = camAngle + Math.PI;
+      } else if (inputForward === -1 && inputStrafe === 0) {
+        // In 3P, backing up keeps avatar facing forward away from camera
+        targetRot = camAngle + Math.PI;
+      } else {
+        // Turning and running forward or diagonally
+        targetRot = Math.atan2(velocity.current.x, velocity.current.z);
+      }
+
       let diff = (targetRot - currentRot) % (Math.PI * 2);
       if (diff > Math.PI) diff -= Math.PI * 2;
       if (diff < -Math.PI) diff += Math.PI * 2;
@@ -181,6 +193,12 @@ export const Avatar: React.FC<AvatarProps> = ({ cameraAngleRef }) => {
       // Deceleration damping
       velocity.current.x = THREE.MathUtils.lerp(velocity.current.x, 0, 0.25);
       velocity.current.z = THREE.MathUtils.lerp(velocity.current.z, 0, 0.25);
+
+      if (perspectiveMode === '1st_person') {
+        // Keep avatar facing camera in 1P even while stationary
+        const camAngle = cameraAngleRef.current;
+        avatarGroupRef.current.rotation.y = camAngle + Math.PI;
+      }
     }
 
     // Apply horizontal translation

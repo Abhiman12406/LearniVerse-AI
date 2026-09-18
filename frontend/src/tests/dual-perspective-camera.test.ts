@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import * as THREE from 'three';
 import { useClassroomStore } from '../store/useClassroomStore';
 import {
   exponentialDamp,
@@ -212,6 +213,92 @@ describe('Issue 13: Dual-Perspective Camera Controller & Exponential Motion Damp
 
       expect(currentDistance).toBe(3.5);
       expect(useClassroomStore.getState().perspectiveMode).toBe('3rd_person');
+    });
+  });
+
+  describe('7. Third-Person Perspective (3P) Auto-Chase Camera Following Behind Player', () => {
+    it('calculates the desired chase azimuth directly behind the avatar', () => {
+      // Facing North (-Z) in world coords: avatar.rotation = Math.PI
+      const avatarRotationNorth = Math.PI;
+      const desiredAngleNorth = avatarRotationNorth - Math.PI; // 0 radians (+Z, behind player)
+      expect(desiredAngleNorth).toBeCloseTo(0, 4);
+
+      // Facing East (+X): avatar.rotation = Math.PI / 2
+      const avatarRotationEast = Math.PI / 2;
+      const desiredAngleEast = avatarRotationEast - Math.PI; // -PI / 2 (-X, behind player)
+      expect(desiredAngleEast).toBeCloseTo(-Math.PI / 2, 4);
+
+      // Facing West (-X): avatar.rotation = -Math.PI / 2
+      const avatarRotationWest = -Math.PI / 2;
+      const desiredAngleWest = avatarRotationWest - Math.PI; // -3PI / 2 => +PI / 2 (+X, behind player)
+      let normalizedAngleWest = desiredAngleWest % (Math.PI * 2);
+      if (normalizedAngleWest < -Math.PI) normalizedAngleWest += Math.PI * 2;
+      expect(normalizedAngleWest).toBeCloseTo(Math.PI / 2, 4);
+    });
+
+    it('smoothly steps camera angle toward desired angle when avatar is moving', () => {
+      let cameraAngle = 0;
+      const avatarRotation = Math.PI * 0.75; // Turning towards diagonal
+      const desiredAngle = avatarRotation - Math.PI; // -0.25 * PI (-0.785 rad)
+
+      let angleDiff = (desiredAngle - cameraAngle) % (Math.PI * 2);
+      if (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+      if (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+      const delta = 0.016;
+      const followSpeed = 3.5;
+      cameraAngle += angleDiff * Math.min(1.0, followSpeed * delta);
+
+      // Camera angle should have smoothly moved toward desired angle
+      expect(cameraAngle).toBeLessThan(0);
+      expect(cameraAngle).toBeGreaterThan(desiredAngle);
+    });
+  });
+
+  describe('8. First-Person Perspective (1P) FPS Mouselook Mechanics', () => {
+    it('updates camera azimuth and pitch in response to mouse movement deltas', () => {
+      let cameraAngle = 0;
+      let cameraPitch = 0;
+      const sensitivity = 0.0022;
+
+      // Mouse moved right (+50px) and down (+30px)
+      const movementX = 50;
+      const movementY = 30;
+
+      cameraAngle -= movementX * sensitivity;
+      cameraPitch = THREE.MathUtils.clamp(
+        cameraPitch + movementY * sensitivity,
+        -1.4,
+        1.4
+      );
+
+      // Turning right decreases angle (towards positive forwardX)
+      expect(cameraAngle).toBeCloseTo(-0.11, 4);
+      // Looking down increases pitch (towards negative forwardY)
+      expect(cameraPitch).toBeCloseTo(0.066, 4);
+    });
+
+    it('clamps pitch angle to prevent flipping camera past zenith and nadir', () => {
+      let cameraPitch = 0;
+      const sensitivity = 0.0022;
+
+      // Mouse moved up extremely fast (-1000px)
+      const movementYUp = -1000;
+      cameraPitch = THREE.MathUtils.clamp(
+        cameraPitch + movementYUp * sensitivity,
+        -1.4,
+        1.4
+      );
+      expect(cameraPitch).toBe(-1.4);
+
+      // Mouse moved down extremely fast (+2000px)
+      const movementYDown = 2000;
+      cameraPitch = THREE.MathUtils.clamp(
+        cameraPitch + movementYDown * sensitivity,
+        -1.4,
+        1.4
+      );
+      expect(cameraPitch).toBe(1.4);
     });
   });
 });

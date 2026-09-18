@@ -22,12 +22,14 @@ interface CameraFollowerProps {
   cameraAngleRef: React.MutableRefObject<number>;
   cameraPitchRef: React.MutableRefObject<number>;
   cameraDistanceRef: React.MutableRefObject<number>;
+  isDraggingRef: React.MutableRefObject<boolean>;
 }
 
 const CameraFollower: React.FC<CameraFollowerProps> = ({
   cameraAngleRef,
   cameraPitchRef,
   cameraDistanceRef,
+  isDraggingRef,
 }) => {
   const { camera } = useThree();
   const currentCamPos = useRef(new THREE.Vector3(0, 3, 15));
@@ -116,10 +118,32 @@ const CameraFollower: React.FC<CameraFollowerProps> = ({
       idealY = pose.position[1];
       idealZ = pose.position[2];
       targetLookAtRef.current.set(pose.lookAt[0], pose.lookAt[1], pose.lookAt[2]);
-      posLambda = 18.0;
-      lookLambda = 20.0;
+      posLambda = 24.0;
+      lookLambda = 45.0; // Responsive, crisp FPP look feel
     } else {
-      // Third-Person Perspective: Smooth chase camera with orbit azimuth controls and variable zoom distance
+      // Third-Person Perspective: Smooth chase camera automatically following player from behind
+      if (
+        perspectiveMode === '3rd_person' &&
+        activeStation === null &&
+        (!cinematicCamera || !cinematicCamera.active)
+      ) {
+        if (avatar.isMoving && !isDraggingRef.current) {
+          // Desired camera azimuth directly behind avatar
+          const desiredAngle = avatar.rotation - Math.PI;
+          let angleDiff = (desiredAngle - cameraAngleRef.current) % (Math.PI * 2);
+          if (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+          if (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+          // Smoothly track behind avatar (damped follow)
+          const followSpeed = 3.5;
+          cameraAngleRef.current += angleDiff * Math.min(1.0, followSpeed * delta);
+
+          // Keep cameraAngleRef bounded between -PI and PI
+          if (cameraAngleRef.current > Math.PI) cameraAngleRef.current -= Math.PI * 2;
+          if (cameraAngleRef.current < -Math.PI) cameraAngleRef.current += Math.PI * 2;
+        }
+      }
+
       const pose = calculateThirdPersonCamera(
         avatar.position,
         cameraAngleRef.current,
@@ -172,24 +196,89 @@ export const ClassroomCanvas: React.FC = () => {
   const cameraDistanceRef = useRef<number>(6.8); // 3P chase distance (zoomable between 2.2 and 14.0)
   const isDragging = useRef<boolean>(false);
   const lastMousePos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isPointerLocked, setIsPointerLocked] = React.useState<boolean>(false);
+
+  const perspectiveMode = useClassroomStore((s) => s.perspectiveMode);
+
+  // Auto-release pointer lock if any modal opens
+  useEffect(() => {
+    const unsub = useClassroomStore.subscribe((state) => {
+      const isModalOpen =
+        state.isMentorOpen ||
+        (state as any).isFeynmanOpen ||
+        (state as any).isAssessmentOpen;
+      if (isModalOpen && document.pointerLockElement) {
+        document.exitPointerLock();
+      }
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
+    const handlePointerLockChange = () => {
+      const locked =
+        document.pointerLockElement !== null &&
+        (document.pointerLockElement === containerRef.current ||
+          document.pointerLockElement?.tagName === 'CANVAS');
+      setIsPointerLocked(locked);
+    };
+
+    document.addEventListener('pointerlockchange', handlePointerLockChange);
+
     const handleMouseDown = (e: MouseEvent) => {
       // Ignore clicks on UI overlay buttons
       if ((e.target as HTMLElement).closest('.ui-interactive')) return;
+
+      const { perspectiveMode: currentMode, isMentorOpen, isFeynmanOpen, isAssessmentOpen } =
+        useClassroomStore.getState() as any;
+      const isModalOpen = isMentorOpen || isFeynmanOpen || isAssessmentOpen;
+
+      if (currentMode === '1st_person' && !isModalOpen) {
+        // Request pointer lock on canvas click in 1P mode for FPS mouselook
+        if (document.pointerLockElement === null && containerRef.current) {
+          try {
+            containerRef.current.requestPointerLock();
+          } catch (_) {}
+        }
+      }
+
       isDragging.current = true;
       lastMousePos.current = { x: e.clientX, y: e.clientY };
     };
 
     const handleMouseMove = (e: MouseEvent) => {
+      const { perspectiveMode: currentMode, isMentorOpen, isFeynmanOpen, isAssessmentOpen } =
+        useClassroomStore.getState() as any;
+      const isModalOpen = isMentorOpen || isFeynmanOpen || isAssessmentOpen;
+
+      if (currentMode === '1st_person') {
+        const isLocked = document.pointerLockElement !== null;
+        // In 1st person: moving mouse directly controls camera (FPP game style)
+        if (isLocked || (isDragging.current && !isModalOpen)) {
+          const dx = isLocked && e.movementX !== undefined ? e.movementX : e.clientX - lastMousePos.current.x;
+          const dy = isLocked && e.movementY !== undefined ? e.movementY : e.clientY - lastMousePos.current.y;
+          lastMousePos.current = { x: e.clientX, y: e.clientY };
+
+          const sensitivity = 0.0022;
+          cameraAngleRef.current -= dx * sensitivity;
+          cameraPitchRef.current = THREE.MathUtils.clamp(
+            cameraPitchRef.current + dy * sensitivity,
+            -1.4, // Look up (~80 deg)
+            1.4   // Look down (~80 deg)
+          );
+        }
+        return;
+      }
+
+      // 3rd Person Perspective Orbit Controls (when dragging)
       if (!isDragging.current) return;
       const dx = e.clientX - lastMousePos.current.x;
       const dy = e.clientY - lastMousePos.current.y;
       lastMousePos.current = { x: e.clientX, y: e.clientY };
 
-      const { perspectiveMode } = useClassroomStore.getState();
-      const minPitch = perspectiveMode === '1st_person' ? -0.85 : -0.2;
-      const maxPitch = perspectiveMode === '1st_person' ? 0.85 : 0.75;
+      const minPitch = -0.2;
+      const maxPitch = 0.75;
 
       // Orbit sensitivity
       cameraAngleRef.current -= dx * 0.005;
@@ -206,14 +295,17 @@ export const ClassroomCanvas: React.FC = () => {
 
     const handleWheel = (e: WheelEvent) => {
       if ((e.target as HTMLElement).closest('.ui-interactive')) return;
-      const { perspectiveMode, setPerspectiveMode } = useClassroomStore.getState();
+      const { perspectiveMode: currentMode, setPerspectiveMode } = useClassroomStore.getState();
       const zoomDelta = e.deltaY * 0.005;
 
-      if (perspectiveMode === '1st_person') {
+      if (currentMode === '1st_person') {
         // Scrolling backward pulls camera out into 3P mode
         if (e.deltaY > 0) {
           cameraDistanceRef.current = 3.5;
           setPerspectiveMode('3rd_person');
+          if (document.pointerLockElement) {
+            document.exitPointerLock();
+          }
         }
       } else {
         const newDist = cameraDistanceRef.current + zoomDelta;
@@ -221,6 +313,9 @@ export const ClassroomCanvas: React.FC = () => {
         if (newDist <= 2.2) {
           cameraDistanceRef.current = 2.2;
           setPerspectiveMode('1st_person');
+          try {
+            containerRef.current?.requestPointerLock();
+          } catch (_) {}
         } else {
           cameraDistanceRef.current = THREE.MathUtils.clamp(newDist, 2.2, 14.0);
         }
@@ -231,12 +326,18 @@ export const ClassroomCanvas: React.FC = () => {
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
       if (e.code === 'KeyV' && !e.ctrlKey && !e.altKey && !e.metaKey) {
         e.preventDefault();
-        const { perspectiveMode, setPerspectiveMode } = useClassroomStore.getState();
-        if (perspectiveMode === '1st_person') {
+        const { perspectiveMode: currentMode, setPerspectiveMode } = useClassroomStore.getState();
+        if (currentMode === '1st_person') {
           cameraDistanceRef.current = 6.8;
           setPerspectiveMode('3rd_person');
+          if (document.pointerLockElement) {
+            document.exitPointerLock();
+          }
         } else {
           setPerspectiveMode('1st_person');
+          try {
+            containerRef.current?.requestPointerLock();
+          } catch (_) {}
         }
       }
     };
@@ -248,6 +349,7 @@ export const ClassroomCanvas: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
+      document.removeEventListener('pointerlockchange', handlePointerLockChange);
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
@@ -257,7 +359,7 @@ export const ClassroomCanvas: React.FC = () => {
   }, []);
 
   return (
-    <div className="canvas-container">
+    <div className="canvas-container" ref={containerRef}>
       <Canvas
         camera={{ position: [0, 3, 15], fov: 60, near: 0.1, far: 250 }}
         gl={{
@@ -272,6 +374,7 @@ export const ClassroomCanvas: React.FC = () => {
           cameraAngleRef={cameraAngleRef}
           cameraPitchRef={cameraPitchRef}
           cameraDistanceRef={cameraDistanceRef}
+          isDraggingRef={isDragging}
         />
         <ClassroomCampus />
         <Avatar cameraAngleRef={cameraAngleRef} />
@@ -284,6 +387,21 @@ export const ClassroomCanvas: React.FC = () => {
         <RecursionLabWing />
         <TreeLabWing />
       </Canvas>
+
+      {/* First-Person Perspective (FPP) Reticle & Mouselook HUD Overlay */}
+      {perspectiveMode === '1st_person' && (
+        <div className="fpp-overlay-container">
+          <div className="fpp-reticle" />
+          {!isPointerLocked && (
+            <div className="fpp-pointer-hint">
+              <span className="fpp-icon">🎯</span>
+              <span>Click to lock mouse look</span>
+              <span className="fpp-kbd">[ESC] unlock</span>
+              <span className="fpp-kbd">[V] 3P Mode</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
