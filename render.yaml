@@ -18,10 +18,7 @@ services:
     staticPublishPath: frontend/dist
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: learniverse-backend
-          property: host
+        value: https://learniverse-backend-a4go.onrender.com
     routes:
       - type: rewrite
         source: /*

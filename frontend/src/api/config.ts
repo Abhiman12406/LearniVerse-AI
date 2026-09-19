@@ -13,15 +13,16 @@
 export function getApiBaseUrl(): string {
   const envUrl = import.meta.env.VITE_API_URL;
 
-  // If running locally in browser (localhost / 127.0.0.1), use relative path for local Vite proxy
+  // 1. If running locally in browser (localhost / 127.0.0.1), use relative path "" for Vite dev proxy
   if (typeof window !== 'undefined') {
     const isLocal = window.location?.hostname === 'localhost' || window.location?.hostname === '127.0.0.1';
-    if (isLocal && (!envUrl || envUrl.includes('onrender.com'))) {
+    if (isLocal) {
       return '';
     }
   }
 
-  if (!envUrl) {
+  // 2. If no environment variable provided:
+  if (!envUrl || !envUrl.trim()) {
     // If running in production in the browser on Render, default to the live backend instance
     if (typeof window !== 'undefined' && window.location?.hostname?.includes('onrender.com')) {
       return 'https://learniverse-backend-a4go.onrender.com';
@@ -29,13 +30,19 @@ export function getApiBaseUrl(): string {
     return '';
   }
 
-  let normalized = envUrl.trim();
-  if (!/^https?:\/\//i.test(normalized)) {
-    if (normalized.startsWith('localhost') || normalized.startsWith('127.0.0.1')) {
-      normalized = `http://${normalized}`;
-    } else {
-      normalized = `https://${normalized}`;
-    }
+  let normalized = envUrl.trim().replace(/^https?:\/\//i, '');
+
+  // 3. CRITICAL: If Render Blueprint supplied internal service slug (e.g. "learniverse-backend-a4go" without domain),
+  // append ".onrender.com" because client-side browser cannot resolve private cluster hostnames!
+  if (!normalized.includes('.') && !normalized.includes(':')) {
+    normalized = `${normalized}.onrender.com`;
+  }
+
+  // 4. Ensure proper HTTPS protocol (or http for local addresses)
+  if (normalized.startsWith('localhost') || normalized.startsWith('127.0.0.1')) {
+    normalized = `http://${normalized}`;
+  } else {
+    normalized = `https://${normalized}`;
   }
 
   return normalized.replace(/\/+$/, '');
