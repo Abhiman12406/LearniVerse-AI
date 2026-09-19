@@ -12,6 +12,7 @@ from backend.app.routers.feynman import router as feynman_router
 from backend.app.routers.curriculum import router as curriculum_router
 from backend.app.routers.assessment import router as assessment_router
 from backend.app.routers.cache import router as cache_router
+from backend.app.routers.vector_db import router as vector_router
 
 app = FastAPI(
     title="Adaptive Virtual Classroom API",
@@ -38,6 +39,7 @@ app.include_router(feynman_router)
 app.include_router(curriculum_router)
 app.include_router(assessment_router)
 app.include_router(cache_router)
+app.include_router(vector_router)
 
 
 @app.get("/")
