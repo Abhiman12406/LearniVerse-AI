@@ -4,11 +4,12 @@
 > An autonomous, agentic 3D cybernetic learning environment where physical architectural barriers, kinetic apparatuses, learning paths, and pedagogical guidance dynamically adapt to each learner's evolving knowledge state.
 
 [![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-learniverse--frontend.onrender.com-00c853?style=for-the-badge&logo=render&logoColor=white)](https://learniverse-frontend.onrender.com)
+[![Live Backend API](https://img.shields.io/badge/⚡_Live_API-learniverse--backend--a4go.onrender.com-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://learniverse-backend-a4go.onrender.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Backend: FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![3D: React Three Fiber](https://img.shields.io/badge/3D_Engine-R3F_%2B_Three.js-000000?style=for-the-badge&logo=threedotjs&logoColor=white)](https://docs.pmnd.rs/react-three-fiber)
 
-🎮 **Experience the 3D Classroom Live**: [**https://learniverse-frontend.onrender.com**](https://learniverse-frontend.onrender.com)
+🎮 **Experience the 3D Classroom Live**: [**https://learniverse-frontend.onrender.com**](https://learniverse-frontend.onrender.com)  
+⚡ **Live Backend API**: [**https://learniverse-backend-a4go.onrender.com**](https://learniverse-backend-a4go.onrender.com) (API Docs: [`/docs`](https://learniverse-backend-a4go.onrender.com/docs))
 
 ---
 
@@ -356,7 +357,7 @@ LearniVerse-AI is production-engineered for **1-click deployment on Render** via
 | Service | Type | Plan | Region | Technology Stack | Live Link |
 |---|---|---|---|---|---|
 | **`learniverse-frontend`** | Static Site | Free | Singapore (Global CDN) | React 19, Three.js, Vite | [🔗 Launch 3D App](https://learniverse-frontend.onrender.com) |
-| **`learniverse-backend`** | Web Service (Python) | Free | Singapore | Python 3.11, FastAPI, Uvicorn | `https://learniverse-backend.onrender.com` |
+| **`learniverse-backend`** | Web Service (Python) | Free | Singapore | Python 3.11, FastAPI, Uvicorn | [🔗 Live API Service](https://learniverse-backend-a4go.onrender.com) |
 | **`learniverse-n8n`** | Web Service (Docker) | Free | Singapore | Docker, n8n Orchestrator, Node.js (`--max-old-space-size=384`) | `https://learniverse-n8n.onrender.com` |
 
 See [`docs/RENDER_DEPLOYMENT.md`](./docs/RENDER_DEPLOYMENT.md) for the complete production operational guide.

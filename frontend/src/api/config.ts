@@ -5,14 +5,18 @@
  * In local dev (Vite proxy mode), VITE_API_URL is unset or empty, returning relative `""`
  * so Vite's dev proxy `/api` -> `http://127.0.0.1:8000` functions seamlessly.
  *
- * On Render static sites, VITE_API_URL is supplied via environment variable
- * (e.g. `https://learniverse-backend.onrender.com` or `learniverse-backend.onrender.com`).
+ * On Render static sites, VITE_API_URL is supplied via environment variable or .env.production
+ * (default: `https://learniverse-backend-a4go.onrender.com`).
  * This helper normalizes protocol schemes and trims trailing slashes.
  */
 
 export function getApiBaseUrl(): string {
   const envUrl = import.meta.env.VITE_API_URL;
   if (!envUrl) {
+    // If running in production in the browser on Render, default to the live backend instance
+    if (typeof window !== 'undefined' && window.location?.hostname?.includes('onrender.com')) {
+      return 'https://learniverse-backend-a4go.onrender.com';
+    }
     return '';
   }
 
@@ -33,7 +37,7 @@ export function getApiBaseUrl(): string {
  *
  * @example
  * getApiUrl('/api/learner/profile')
- * // Returns: "https://learniverse-backend.onrender.com/api/learner/profile" (on Render)
+ * // Returns: "https://learniverse-backend-a4go.onrender.com/api/learner/profile" (on Render)
  * // Returns: "/api/learner/profile" (in local dev Vite proxy)
  */
 export function getApiUrl(endpoint: string): string {
@@ -41,3 +45,4 @@ export function getApiUrl(endpoint: string): string {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   return base ? `${base}${cleanEndpoint}` : cleanEndpoint;
 }
+

@@ -82,7 +82,7 @@ This repository includes a root `render.yaml` blueprint. In your Render Dashboar
 
 | Variable | Recommended Value | Description |
 | :--- | :--- | :--- |
-| `FASTAPI_BACKEND_URL` | `https://learniverse-backend.onrender.com` | URL of the live FastAPI service |
+| `FASTAPI_BACKEND_URL` | `https://learniverse-backend-a4go.onrender.com` | URL of the live FastAPI service |
 | `GEMINI_API_KEY` | `AIzaSy...` | Google Gemini API Key for LLM nodes |
 | `GROQ_API_KEY` | `gsk_...` | Groq Cloud API Key for Whisper speech-to-text voice input |
 | `WEBHOOK_URL` | `https://learniverse-n8n.onrender.com/` | Public URL of this n8n service for webhooks |

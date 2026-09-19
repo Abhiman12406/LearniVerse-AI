@@ -90,7 +90,7 @@ If creating the n8n service manually in Render:
 
 | Variable | Value | Purpose |
 | :--- | :--- | :--- |
-| `FASTAPI_BACKEND_URL` | `https://learniverse-backend.onrender.com` | FastAPI backend URL for context and verification |
+| `FASTAPI_BACKEND_URL` | `https://learniverse-backend-a4go.onrender.com` | FastAPI backend URL for context and verification |
 | `GEMINI_API_KEY` | `AIzaSy...` | Gemini 2.5 API Key for the diagnostic agent |
 | `GROQ_API_KEY` | `gsk_...` | Groq API Key for Whisper speech-to-text voice input (`whisper-large-v3`) |
 | `WEBHOOK_URL` | `https://learniverse-n8n.onrender.com/` | Public URL of this n8n instance for webhooks |

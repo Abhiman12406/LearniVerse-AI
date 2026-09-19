@@ -156,8 +156,8 @@ Go to **`learniverse-backend`** -> **Environment** -> **Add Environment Variable
 Once deployed, follow this checklist to verify full system operation:
 
 ### Step 1: Healthcheck Endpoints
-* Backend Health: `https://learniverse-backend.onrender.com/health` ➔ `{"status": "healthy"}`
-* Feynman Health: `https://learniverse-backend.onrender.com/api/feynman/health` ➔ `{"status": "healthy", "service": "feynman"}`
+* Backend Health: `https://learniverse-backend-a4go.onrender.com/health` ➔ `{"status": "healthy"}`
+* Feynman Health: `https://learniverse-backend-a4go.onrender.com/api/feynman/health` ➔ `{"status": "healthy", "service": "feynman"}`
 * n8n Health: `https://learniverse-n8n.onrender.com/healthz` ➔ HTTP 200
 
 ### Step 2: 3D Classroom Initial State
