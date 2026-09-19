@@ -130,43 +130,43 @@ flowchart TB
         STATIONS["3D Kinetic Lab Apparatuses"]
         BARRIERS["Dynamic Prerequisite Barriers"]
         STORE["Zustand State Store"]
-        
-        UI <--> STORE
+
+        UI --- STORE
         CANVAS --> CAM
         CANVAS --> STATIONS
         CANVAS --> BARRIERS
-        STORE <--> CANVAS
+        STORE --- CANVAS
     end
 
     subgraph BACKEND["Core Intelligence Backend (FastAPI + Python 3.11)"]
-        ROUTERS["FastAPI Endpoints (/api/*)"]
-        BKT_ENGINE["Bayesian Knowledge Tracing (BKT) Engine"]
-        IRT_ENGINE["Item Response Theory (IRT) Adaptive Engine"]
+        ROUTERS["FastAPI Endpoints (/api)"]
+        BKT_ENGINE["Bayesian Knowledge Tracing Engine"]
+        IRT_ENGINE["Item Response Theory Adaptive Engine"]
         KG_ENGINE["Knowledge Graph Engine (NetworkX / Neo4j)"]
-        CACHE_ENGINE["Semantic Caching Service (LangCache / In-Memory)"]
-        
-        subgraph LANGGRAPH["5-Agent Deliberation Pipeline (LangGraph)"]
+        CACHE_ENGINE["Semantic Caching Service (LangCache)"]
+
+        subgraph LANGGRAPH["5-Agent Deliberation Pipeline"]
             A1["1. Context Agent"] --> A2["2. Diagnostic Agent"]
             A2 --> A3["3. Planner Agent"]
             A3 --> A4["4. Validator Agent"]
             A4 --> A5["5. Game Agent"]
         end
-        
-        FEYNMAN_INTERNAL["Built-in Multimodal Feynman Agent"]
+
+        FEYNMAN_GENAI["Python Google GenAI Remediation Engine"]
     end
 
-    subgraph ORCHESTRATOR["External Workflow Tier (Optional / Decoupled)"]
+    subgraph ORCHESTRATOR["External Workflow Tier (Optional)"]
         N8N["n8n Workflow Engine (Docker Service)"]
     end
 
-    CLIENT -- "REST / JSON & Telemetry" --> ROUTERS
+    STORE -->|"REST / JSON and Telemetry"| ROUTERS
     ROUTERS --> BKT_ENGINE
     ROUTERS --> IRT_ENGINE
     ROUTERS --> KG_ENGINE
     ROUTERS --> CACHE_ENGINE
-    ROUTERS --> LANGGRAPH
-    ROUTERS --> FEYNMAN_INTERNAL
-    FEYNMAN_INTERNAL -. "Webhook (Fallback Resilient)" .-> N8N
+    ROUTERS --> A1
+    ROUTERS --> FEYNMAN_GENAI
+    FEYNMAN_GENAI -.->|"Optional Webhook"| N8N
 ```
 
 ---
@@ -175,35 +175,32 @@ flowchart TB
 
 ```mermaid
 sequenceDiagram
-    autonumber
     actor Learner as Learner Avatar
     participant Canvas as 3D Classroom Canvas
     participant API as FastAPI Backend
-    participant BKT as BKT & KG Pipeline
+    participant BKT as BKT and KG Pipeline
     participant Agents as LangGraph 5-Agent Engine
-    participant Feynman as Feynman Agent Engine
+    participant GenAI as Google GenAI Remediation Engine
 
     Learner->>Canvas: Interacts with Apparatus / Submits Challenge
     Canvas->>API: POST /api/interactions/log
     API->>BKT: Update Posterior Mastery P(L_t)
-    BKT->>API: New Mastery State & Prerequisite Status
+    BKT->>API: New Mastery State and Prerequisite Status
     API->>Agents: POST /api/agents/deliberate
-    
-    rect rgb(20, 30, 50)
-        Note over Agents: 1. Context Agent: Extracts active wing & prerequisite state
-        Note over Agents: 2. Diagnostic Agent: Flags gaps (e.g. Stack < 0.70)
-        Note over Agents: 3. Planner Agent: Recommends REMEDIATE on Stack
-        Note over Agents: 4. Validator Agent: Enforces pedagogical policy gate
-        Note over Agents: 5. Game Agent: Sets Conduits & Locks Recursion Wing
-    end
-    
-    Agents-->>API: Deliberation Decision & Environmental Directives
+
+    Note over Agents: 1. Context Agent: Extracts active wing and prerequisite state
+    Note over Agents: 2. Diagnostic Agent: Flags gaps (e.g. Stack below 0.70)
+    Note over Agents: 3. Planner Agent: Recommends REMEDIATE on Stack
+    Note over Agents: 4. Validator Agent: Enforces pedagogical policy gate
+    Note over Agents: 5. Game Agent: Sets Conduits and Locks Recursion Wing
+
+    Agents-->>API: Deliberation Decision and Environmental Directives
     API-->>Canvas: World State (Active Conduits, Barriers, Mission)
-    
+
     opt If Misconception Detected
-        Canvas->>API: POST /api/feynman/explain
-        API->>Feynman: Formulate Multi-Modal Repair (3D Simulation + Analogy)
-        Feynman-->>Canvas: Interactive Explanation & Verification Challenge
+        Canvas->>API: POST /api/feynman/request
+        API->>GenAI: Formulate Multimodal Repair (3D Simulation + Analogy)
+        GenAI-->>Canvas: Interactive Explanation and Verification Challenge
         Learner->>Canvas: Submits Verification Answer
         Canvas->>API: POST /api/feynman/verify
         API->>BKT: Posterior Confidence Boost (+0.23)
@@ -216,21 +213,21 @@ sequenceDiagram
 ### 5.3 Curriculum Knowledge Graph DAG
 
 ```mermaid
-graph LR
+flowchart LR
     classDef mastered fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff;
     classDef active fill:#0ea5e9,stroke:#0284c7,stroke-width:2px,color:#fff;
     classDef locked fill:#ef4444,stroke:#b91c1c,stroke-width:2px,color:#fff;
 
-    Arrays["📦 Arrays & Memory<br/>(Mastery: 0.92)"]:::mastered
-    LinkedList["🔗 Linked Lists<br/>(Mastery: 0.78)"]:::mastered
-    Stacks["🟧 Stacks (LIFO)<br/>(Mastery: 0.38 - Remediation)"]:::active
-    Recursion["🌀 Recursion Chamber<br/>(LOCKED - Prereq: Stack ≥ 0.70)"]:::locked
-    Trees["🌲 Trees & BST<br/>(LOCKED - Prereq: Recursion ≥ 0.70)"]:::locked
+    Arrays["Arrays and Memory<br>(Mastery: 0.92)"]:::mastered
+    LinkedList["Linked Lists<br>(Mastery: 0.78)"]:::mastered
+    Stacks["Stacks (LIFO)<br>(Mastery: 0.38 - Remediation)"]:::active
+    Recursion["Recursion Chamber<br>(LOCKED - Prereq: Stack >= 0.70)"]:::locked
+    Trees["Trees and BST<br>(LOCKED - Prereq: Recursion >= 0.70)"]:::locked
 
-    Arrays -->|"Prerequisite"| LinkedList
-    LinkedList -->|"Prerequisite"| Stacks
-    Stacks -->|"Prerequisite Barrier Gate"| Recursion
-    Recursion -->|"Prerequisite Barrier Gate"| Trees
+    Arrays -->|Prerequisite| LinkedList
+    LinkedList -->|Prerequisite| Stacks
+    Stacks -->|Prerequisite Barrier Gate| Recursion
+    Recursion -->|Prerequisite Barrier Gate| Trees
 ```
 
 ---
