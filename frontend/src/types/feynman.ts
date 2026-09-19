@@ -82,6 +82,9 @@ export interface FeynmanResponse {
   strategy_history: StrategyHistoryItem[];
   orchestrator: string;
   llm_mode: string;
+  cache_status?: string | null;
+  cache_provider?: string | null;
+  latency_saved_ms?: number | null;
   timestamp: string;
 }
 

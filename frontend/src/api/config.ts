@@ -12,6 +12,15 @@
 
 export function getApiBaseUrl(): string {
   const envUrl = import.meta.env.VITE_API_URL;
+
+  // If running locally in browser (localhost / 127.0.0.1), use relative path for local Vite proxy
+  if (typeof window !== 'undefined') {
+    const isLocal = window.location?.hostname === 'localhost' || window.location?.hostname === '127.0.0.1';
+    if (isLocal && (!envUrl || envUrl.includes('onrender.com'))) {
+      return '';
+    }
+  }
+
   if (!envUrl) {
     // If running in production in the browser on Render, default to the live backend instance
     if (typeof window !== 'undefined' && window.location?.hostname?.includes('onrender.com')) {
