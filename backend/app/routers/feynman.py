@@ -1,4 +1,4 @@
-"""Feynman Agent API router conforming to FEYNMAN.md specification."""
+"""Python Google GenAI Feynman Remediation API router conforming to FEYNMAN.md specification."""
 
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -14,7 +14,7 @@ from backend.app.models.feynman import (
 )
 from backend.app.services.feynman_service import feynman_service
 
-router = APIRouter(prefix="/api/feynman", tags=["Feynman Multimodal Agent"])
+router = APIRouter(prefix="/api/feynman", tags=["Python Google GenAI Feynman Remediation"])
 
 
 @router.get("/health")

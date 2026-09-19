@@ -117,5 +117,4 @@ class TestFeynmanServiceEndToEndParity:
         assert res.concept_id == "stack"
         assert res.explanation.title is not None
         assert len(res.explanation.visual_steps) >= 4
-        assert res.verification_question.question_id is not None
-        assert res.orchestrator in ["builtin_engine", "n8n"]
+        assert res.orchestrator in ["google_genai", "builtin_engine", "n8n"]

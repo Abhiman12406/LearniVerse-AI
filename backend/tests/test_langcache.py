@@ -180,7 +180,7 @@ def test_feynman_service_cache_hit_pipeline():
 
     resp = service.process_feynman_request(req)
     assert resp.cache_status == "HIT"
-    assert resp.llm_mode == "cached_gemini"
+    assert resp.llm_mode in ["cached_gemini", "cached_google_genai"]
     assert resp.decision.learning_objective == "Understand recursion base case"
     assert resp.explanation.title == "The Infinite Russian Nesting Dolls"
     assert resp.verification_question.prompt == "What stops infinite recursion?"

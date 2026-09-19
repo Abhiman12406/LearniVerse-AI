@@ -45,6 +45,7 @@ from backend.app.services.feynman.curriculum_content import (
     CURRICULUM_EXPLANATIONS,
     curriculum_repository,
 )
+from backend.app.services.feynman.google_genai_service import google_genai_service
 from backend.app.services.feynman.transcription_adapter import transcription_adapter
 from backend.app.services.feynman.webhook_adapter import webhook_adapter
 from backend.app.services.langcache_service import langcache_service
@@ -277,7 +278,8 @@ class FeynmanService:
             recent_mistakes=context.recent_mistakes,
         )
 
-        # Step 4: Dispatch external n8n webhook via adapter with resilient fallback
+        # Step 4: Python Google GenAI engine is authoritative orchestrator
+        orchestrator = "google_genai"
         payload = {
             "session_id": session_id,
             "student_id": student_id,
@@ -287,7 +289,11 @@ class FeynmanService:
             "requested_modality": selected_modality,
             "context": context.model_dump(),
         }
-        orchestrator, _ = webhook_adapter.dispatch_n8n_sync(payload)
+        if os.environ.get("N8N_WEBHOOK_URL"):
+            n8n_mode, _ = webhook_adapter.dispatch_n8n_sync(payload)
+            if n8n_mode == "n8n":
+                orchestrator = "n8n"
+
         llm_mode = "deterministic_fallback"
 
         # Step 5: Check Redis LangCache for semantically similar explanation
@@ -318,7 +324,7 @@ class FeynmanService:
                 explanation = FeynmanExplanationPayload(**expl_data)
 
                 verify_q = VerificationQuestion(**cached_data["verification"])
-                llm_mode = "cached_gemini"
+                llm_mode = "cached_google_genai"
                 cache_status = "HIT"
                 cache_provider = cached_match.get("provider", cache_provider)
                 latency_saved_ms = cached_match.get("latency_saved_ms", 950.0)
@@ -326,17 +332,17 @@ class FeynmanService:
                 cached_match = None
 
         if not cached_match:
-            # Step 5b: Execute Gemini reasoning if API key present
-            gemini_result = self._try_gemini_analysis(
+            # Step 5b: Execute Python Google GenAI reasoning if configured
+            genai_result = self._try_gemini_analysis(
                 concept=concept,
                 context=context,
                 student_input=unified_input,
                 selected_modality=selected_modality,
             )
 
-            if gemini_result:
-                decision, explanation, verify_q = gemini_result
-                llm_mode = "gemini"
+            if genai_result:
+                decision, explanation, verify_q = genai_result
+                llm_mode = "google_genai"
                 cache_status = "MISS"
                 # Store in Redis LangCache
                 try:
@@ -413,118 +419,13 @@ class FeynmanService:
         student_input: str,
         selected_modality: str,
     ) -> Optional[tuple[FeynmanDecision, FeynmanExplanationPayload, VerificationQuestion]]:
-        """Attempt Google Gemini 2.5 structured analysis and explanation generation."""
-        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-        if not api_key:
-            return None
-
-        try:
-            import importlib
-            genai = importlib.import_module("google.genai")
-            client = genai.Client(api_key=api_key)
-
-            prompt = f"""
-You are the Feynman Analysis and Multimodal Explanation Agent in an adaptive virtual classroom.
-FEYNMAN CORE PRINCIPLE: Explain difficult Data Structures concepts using everyday physical metaphors, crystal-clear step-by-step logic, and zero unnecessary jargon.
-
-Student Context:
-- Concept: {concept}
-- Current Mastery: {context.mastery:.2f}
-- Prerequisites: {json.dumps(context.prerequisites)}
-- Recent Mistakes: {json.dumps(context.recent_mistakes)}
-- Student Input: "{student_input}"
-- Selected Modality: {selected_modality}
-
-Your response must be strict JSON matching this exact structure:
-{{
-  "decision": {{
-    "problem": "Brief summary of root conceptual difficulty",
-    "modality": "{selected_modality}",
-    "difficulty": "BEGINNER",
-    "learning_objective": "Single clear learning target",
-    "reason": "Why this modality and explanation focus was chosen",
-    "understood": ["what student grasped"],
-    "gaps": ["specific identified gap"],
-    "misconceptions": ["detected misconception"],
-    "confidence": 0.92
-  }},
-  "explanation": {{
-    "title": "Engaging Headline",
-    "analogy": "Concrete everyday physical analogy",
-    "detailed_explanation": "Simplified step-by-step breakdown",
-    "code_or_trace": "Short code or trace showing execution",
-    "voice_script": "Clear narration text formatted for voice read-aloud"
-  }},
-  "verification": {{
-    "prompt": "Short multiple-choice question testing the identified gap",
-    "options": ["Correct option", "Distractor 1", "Distractor 2", "Distractor 3"],
-    "correct_option_index": 0,
-    "explanation": "Why option 0 is correct",
-    "tested_skill": "The specific skill tested"
-  }}
-}}
-"""
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-            )
-
-            if response and response.text:
-                cleaned = response.text.strip()
-                if cleaned.startswith("```json"):
-                    cleaned = cleaned[7:]
-                if cleaned.startswith("```"):
-                    cleaned = cleaned[3:]
-                if cleaned.endswith("```"):
-                    cleaned = cleaned[:-3]
-                parsed = json.loads(cleaned.strip())
-
-                # Pull fallback steps for visual and 3D apparatus commands
-                fallback_base = curriculum_repository.get_content(concept)
-
-                decision_dict = parsed.get("decision", {})
-                decision = FeynmanDecision(
-                    decision_id=f"FD_{uuid.uuid4().hex[:6].upper()}",
-                    concept_id=concept,
-                    problem=decision_dict.get("problem", "Conceptual confusion"),
-                    modality=decision_dict.get("modality", selected_modality),
-                    difficulty=decision_dict.get("difficulty", "BEGINNER"),
-                    learning_objective=decision_dict.get("learning_objective", f"Understand {concept}"),
-                    reason=decision_dict.get("reason", "Gemini adaptive diagnosis"),
-                    understood=decision_dict.get("understood", []),
-                    gaps=decision_dict.get("gaps", [f"core_{concept}_mechanics"]),
-                    misconceptions=decision_dict.get("misconceptions", []),
-                    confidence=float(decision_dict.get("confidence", 0.92)),
-                )
-
-                expl_dict = parsed.get("explanation", {})
-                explanation = FeynmanExplanationPayload(
-                    title=expl_dict.get("title", fallback_base["title"]),
-                    modality=selected_modality,
-                    analogy=expl_dict.get("analogy", fallback_base["analogy"]),
-                    detailed_explanation=expl_dict.get("detailed_explanation", fallback_base["detailed_explanation"]),
-                    code_or_trace=expl_dict.get("code_or_trace", fallback_base.get("code_or_trace")),
-                    visual_steps=[VisualStep(**s) for s in fallback_base["visual_steps"]],
-                    voice_script=expl_dict.get("voice_script", fallback_base["voice_script"]),
-                    video_timeline=[VideoFrame(**v) for v in fallback_base["video_timeline"]],
-                    three_d_instruction=ThreeDApparatusInstruction(**fallback_base["three_d_instruction"]),
-                )
-
-                ver_dict = parsed.get("verification", {})
-                verification = VerificationQuestion(
-                    question_id=f"VQ_{uuid.uuid4().hex[:6].upper()}",
-                    prompt=ver_dict.get("prompt", fallback_base["verification_question"]["prompt"]),
-                    options=ver_dict.get("options", fallback_base["verification_question"]["options"]),
-                    correct_option_index=int(ver_dict.get("correct_option_index", 0)),
-                    explanation=ver_dict.get("explanation", fallback_base["verification_question"]["explanation"]),
-                    tested_skill=ver_dict.get("tested_skill", fallback_base["verification_question"]["tested_skill"]),
-                )
-
-                return decision, explanation, verification
-        except Exception:
-            pass
-
-        return None
+        """Attempt Python Google GenAI structured analysis and explanation generation."""
+        return google_genai_service.generate_explanation(
+            concept=concept,
+            context=context,
+            student_input=student_input,
+            selected_modality=selected_modality,
+        )
 
     def _build_deterministic_explanation(
         self,
